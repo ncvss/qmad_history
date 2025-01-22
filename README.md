@@ -13,14 +13,22 @@ The function names are composed of the following parts:
 2. memory order of the indices
 3. order of the loops over the indices
 
-``m`` is the hop direction ($\mu$), ``md`` is the signed hop direction,
-``x`` stands for all space axes, ``t`` is time,
-``s`` is spin, ``g`` is gauge, ``h`` is the gauge that is summed over in the
-SU(3) matrix multiplication, ``n`` is the clover term orientation ($\mu\nu$).
+The indices are named in the following way:
+- ``m`` is the hop direction ($\mu$)
+- ``d`` is the sign of the hop direction
+- ``x`` stands for all space axes
+- ``t`` is time
+- ``s`` is spin
+- ``g`` is gauge
+- ``h`` is the gauge that is summed over in the SU(3) matrix multiplication
+- ``n`` is the clover term orientation ($\mu\nu$),
+- ``b`` is the blocked space-time
+- ``M`` denotes the position of the loop where mass and hop terms
+are split
 
-For example, ``dw_dir_mxtsg_xtsghm`` means this is a Dirac Wilson operator where there
+For example, ``dw_dir_mxtsg_xtsgMhm`` means this is a Dirac Wilson operator where there
 is no precomputation, the indices from slowest to fastest in memory
 are hop direction (``m``), space-time (``t``), spin (``s``), gauge (``g``),
 and the loops from outer to inner go over all space directions (``x``), time (``t``),
 spin, gauge, gauge that is summed in the matrix multiplication (``h``), hop direction.
-
+The mass term and hop terms are computed in the same gauge and spin loops.
