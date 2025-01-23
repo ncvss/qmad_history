@@ -52,27 +52,44 @@ vo = v[dw_eo.omask]
 
 dwv_py = dw_py(v)
 
-check_correct = []
+check_correct = ["\nwilson"]
 
 for dw in [dw_d, dw_ho]:
     check_correct.append(str(dw))
-    for order, c in dw.all_calls().items():
+    for order, c in zip(dw.all_call_names(),dw.all_calls()):
         check_correct.append((order,torch.allclose(c(v),dwv_py)))
 
 check_correct.append(str(dw_hn))
-for order, c in dw_hn.all_calls().items():
+for order, c in zip(dw_hn.all_call_names(),dw_hn.all_calls()):
     check_correct.append((order,torch.allclose(c(vn).transpose(4,5),dwv_py)))
 
 check_correct.append(str(dw_eo))
-for order, c in dw_eo.all_calls().items():
-    dwv_eo = c(ve, vo)
+for order, c in zip(dw_eo.all_call_names(),dw_eo.all_calls()):
+    dwv_eo = c([ve,vo])
     dwv_eo_back = torch.zeros_like(dwv_py)
     dwv_eo_back[dw_eo.emask] = dwv_eo[0]
     dwv_eo_back[dw_eo.omask] = dwv_eo[1]
     check_correct.append((order,torch.allclose(dwv_py,dwv_eo_back)))
 
+check_correct.append("\nwilson clover")
+
+dwcv_py = dwc_py(v)
+
+dwc_d = clover.wilson_clover_direct_false(U, mass, csw)
+dwc_f = clover.wilson_clover_fpre(U, mass, csw)
+dwc_ho = clover.wilson_clover_hop_mtsg(U, mass, csw)
+dwc_hn = clover.wilson_clover_hop_tmgs(U, mass, csw)
+dwc_s = clover.wilson_clover_sigpre(U, mass, csw)
+
+for dw in [dwc_d, dwc_f, dwc_ho]:
+    check_correct.append(str(dw))
+    for order, c in zip(dw.all_call_names(),dw.all_calls()):
+        check_correct.append((order,torch.allclose(c(v),dwcv_py)))
+
+check_correct.append(str(dwc_hn))
+for order, c in zip(dwc_hn.all_call_names(),dwc_hn.all_calls()):
+    check_correct.append((order,torch.allclose(c(vn).transpose(4,5),dwcv_py)))
+
 
 for cc in check_correct:
     print(cc)
-
-

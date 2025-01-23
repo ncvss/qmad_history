@@ -45,10 +45,18 @@ class wilson_clover_direct_false:
         self.U = U
         self.mass_parameter = mass_parameter
         self.csw = csw
+
+    def __str__(self):
+        return "dwc_dir_mxtsg_false"
     
-    def __call__(self, v):
+    def fcall(self, v):
         # alternate name: xtMmghijkls
         return torch.ops.qmad_history.dwc_dir_mxtsg_false(self.U, v, self.mass_parameter, self.csw)
+    
+    def all_calls(self):
+        return [self.fcall]
+    def all_call_names(self):
+        return ["xtMmghijkls"]
 
 
 class wilson_clover_fpre:
@@ -96,6 +104,9 @@ class wilson_clover_fpre:
         assert len(self.field_strength) == 6
         for F in self.field_strength:
             assert tuple(F.shape[4:6]) == (3,3)
+    
+    def __str__(self):
+        return "dwc_fpre_mntsg"
         
     def xtsghmn (self, v):
         return torch.ops.qmad_history.dwc_fpre_mntsg_xtsghmn(self.U, v, self.field_strength,
@@ -109,6 +120,11 @@ class wilson_clover_fpre:
     def xtmdnghs (self, v):
         return torch.ops.qmad_history.dwc_fpre_mntsg_xtmdnghs(self.U, v, self.field_strength,
                                                              self.mass_parameter, self.csw)
+    
+    def all_calls(self):
+        return [self.xtsghmn, self.xtmghsn, self.xtmnghs, self.xtmdnghs]
+    def all_call_names(self):
+        return ["xtsghmn", "xtmghsn", "xtmnghs", "xtmdnghs"]
 
 
 class wilson_clover_sigpre:
@@ -182,10 +198,18 @@ class wilson_clover_sigpre:
                 field_strength_sigma += 2*Fsigma
         
         self.field_strength_sigma = field_strength_sigma.contiguous().reshape(dim+[12,12])
+    
+    def __str__(self):
+        return "dw_dir_mxtsg"
         
     def xtMmdghs (self, v):
         return (torch.ops.qmad_history.dw_dir_mxtsg_xtMmdghs(self.U, v, self.mass_parameter)
                 - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
+
+    def all_calls(self):
+        return [self.xtMmdghs]
+    def all_call_names(self):
+        return ["xtMmdghs"]
 
 
 class wilson_clover_hop_mtsg:
@@ -251,6 +275,9 @@ class wilson_clover_hop_mtsg:
         
         self.field_strength = torch.stack(field_strength, dim=4)
         assert tuple(self.field_strength.shape[4:7]) == (6,3,3,)
+    
+    def __str__(self):
+        return "dwc_avx_mtsg"
 
     def avx_tmgsMhns(self, v):
         return torch.ops.qmad_history.dwc_avx_mtsg_tmgsMhns(self.U, v, self.field_strength,
@@ -260,6 +287,13 @@ class wilson_clover_hop_mtsg:
         return torch.ops.qmad_history.dwc_templ_mtsg_tmgsMhns(self.U, v, self.field_strength,
                                                               self.hop_inds, self.mass_parameter,
                                                               self.csw)
+    
+    def all_calls(self):
+        return [self.avx_tmgsMhns, self.templ_tmgsMhns]
+    def all_call_names(self):
+        return ["avx_tmgsMhns", "templ_tmgsMhns"]
+
+
 
 class wilson_clover_hop_tmgs:
     """
@@ -325,8 +359,16 @@ class wilson_clover_hop_tmgs:
         self.field_strength = torch.stack(field_strength, dim=4)
         assert tuple(self.field_strength.shape[4:7]) == (6,3,3,)
 
+    def __str__(self):
+        return "dwc_avx_tmgs"
+
     def avx_tmgsMhns(self, v):
         return torch.ops.qmad_history.dwc_avx_tmgs_tmgsMhns(self.U, v, self.field_strength,
                                                             self.hop_inds, self.mass_parameter,
                                                             self.csw)
+    
+    def all_calls(self):
+        return [self.avx_tmgsMhns]
+    def all_call_names(self):
+        return ["avx_tmgsMhns"]
 

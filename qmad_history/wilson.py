@@ -29,8 +29,9 @@ class wilson_direct:
         return torch.ops.qmad_history.dw_block_mxtsg_bxtsghm(self.U, v, self.mass_parameter, blocksize)
     
     def all_calls(self):
-        return {"xtsgMhm":self.xtsgMhm, "xtMmghs":self.xtMmghs, "xtMmdghs":self.xtMmdghs,
-                "block_dbxtsghm":self.block_dbxtsghm, "block_bxtsghm":self.block_bxtsghm}
+        return [self.xtsgMhm, self.xtMmghs, self.xtMmdghs, self.block_dbxtsghm, self.block_bxtsghm]
+    def all_call_names(self):
+        return ["xtsgMhm", "xtMmghs", "xtMmdghs", "block_dbxtsghm", "block_bxtsghm"]
 
 
 
@@ -64,11 +65,13 @@ class wilson_eo:
     def __str__(self):
         return "dw_eo_pmtsg"
 
-    def pxtMmghs(self, ve, vo):
-        return torch.ops.qmad_history.dw_eo_pmtsg_pxtMmghs(self.Ue, self.Uo, ve, vo, self.mass_parameter, self.eodim)
+    def pxtMmghs(self, vboth):
+        return torch.ops.qmad_history.dw_eo_pmtsg_pxtMmghs(self.Ue, self.Uo, vboth[0], vboth[1], self.mass_parameter, self.eodim)
 
     def all_calls(self):
-        return {"pxtMmghs":self.pxtMmghs}
+        return [self.pxtMmghs]
+    def all_call_names(self):
+        return ["pxtMmghs"]
 
 
 class wilson_hop_mtsg:
@@ -120,8 +123,9 @@ class wilson_hop_mtsg:
                                                             self.mass_parameter)
     
     def all_calls(self):
-        return {"tMmgsh":self.tMmgsh, "tMgshm":self.tMgshm, "tmgsMh":self.tmgsMh,
-                "avx_tmgsMhs":self.avx_tmgsMhs, "templ_tmgsMhs":self.templ_tmgsMhs}
+        return [self.tMmgsh, self.tMgshm, self.tmgsMh, self.avx_tmgsMhs, self.templ_tmgsMhs]
+    def all_call_names(self):
+        return ["tMmgsh", "tMgshm", "tmgsMh", "avx_tmgsMhs", "templ_tmgsMhs"]
 
 
 class wilson_hop_tmgs:
@@ -174,7 +178,8 @@ class wilson_hop_tmgs:
                                                           self.mass_parameter)
     
     def all_calls(self):
-        return {"tMmghs":self.tMmghs, "tMmgsh":self.tMmgsh, "tMmgshu":self.tMmgshu,
-                "tmgsMh":self.tmgsMh, "avx_tmgsMhs":self.avx_tmgsMhs}
+        return [self.tMmghs, self.tMmgsh, self.tMmgshu, self.tmgsMh, self.avx_tmgsMhs]
+    def all_call_names(self):
+        return ["tMmghs", "tMmgsh", "tMmgshu", "tmgsMh", "avx_tmgsMhs"]
 
 

@@ -1,0 +1,123 @@
+import torch
+import socket
+import numpy as np
+import time
+
+import gpt as g # type: ignore
+import qcd_ml
+
+from qmad_history import compat, wilson, clover
+
+print()
+num_threads = torch.get_num_threads()
+print("running on host", socket.gethostname())
+print(f'Machine has {num_threads} threads')
+
+n_measurements = 200
+n_warmup = 10
+print("n_measurements =",n_measurements)
+
+lat_dim = [8,8,8,16]
+print("lattice_dimensions =",lat_dim)
+
+rng = g.random("alltests")
+U_g = g.qcd.gauge.random(g.grid(lat_dim, g.double), rng)
+grid = U_g[0].grid
+v_g = rng.cnormal(g.vspincolor(grid))
+dst_g = g.lattice(v_g)
+
+mass = -0.5
+print("mass_parameter =",mass)
+kappa = 1.0/2.0/(mass + 4.0)
+csw = 1.0
+print("csw =", csw)
+
+U = torch.tensor(compat.lattice_to_array(U_g))
+v = torch.tensor(compat.lattice_to_array(v_g))
+vn = torch.transpose(v, 4, 5).contiguous()
+
+
+dw_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":0.0,"csw_t":0.0,"xi_0":1,"nu":1,
+                                            "isAnisotropic":False,"boundary_phases":[1.0,1.0,1.0,1.0],}, )
+
+#dw_py = qcd_ml.qcd.dirac.dirac_wilson(U, mass)
+
+
+dw_d = wilson.wilson_direct(U, mass)
+dw_eo = wilson.wilson_eo(U, mass)
+dw_ho = wilson.wilson_hop_mtsg(U, mass)
+dw_hn = wilson.wilson_hop_tmgs(U, mass)
+
+ve = v[dw_eo.emask]
+vo = v[dw_eo.omask]
+
+veo = [ve, vo]
+
+names = ["gpt"]
+funcs = [dw_g]
+dnames = ["gpt"]
+
+vs = {"gpt": v_g, str(dw_d): v, str(dw_ho): v, str(dw_hn): vn, str(dw_eo): veo}
+
+for dw in [dw_d, dw_eo, dw_ho, dw_hn]:
+    names += [str(dw)+"."+x for x in dw.all_call_names()]
+    dnames += [str(dw)] * len(dw.all_call_names())
+    funcs += dw.all_calls()
+
+results = {x:np.zeros(n_measurements) for x in names}
+
+for i in range(n_warmup):
+    for j in range(len(names)):
+        vres = funcs[j](vs[dnames[j]])
+
+for i in range(n_measurements):
+    for j in range(len(names)):
+        start = time.perf_counter_ns()
+        vres = funcs[j](vs[dnames[j]])
+        stop = time.perf_counter_ns()
+        results[names[j]][i] = stop - start
+
+for x,y in results.items():
+    print(f"time of {x:<30}: {np.mean(y)/1000:>10.3f} us")
+        
+
+dwc_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
+                                            "isAnisotropic":False,"boundary_phases":[1.0,1.0,1.0,1.0],}, )
+
+dwc_d = clover.wilson_clover_direct_false(U, mass, csw)
+dwc_f = clover.wilson_clover_fpre(U, mass, csw)
+dwc_ho = clover.wilson_clover_hop_mtsg(U, mass, csw)
+dwc_hn = clover.wilson_clover_hop_tmgs(U, mass, csw)
+dwc_s = clover.wilson_clover_sigpre(U, mass, csw)
+
+namesc = ["gpt"]
+funcsc = [dwc_g]
+dnamesc = ["gpt"]
+
+vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_ho): v, str(dwc_hn): vn, str(dwc_s): v, str(dwc_f): v}
+
+for dw in [dwc_d, dwc_f, dwc_ho, dwc_hn, dwc_s]:
+    namesc += [str(dw)+"."+x for x in dw.all_call_names()]
+    dnamesc += [str(dw)] * len(dw.all_call_names())
+    funcsc += dw.all_calls()
+
+# print(len(namesc))
+# print(len(funcsc))
+# for ff in funcsc:
+#     print(ff)
+resultsc = {x:np.zeros(n_measurements) for x in namesc}
+
+for i in range(n_warmup):
+    for j in range(len(namesc)):
+        vresc = funcsc[j](vsc[dnamesc[j]])
+
+for i in range(n_measurements):
+    for j in range(len(namesc)):
+        start = time.perf_counter_ns()
+        vresc = funcsc[j](vsc[dnamesc[j]])
+        stop = time.perf_counter_ns()
+        resultsc[namesc[j]][i] = stop - start
+
+for x,y in resultsc.items():
+    print(f"time of {x:<30}: {np.mean(y)/1000:>10.3f} us")
+
