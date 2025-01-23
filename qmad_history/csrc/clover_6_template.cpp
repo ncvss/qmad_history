@@ -4,8 +4,8 @@
 #include <omp.h>
 #include <immintrin.h>
 
-#include "indexfunc_double.hpp"
-#include "gamma_template.hpp"
+#include "static/indexfunc_double.hpp"
+#include "static/gamma_template.hpp"
 #include "complmath_avx.hpp"
 #include "load_avx.hpp"
 

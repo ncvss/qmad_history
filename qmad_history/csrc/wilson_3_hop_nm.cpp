@@ -7,8 +7,8 @@
 #include <torch/extension.h>
 #include <omp.h>
 
-#include "indexfunc_2.hpp"
-#include "gamma_1.hpp"
+#include "static/indexfunc_2.hpp"
+#include "static/gamma_1.hpp"
 
 namespace qmad_history {
 

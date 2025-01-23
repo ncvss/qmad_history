@@ -9,8 +9,8 @@
 #include <ATen/ParallelOpenMP.h>
 #include <omp.h>
 
-#include "indexfunc_1.hpp"
-#include "gamma_1.hpp"
+#include "static/indexfunc_1.hpp"
+#include "static/gamma_1.hpp"
 
 namespace qmad_history {
 

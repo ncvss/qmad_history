@@ -25,8 +25,9 @@ class wilson_direct:
     def block_bxtsghm(self, v, blocksize):
         return torch.ops.qmad_history.dw_block_mxtsg_bxtsghm(self.U, v, self.mass_parameter, blocksize)
     
-
-
+    def all_calls(self):
+        return {"xtsgMhm":self.xtsgMhm, "xtMmghs":self.xtMmghs, "xtMmdghs":self.xtMmdghs,
+                "block_dbxtsghm":self.block_dbxtsghm, "block_bxtsghm":self.block_bxtsghm}
 
 
 
@@ -59,6 +60,9 @@ class wilson_eo:
 
     def pxtMmghs(self, ve, vo):
         return torch.ops.qmad_history.dw_eo_pmtsg_pxtMmghs(self.Ue, self.Uo, ve, vo, self.mass_parameter, self.eodim)
+
+    def all_calls(self):
+        return {"pxtMmghs":self.pxtMmghs}
 
 
 class wilson_hop_mtsg:
@@ -105,6 +109,10 @@ class wilson_hop_mtsg:
     def templ_tmgsMhs(self, v):
         return torch.ops.qmad_history.dw_templ_mtsg_tmgsMhs(self.U, v, self.hop_inds,
                                                             self.mass_parameter)
+    
+    def all_calls(self):
+        return {"tMmgsh":self.tMmgsh, "tMgshm":self.tMgshm, "tmgsMh":self.tmgsMh,
+                "avx_tmgsMhs":self.avx_tmgsMhs, "templ_tmgsMhs":self.templ_tmgsMhs}
 
 
 class wilson_hop_tmgs:
@@ -152,39 +160,9 @@ class wilson_hop_tmgs:
     def avx_tmgsMhs(self, v):
         return torch.ops.qmad_history.dw_avx_tmgs_tmgsMhs(self.U, v, self.hop_inds,
                                                           self.mass_parameter)
+    
+    def all_calls(self):
+        return {"tMmghs":self.tMmghs, "tMmgsh":self.tMmgsh, "tMmgshu":self.tMmgshu,
+                "tmgsMh":self.tmgsMh, "avx_tmgsMhs":self.avx_tmgsMhs}
 
-
-
-class dirac_wilson_avx:
-    """
-    Dirac Wilson operator that creates a lookup table for the hops and uses AVX instructions.
-    The axes are U[mu,x,y,z,t,g,gi] and v[x,y,z,t,s,g].
-    """
-    def __init__(self, U, mass_parameter):
-        self.U = U
-        assert tuple(U.shape[5:7]) == (3,3,)
-        assert U.shape[0] == 4
-        self.mass_parameter = mass_parameter
-
-        grid = U.shape[1:5]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
-        npind = np.indices(grid, sparse=False)
-        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
-
-        hop_inds = []
-        for coord in range(4):
-            # index after a negative step in coord direction
-            minus_hop_ind = torch.clone(indices)
-            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
-            # index after a positive step in coord direction
-            plus_hop_ind = torch.clone(indices)
-            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
-            # compute flattened index by dot product with strides
-            hop_inds.append(torch.matmul(minus_hop_ind, strides))
-            hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
-
-    def __call__(self, v):
-        return torch.ops.qcd_ml_accel_dirac.dw_call_256d_om_template(self.U, v, self.hop_inds,
-                                                                     self.mass_parameter)
 

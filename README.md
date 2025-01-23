@@ -34,3 +34,6 @@ are hop direction (``m``), space-time (``t``), spin (``s``), gauge (``g``),
 and the loops from outer to inner go over all space directions (``x``), time (``t``),
 spin, gauge, gauge that is summed in the matrix multiplication (``h``), hop direction.
 The mass term and hop terms are computed in the same gauge and spin loops.
+
+The vectorisation has the same nomenclature as the loops. If an index is looped and
+vectorised, it appears twice.
