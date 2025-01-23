@@ -1,2 +1,4 @@
 /.venv
 /.vscode
+/qmad_history.egg-info
+/build

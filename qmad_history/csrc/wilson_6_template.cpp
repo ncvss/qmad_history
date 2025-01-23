@@ -5,9 +5,11 @@
 #include <immintrin.h>
 
 #include "static/indexfunc_double.hpp"
-#include "static/gamma_template.hpp"
+#include "static/gamma_double.hpp"
 #include "complmath_avx.hpp"
 #include "load_avx.hpp"
+
+#include "static/gamma_template.hpp"
 
 namespace qmad_history{
 

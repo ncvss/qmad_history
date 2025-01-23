@@ -17,9 +17,9 @@ PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {}
 
 // Defines the operators
 TORCH_LIBRARY(qmad_history, m) {
-    m.def("dw_dir_mxtsg_xtsghm(Tensor U, Tensor v, float mass) -> Tensor");
-    m.def("dw_dir_mxtsg_xtmghs(Tensor U, Tensor v, float mass) -> Tensor");
-    m.def("dw_dir_mxtsg_xtmdghs(Tensor U, Tensor v, float mass) -> Tensor");
+    m.def("dw_dir_mxtsg_xtsgMhm(Tensor U, Tensor v, float mass) -> Tensor");
+    m.def("dw_dir_mxtsg_xtMmghs(Tensor U, Tensor v, float mass) -> Tensor");
+    m.def("dw_dir_mxtsg_xtMmdghs(Tensor U, Tensor v, float mass) -> Tensor");
 
     m.def("dwc_dir_mxtsg_false(Tensor U, Tensor v, float mass, float csw) -> Tensor");
 
@@ -55,9 +55,9 @@ TORCH_LIBRARY(qmad_history, m) {
 
 // Registers backend implementations
 TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
-    m.impl("dw_dir_mxtsg_xtsghm", &dw_dir_mxtsg_xtsgMhm);
-    m.impl("dw_dir_mxtsg_xtmghs", &dw_dir_mxtsg_xtMmghs);
-    m.impl("dw_dir_mxtsg_xtmdghs", &dw_dir_mxtsg_xtMmdghs);
+    m.impl("dw_dir_mxtsg_xtsgMhm", &dw_dir_mxtsg_xtsgMhm);
+    m.impl("dw_dir_mxtsg_xtMmghs", &dw_dir_mxtsg_xtMmghs);
+    m.impl("dw_dir_mxtsg_xtMmdghs", &dw_dir_mxtsg_xtMmdghs);
 
     m.impl("dwc_dir_mxtsg_false", &dwc_dir_mxtsg_false);
 

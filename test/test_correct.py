@@ -55,20 +55,24 @@ dwv_py = dw_py(v)
 check_correct = []
 
 for dw in [dw_d, dw_ho]:
-    for order, c in dw.all_calls.items():
+    check_correct.append(str(dw))
+    for order, c in dw.all_calls().items():
         check_correct.append((order,torch.allclose(c(v),dwv_py)))
 
-for order, c in dw_hn.all_calls.items():
+check_correct.append(str(dw_hn))
+for order, c in dw_hn.all_calls().items():
     check_correct.append((order,torch.allclose(c(vn).transpose(4,5),dwv_py)))
 
-dwv_eo = dw_eo.pxtMmghs(ve, vo)
+check_correct.append(str(dw_eo))
+for order, c in dw_eo.all_calls().items():
+    dwv_eo = c(ve, vo)
+    dwv_eo_back = torch.zeros_like(dwv_py)
+    dwv_eo_back[dw_eo.emask] = dwv_eo[0]
+    dwv_eo_back[dw_eo.omask] = dwv_eo[1]
+    check_correct.append((order,torch.allclose(dwv_py,dwv_eo_back)))
 
-dwv_eo_back = torch.zeros_like(dwv_py)
-dwv_eo_back[dw_eo.emask] = dwv_eo[0]
-dwv_eo_back[dw_eo.omask] = dwv_eo[1]
 
-check_correct.append(("eo",torch.allclose(dwv_py,dwv_eo_back)))
-
-print(check_correct)
+for cc in check_correct:
+    print(cc)
 
 

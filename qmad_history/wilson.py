@@ -14,15 +14,18 @@ class wilson_direct:
         self.U = U
         self.mass_parameter = mass_parameter
 
+    def __str__(self):
+        return "dw_dir_mxtsg"
+
     def xtsgMhm(self, v):
         return torch.ops.qmad_history.dw_dir_mxtsg_xtsgMhm(self.U, v, self.mass_parameter)
     def xtMmghs(self, v):
         return torch.ops.qmad_history.dw_dir_mxtsg_xtMmghs(self.U, v, self.mass_parameter)
     def xtMmdghs(self, v):
         return torch.ops.qmad_history.dw_dir_mxtsg_xtMmdghs(self.U, v, self.mass_parameter)
-    def block_dbxtsghm(self, v, blocksize):
+    def block_dbxtsghm(self, v, blocksize=4):
         return torch.ops.qmad_history.dw_block_mxtsg_dbxtsghm(self.U, v, self.mass_parameter, blocksize)
-    def block_bxtsghm(self, v, blocksize):
+    def block_bxtsghm(self, v, blocksize=4):
         return torch.ops.qmad_history.dw_block_mxtsg_bxtsghm(self.U, v, self.mass_parameter, blocksize)
     
     def all_calls(self):
@@ -57,6 +60,9 @@ class wilson_eo:
         self.eodim = eodim
         self.emask = emask
         self.omask = omask
+    
+    def __str__(self):
+        return "dw_eo_pmtsg"
 
     def pxtMmghs(self, ve, vo):
         return torch.ops.qmad_history.dw_eo_pmtsg_pxtMmghs(self.Ue, self.Uo, ve, vo, self.mass_parameter, self.eodim)
@@ -94,6 +100,9 @@ class wilson_hop_mtsg:
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
         self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
 
+    def __str__(self):
+        return "dw_hop_mtsg"
+
     def tMmgsh(self, v):
         return torch.ops.qmad_history.dw_hop_mtsg_tMmgsh(self.U, v, self.hop_inds,
                                                          self.mass_parameter)
@@ -127,7 +136,7 @@ class wilson_hop_tmgs:
         self.U = U
         self.mass_parameter = mass_parameter
 
-        grid = U.shape[0:3]
+        grid = U.shape[0:4]
         strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
         npind = np.indices(grid, sparse=False)
         indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
@@ -144,6 +153,9 @@ class wilson_hop_tmgs:
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
         self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+
+    def __str__(self):
+        return "dw_hop_tmgs"
     
     def tMmghs(self, v):
         return torch.ops.qmad_history.dw_hop_tmgs_tMmghs(self.U, v, self.hop_inds,
