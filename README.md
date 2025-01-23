@@ -21,10 +21,12 @@ The indices are named in the following way:
 - ``s`` is spin
 - ``g`` is gauge
 - ``h`` is the gauge that is summed over in the SU(3) matrix multiplication
+- ``u`` means a sum is unrolled
 - ``n`` is the clover term orientation ($\mu\nu$),
 - ``b`` is the blocked space-time
 - ``M`` denotes the position of the loop where mass and hop terms
 are split
+- ``p`` is the parity of the sites (even-odd)
 
 For example, ``dw_dir_mxtsg_xtsgMhm`` means this is a Dirac Wilson operator where there
 is no precomputation, the indices from slowest to fastest in memory

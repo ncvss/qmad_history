@@ -5,6 +5,8 @@
 #include "dirac_2.hpp"
 #include "dirac_3.hpp"
 #include "dirac_4.hpp"
+#include "dirac_5.hpp"
+#include "dirac_6.hpp"
 
 
 namespace qmad_history{
@@ -40,12 +42,15 @@ TORCH_LIBRARY(qmad_history, m) {
 
     m.def("dw_eo_pmtsg_pxtMmghs(Tensor Ue, Tensor Uo, Tensor ve, Tensor vo, float mass, int[] eodim) -> Tensor");
 
-    // m.def("dirac_wilson_clover_call(Tensor U, Tensor v, Tensor[] F, float mass, float csw) -> Tensor");
-    // m.def("plaquette_action(Tensor U, float g) -> float");
-    // m.def("domain_wall_dirac_call(Tensor U, Tensor v, float mass, float m5) -> Tensor");
+    m.def("dw_avx_tmgs_tmgsMhs(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
+    m.def("dw_avx_mtsg_tmgsMhs(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
 
-    // m.def("dw_call_256d_om_template(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
-    // m.def("dwc_call_256d_om_template(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass, float csw) -> Tensor");
+    m.def("dwc_avx_tmgs_tmgsMhns(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass, float csw) -> Tensor");
+    m.def("dwc_avx_mtsg_tmgsMhns(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass, float csw) -> Tensor");
+
+    m.def("dw_templ_mtsg_tmgsMhs(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
+    
+    m.def("dwc_templ_mtsg_tmgsMhns(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass, float csw) -> Tensor");
 }
 
 // Registers backend implementations
@@ -74,6 +79,16 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
     m.impl("dw_hop_tmgs_tmgsMh", &dw_hop_tmgs_tmgsMh);
 
     m.impl("dw_eo_pmtsg_pxtMmghs", &dw_eo_pmtsg_pxtMmghs);
+
+    m.impl("dw_avx_tmgs_tmgsMhs", &dw_avx_tmgs_tmgsMhs);
+    m.impl("dw_avx_mtsg_tmgsMhs", &dw_avx_mtsg_tmgsMhs);
+
+    m.impl("dwc_avx_tmgs_tmgsMhns", &dwc_avx_tmgs_tmgsMhns);
+    m.impl("dwc_avx_mtsg_tmgsMhns", &dwc_avx_mtsg_tmgsMhns);
+
+    m.impl("dw_templ_mtsg_tmgsMhs", &dw_templ_mtsg_tmgsMhs);
+
+    m.impl("dwc_templ_mtsg_tmgsMhns", &dwc_templ_mtsg_tmgsMhns);
 
 }
 

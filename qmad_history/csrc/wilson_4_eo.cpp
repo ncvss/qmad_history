@@ -271,7 +271,7 @@ at::Tensor dw_eo_pmtsg_pxtMmghs (const at::Tensor& Ue, const at::Tensor& Uo,
                     // mu = 3 term
                     // for this term, because the even and odd v are shrinked in t,
                     // we have to access different points than before
-                    // the odd point following an even point in t direction has the same address
+                    // the first even and odd site in each t row have the same address on their grids
                     for (int64_t g = 0; g < 3; g++){
                         for (int64_t gi = 0; gi < 3; gi++){
                             for (int64_t s = 0; s < 4; s++){
