@@ -6,7 +6,9 @@ import time
 import gpt as g # type: ignore
 import qcd_ml
 
-from qmad_history import compat, wilson, clover
+from qmad_history import compat, wilson, clover, settings
+
+print(settings.capab)
 
 print()
 num_threads = torch.get_num_threads()

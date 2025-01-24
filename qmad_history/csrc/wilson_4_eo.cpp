@@ -3,11 +3,13 @@
 #include <torch/extension.h>
 #include <vector>
 
+#ifdef PARALLELISATION_ACTIVATED
 #ifndef _OPENMP
 #define _OPENMP
 #endif
 #include <ATen/ParallelOpenMP.h>
 #include <omp.h>
+#endif
 
 #include "static/indexfunc_1.hpp"
 #include "static/gamma_1.hpp"
@@ -83,9 +85,13 @@ at::Tensor dw_eo_pmtsg_pxtMmghs (const at::Tensor& Ue, const at::Tensor& Uo,
 
     // the following is only the computation of even sites
 
+#ifdef PARALLELISATION_ACTIVATED
     // parallelisation
     at::parallel_for(0, v_size[0], 1, [&](int64_t start, int64_t end){
     for (int64_t x = start; x < end; x++){
+#else
+    for (int64_t x = 0; x < v_size[0]; x++){
+#endif
         int64_t teo = x%2;
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
@@ -188,14 +194,20 @@ at::Tensor dw_eo_pmtsg_pxtMmghs (const at::Tensor& Ue, const at::Tensor& Uo,
             teo = (teo+1)%2;
         }
     }
+#ifdef PARALLELISATION_ACTIVATED
     });
+#endif
 
     // now the odd term
     // teo again defined in the x loop
 
+#ifdef PARALLELISATION_ACTIVATED
     // parallelisation
     at::parallel_for(0, v_size[0], 1, [&](int64_t start, int64_t end){
     for (int64_t x = start; x < end; x++){
+#else
+    for (int64_t x = 0; x < v_size[0]; x++){
+#endif
         int64_t teo = (x+1)%2;
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
@@ -298,7 +310,9 @@ at::Tensor dw_eo_pmtsg_pxtMmghs (const at::Tensor& Ue, const at::Tensor& Uo,
             teo = (teo+1)%2;
         }
     }
+#ifdef PARALLELISATION_ACTIVATED
     });
+#endif
 
 
     return result;

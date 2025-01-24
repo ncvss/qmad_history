@@ -6,15 +6,17 @@ import time
 import gpt as g # type: ignore
 import qcd_ml
 
-from qmad_history import compat, wilson, clover
+from qmad_history import compat, wilson, clover, settings
 
 print()
 num_threads = torch.get_num_threads()
 print("running on host", socket.gethostname())
 print(f'Machine has {num_threads} threads')
 
-n_measurements = 200
-n_warmup = 10
+print(settings.capab)
+
+n_measurements = 500
+n_warmup = 20
 print("n_measurements =",n_measurements)
 
 lat_dim = [8,8,8,16]
@@ -77,8 +79,14 @@ for i in range(n_measurements):
         stop = time.perf_counter_ns()
         results[names[j]][i] = stop - start
 
-for x,y in results.items():
-    print(f"time of {x:<30}: {np.mean(y)/1000:>10.3f} us")
+results_sorted = dict()
+for x in results:
+    results_sorted[x] = np.sort(results[x])[:(n_measurements//5)]
+
+print(f"\n{"Dirac Wilson":35}: {"time in us":>15} {"std in us":>15}")
+
+for x,y in results_sorted.items():
+    print(f"{x:35}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
         
 
 dwc_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
@@ -118,6 +126,12 @@ for i in range(n_measurements):
         stop = time.perf_counter_ns()
         resultsc[namesc[j]][i] = stop - start
 
-for x,y in resultsc.items():
-    print(f"time of {x:<30}: {np.mean(y)/1000:>10.3f} us")
+resultsc_sorted = dict()
+for x in resultsc:
+    resultsc_sorted[x] = np.sort(resultsc[x])[:(n_measurements//5)]
+
+print(f"\n{"Dirac Wilson Clover":35}: {"time in us":>15} {"std in us":>15}")
+
+for x,y in resultsc_sorted.items():
+    print(f"{x:35}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
 

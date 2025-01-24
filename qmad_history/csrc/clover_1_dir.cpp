@@ -6,11 +6,13 @@
 #include <torch/extension.h>
 #include <vector>
 
+#ifdef PARALLELISATION_ACTIVATED
 #ifndef _OPENMP
 #define _OPENMP
 #endif
 #include <ATen/ParallelOpenMP.h>
 #include <omp.h>
+#endif
 
 #include "static/indexfunc_1.hpp"
 #include "static/gamma_1.hpp"
@@ -71,9 +73,15 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
     // gi is the gauge index of v and the second gauge index of U and F, which is summed over
 
 
+#ifdef PARALLELISATION_ACTIVATED
     // parallelisation
     at::parallel_for(0, v_size[0], 1, [&](int64_t start, int64_t end){
     for (int64_t x = start; x < end; x++){
+#else
+    for (int64_t x = 0; x < v_size[0]; x++){
+#endif
+// #pragma omp parallel for
+//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -244,7 +252,9 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
             }
         }
     }
+#ifdef PARALLELISATION_ACTIVATED
     });
+#endif
 
     return result;
 }

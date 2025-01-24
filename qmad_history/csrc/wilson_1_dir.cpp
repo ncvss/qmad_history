@@ -5,11 +5,13 @@
 #include <torch/extension.h>
 #include <vector>
 
+#ifdef PARALLELISATION_ACTIVATED
 #ifndef _OPENMP
 #define _OPENMP
 #endif
 #include <ATen/ParallelOpenMP.h>
 #include <omp.h>
+#endif
 
 #include "static/indexfunc_1.hpp"
 #include "static/gamma_1.hpp"
@@ -71,9 +73,15 @@ at::Tensor dw_dir_mxtsg_xtsgMhm (const at::Tensor& U, const at::Tensor& v, doubl
     // g is the gauge index of result and the first gauge index of U
     // gi is the gauge index of v and the second gauge index of U, which is summed over
 
+#ifdef PARALLELISATION_ACTIVATED
     // parallelisation
     at::parallel_for(0, v_size[0], 1, [&](int64_t start, int64_t end){
     for (int64_t x = start; x < end; x++){
+#else
+    for (int64_t x = 0; x < v_size[0]; x++){
+#endif
+// #pragma omp parallel for
+//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -140,7 +148,9 @@ at::Tensor dw_dir_mxtsg_xtsgMhm (const at::Tensor& U, const at::Tensor& v, doubl
             }
         }
     }
+#ifdef PARALLELISATION_ACTIVATED
     });
+#endif
 
     return result;
 }
@@ -200,9 +210,15 @@ at::Tensor dw_dir_mxtsg_xtMmghs (const at::Tensor& U, const at::Tensor& v, doubl
     // g is the gauge index of result and the first gauge index of U
     // gi is the gauge index of v and the second gauge index of U, which is summed over
 
+#ifdef PARALLELISATION_ACTIVATED
     // parallelisation
     at::parallel_for(0, v_size[0], 1, [&](int64_t start, int64_t end){
     for (int64_t x = start; x < end; x++){
+#else
+    for (int64_t x = 0; x < v_size[0]; x++){
+#endif
+// #pragma omp parallel for
+//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -299,7 +315,9 @@ at::Tensor dw_dir_mxtsg_xtMmghs (const at::Tensor& U, const at::Tensor& v, doubl
             }
         }
     }
+#ifdef PARALLELISATION_ACTIVATED
     });
+#endif
 
     return result;
 }
@@ -358,9 +376,15 @@ at::Tensor dw_dir_mxtsg_xtMmdghs (const at::Tensor& U, const at::Tensor& v, doub
     // g is the gauge index of result and the first gauge index of U
     // gi is the gauge index of v and the second gauge index of U, which is summed over
 
+#ifdef PARALLELISATION_ACTIVATED
     // parallelisation
     at::parallel_for(0, v_size[0], 1, [&](int64_t start, int64_t end){
     for (int64_t x = start; x < end; x++){
+#else
+    for (int64_t x = 0; x < v_size[0]; x++){
+#endif
+// #pragma omp parallel for
+//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -489,7 +513,9 @@ at::Tensor dw_dir_mxtsg_xtMmdghs (const at::Tensor& U, const at::Tensor& v, doub
             }
         }
     }
+#ifdef PARALLELISATION_ACTIVATED
     });
+#endif
 
     return result;
 }

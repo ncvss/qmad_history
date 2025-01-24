@@ -1,6 +1,21 @@
 import torch
 import numpy as np
 
+from .settings import capab
+
+# import os
+
+# this_dir = os.path.dirname(os.path.curdir)
+# settings_file = os.path.join(this_dir, "qmad_history", "settings.txt")
+
+# capab = dict()
+
+# # take the settings from the text file
+# with open(settings_file, "r") as sfile:
+#     data = sfile.readlines()
+#     for li in data:
+#         wo = li.split()
+#         capab[wo[0]] = bool(wo[1])
 
 # path buffer only for intermediate computations
 # derived from the version in qcd_ml
@@ -200,7 +215,7 @@ class wilson_clover_sigpre:
         self.field_strength_sigma = field_strength_sigma.contiguous().reshape(dim+[12,12])
     
     def __str__(self):
-        return "dw_dir_mxtsg"
+        return "dwc_sigpre_mxtsg"
         
     def xtMmdghs (self, v):
         return (torch.ops.qmad_history.dw_dir_mxtsg_xtMmdghs(self.U, v, self.mass_parameter)
@@ -277,7 +292,7 @@ class wilson_clover_hop_mtsg:
         assert tuple(self.field_strength.shape[4:7]) == (6,3,3,)
     
     def __str__(self):
-        return "dwc_avx_mtsg"
+        return "dwc_hop_mtsg"
 
     def avx_tmgsMhns(self, v):
         return torch.ops.qmad_history.dwc_avx_mtsg_tmgsMhns(self.U, v, self.field_strength,
@@ -289,9 +304,9 @@ class wilson_clover_hop_mtsg:
                                                               self.csw)
     
     def all_calls(self):
-        return [self.avx_tmgsMhns, self.templ_tmgsMhns]
+        return [self.avx_tmgsMhns, self.templ_tmgsMhns] if capab["vectorise"] else []
     def all_call_names(self):
-        return ["avx_tmgsMhns", "templ_tmgsMhns"]
+        return ["avx_tmgsMhns", "templ_tmgsMhns"] if capab["vectorise"] else []
 
 
 
@@ -360,7 +375,7 @@ class wilson_clover_hop_tmgs:
         assert tuple(self.field_strength.shape[4:7]) == (6,3,3,)
 
     def __str__(self):
-        return "dwc_avx_tmgs"
+        return "dwc_hop_tmgs"
 
     def avx_tmgsMhns(self, v):
         return torch.ops.qmad_history.dwc_avx_tmgs_tmgsMhns(self.U, v, self.field_strength,
@@ -368,7 +383,7 @@ class wilson_clover_hop_tmgs:
                                                             self.csw)
     
     def all_calls(self):
-        return [self.avx_tmgsMhns]
+        return [self.avx_tmgsMhns] if capab["vectorise"] else []
     def all_call_names(self):
-        return ["avx_tmgsMhns"]
+        return ["avx_tmgsMhns"] if capab["vectorise"] else []
 

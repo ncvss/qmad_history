@@ -1,6 +1,21 @@
 import torch
 import numpy as np
 
+from .settings import capab
+
+# import os
+
+# this_dir = os.path.dirname(os.path.curdir)
+# settings_file = os.path.join(this_dir, "qmad_history", "settings.txt")
+
+# capab = dict()
+
+# # take the settings from the text file
+# with open(settings_file, "r") as sfile:
+#     data = sfile.readlines()
+#     for li in data:
+#         wo = li.split()
+#         capab[wo[0]] = bool(wo[1])
 
 class wilson_direct:
     """
@@ -123,9 +138,9 @@ class wilson_hop_mtsg:
                                                             self.mass_parameter)
     
     def all_calls(self):
-        return [self.tMmgsh, self.tMgshm, self.tmgsMh, self.avx_tmgsMhs, self.templ_tmgsMhs]
+        return [self.tMmgsh, self.tMgshm, self.tmgsMh] + ([self.avx_tmgsMhs, self.templ_tmgsMhs] if capab["vectorise"] else [])
     def all_call_names(self):
-        return ["tMmgsh", "tMgshm", "tmgsMh", "avx_tmgsMhs", "templ_tmgsMhs"]
+        return ["tMmgsh", "tMgshm", "tmgsMh"] + (["avx_tmgsMhs", "templ_tmgsMhs"] if capab["vectorise"] else [])
 
 
 class wilson_hop_tmgs:
@@ -178,8 +193,8 @@ class wilson_hop_tmgs:
                                                           self.mass_parameter)
     
     def all_calls(self):
-        return [self.tMmghs, self.tMmgsh, self.tMmgshu, self.tmgsMh, self.avx_tmgsMhs]
+        return [self.tMmghs, self.tMmgsh, self.tMmgshu, self.tmgsMh] + ([self.avx_tmgsMhs] if capab["vectorise"] else [])
     def all_call_names(self):
-        return ["tMmghs", "tMmgsh", "tMmgshu", "tmgsMh", "avx_tmgsMhs"]
+        return ["tMmghs", "tMmgsh", "tMmgshu", "tmgsMh"] + (["avx_tmgsMhs"] if capab["vectorise"] else [])
 
 
