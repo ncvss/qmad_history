@@ -7,6 +7,7 @@
 #include "dirac_4.hpp"
 #include "dirac_5.hpp"
 #include "dirac_6.hpp"
+#include "dirac_7.hpp"
 
 
 namespace qmad_history{
@@ -51,6 +52,8 @@ TORCH_LIBRARY(qmad_history, m) {
     m.def("dw_templ_mtsg_tmgsMhs(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
     
     m.def("dwc_templ_mtsg_tmgsMhns(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass, float csw) -> Tensor");
+
+    m.def("dw_tempdir_mtsg_tmgsMhs(Tensor U, Tensor v, float mass) -> Tensor");
 }
 
 // Registers backend implementations
@@ -90,6 +93,7 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
 
     m.impl("dwc_templ_mtsg_tmgsMhns", &dwc_templ_mtsg_tmgsMhns);
 
+    m.impl("dw_tempdir_mtsg_tmgsMhs", &dw_tempdir_mtsg_tmgsMhs);
 }
 
 }

@@ -42,11 +42,15 @@ class wilson_direct:
         return torch.ops.qmad_history.dw_block_mxtsg_dbxtsghm(self.U, v, self.mass_parameter, blocksize)
     def block_bxtsghm(self, v, blocksize=4):
         return torch.ops.qmad_history.dw_block_mxtsg_bxtsghm(self.U, v, self.mass_parameter, blocksize)
+    def tempdir_tmgsMhs(self, v):
+        return torch.ops.qmad_history.dw_tempdir_mtsg_tmgsMhs(self.U, v, self.mass_parameter)
     
     def all_calls(self):
-        return [self.xtsgMhm, self.xtMmghs, self.xtMmdghs, self.block_dbxtsghm, self.block_bxtsghm]
+        return [self.xtsgMhm, self.xtMmghs, self.xtMmdghs, self.block_dbxtsghm, self.block_bxtsghm,
+                self.tempdir_tmgsMhs]
     def all_call_names(self):
-        return ["xtsgMhm", "xtMmghs", "xtMmdghs", "block_dbxtsghm", "block_bxtsghm"]
+        return ["xtsgMhm", "xtMmghs", "xtMmdghs", "block_dbxtsghm", "block_bxtsghm",
+                "tempdir_tmgsMhs"]
 
 
 
@@ -122,6 +126,16 @@ class wilson_hop_mtsg:
         return "dw_hop_mtsg"
 
     def tMmgsh(self, v):
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,0])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,11,1])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,4])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,11,5])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,6])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,2,7])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,2])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,11,3])
+        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,12,7])
+        
         return torch.ops.qmad_history.dw_hop_mtsg_tMmgsh(self.U, v, self.hop_inds,
                                                          self.mass_parameter)
     def tMgshm(self, v):

@@ -12,4 +12,4 @@
 #         wo = li.split()
 #         capab[wo[0]] = bool(wo[1])
 
-capab = {"parallelise": False, "vectorise": False}
+capab = {"parallelise": True, "vectorise": True}

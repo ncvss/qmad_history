@@ -15,8 +15,8 @@ library_name = "qmad_history"
 def get_extensions():
     extension = CppExtension
 
-    parallelise = False
-    vectorise = False
+    parallelise = True
+    vectorise = True
 
     extra_compile_args = {
         "cxx": [
