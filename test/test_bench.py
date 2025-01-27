@@ -6,7 +6,7 @@ import time
 import gpt as g # type: ignore
 import qcd_ml
 
-from qmad_history import compat, wilson, clover, settings
+from qmad_history import compat, wilson, clover, settings, wilson_roofline
 
 print()
 num_threads = torch.get_num_threads()
@@ -50,6 +50,8 @@ dw_eo = wilson.wilson_eo(U, mass)
 dw_ho = wilson.wilson_hop_mtsg(U, mass)
 dw_hn = wilson.wilson_hop_tmgs(U, mass)
 
+dw_roof = wilson_roofline.wilson_hop_mtsg_roofline(U, mass, lat_dim)
+
 ve = v[dw_eo.emask]
 vo = v[dw_eo.omask]
 
@@ -59,9 +61,9 @@ names = ["gpt"]
 funcs = [dw_g]
 dnames = ["gpt"]
 
-vs = {"gpt": v_g, str(dw_d): v, str(dw_ho): v, str(dw_hn): vn, str(dw_eo): veo}
+vs = {"gpt": v_g, str(dw_d): v, str(dw_ho): v, str(dw_hn): vn, str(dw_eo): veo, str(dw_roof): v}
 
-for dw in [dw_d, dw_eo, dw_ho, dw_hn]:
+for dw in [dw_d, dw_eo, dw_ho, dw_hn, dw_roof]:
     names += [str(dw)+"."+x for x in dw.all_call_names()]
     dnames += [str(dw)] * len(dw.all_call_names())
     funcs += dw.all_calls()

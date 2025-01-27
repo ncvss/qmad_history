@@ -6,7 +6,7 @@ import time
 import gpt as g # type: ignore
 import qcd_ml
 
-from qmad_history import compat, wilson, clover, settings
+from qmad_history import compat, wilson, clover, settings, wilson_roofline
 
 print(settings.capab)
 
@@ -49,6 +49,8 @@ dw_eo = wilson.wilson_eo(U, mass)
 dw_ho = wilson.wilson_hop_mtsg(U, mass)
 dw_hn = wilson.wilson_hop_tmgs(U, mass)
 
+dw_roof = wilson_roofline.wilson_hop_mtsg_roofline(U, mass, lat_dim)
+
 ve = v[dw_eo.emask]
 vo = v[dw_eo.omask]
 
@@ -72,6 +74,12 @@ for order, c in zip(dw_eo.all_call_names(),dw_eo.all_calls()):
     dwv_eo_back[dw_eo.emask] = dwv_eo[0]
     dwv_eo_back[dw_eo.omask] = dwv_eo[1]
     check_correct.append((order,torch.allclose(dwv_py,dwv_eo_back)))
+
+check_correct.append(str(dw_roof))
+for order, c in zip(dw_roof.all_call_names(),dw_roof.all_calls()):
+    dwv_roof = c(v).reshape(lat_dim+[4,3])
+    check_correct.append((order, torch.allclose(dwv_roof,dwv_py)))
+
 
 check_correct.append("\nwilson clover")
 

@@ -53,6 +53,8 @@ TORCH_LIBRARY(qmad_history, m) {
     
     m.def("dwc_templ_mtsg_tmgsMhns(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass, float csw) -> Tensor");
 
+    m.def("dw_roof_templ_mtsg_tmgsMhs(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
+
     m.def("dw_tempdir_mtsg_tmgsMhs(Tensor U, Tensor v, float mass) -> Tensor");
 }
 
@@ -92,6 +94,8 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
     m.impl("dw_templ_mtsg_tmgsMhs", &dw_templ_mtsg_tmgsMhs);
 
     m.impl("dwc_templ_mtsg_tmgsMhns", &dwc_templ_mtsg_tmgsMhns);
+
+    m.impl("dw_roof_templ_mtsg_tmgsMhs", &dw_roof_templ_mtsg_tmgsMhs);
 
     m.impl("dw_tempdir_mtsg_tmgsMhs", &dw_tempdir_mtsg_tmgsMhs);
 }
