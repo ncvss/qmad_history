@@ -126,16 +126,6 @@ class wilson_hop_mtsg:
         return "dw_hop_mtsg"
 
     def tMmgsh(self, v):
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,0])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,11,1])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,4])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,11,5])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,6])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,2,7])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[1,2,3,4,2])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,11,3])
-        # print("hop precom:", self.hop_inds.reshape([v.shape[0],v.shape[1],v.shape[2],v.shape[3],8])[5,4,4,12,7])
-        
         return torch.ops.qmad_history.dw_hop_mtsg_tMmgsh(self.U, v, self.hop_inds,
                                                          self.mass_parameter)
     def tMgshm(self, v):
