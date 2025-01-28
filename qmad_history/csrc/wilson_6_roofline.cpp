@@ -2,7 +2,7 @@
 // the input is of varying size, so that a roofline plot can be fitted
 
 #include <torch/extension.h>
-
+//#define VECTORISATION_ACTIVATED
 #ifdef VECTORISATION_ACTIVATED
 
 #include <omp.h>
@@ -48,7 +48,7 @@ void dw_roof_templ_mtsg_tmgsMhs_loop (const double * U, const double * v,
         incr = _mm256_mul_pd(incr,massf_reg);
     } else {
         // load result of previous computations to add to
-        incr = load_split_spin(result+vixo(hops[hixv(t,4,0)],g,s));
+        incr = load_split_spin(result+vixo(t,g,s));
     }
 
 
@@ -130,11 +130,12 @@ at::Tensor dw_roof_templ_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Ten
     TORCH_CHECK(U_tensor.is_contiguous());
     TORCH_CHECK(v_tensor.is_contiguous());
 
-    int vol = hops_tensor.size(0);
-    //std::cout << "volume: " << vol << std::endl;
-    
+    int rvol = hops_tensor.size(0);
+    //std::cout << "base volume: " << rvol << std::endl;
+    int vol = U_tensor.size(1)*U_tensor.size(2)*U_tensor.size(3)*U_tensor.size(4);
+    //std::cout << "input volume: " << vol << std::endl;
 
-    at::Tensor result_tensor = torch::empty({vol,4,3}, v_tensor.options());
+    at::Tensor result_tensor = torch::empty({rvol,4,3}, v_tensor.options());
 
     // we create a pointer to the complex tensor, then typecast it to double*
     // this allows us to access the complex numbers as doubles in riri format
@@ -148,7 +149,7 @@ at::Tensor dw_roof_templ_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Ten
 
 
 #pragma omp parallel for
-    for (int t = 0; t < vol; t++){
+    for (int t = 0; t < rvol; t++){
 
         // loop over mu=0,1,2,3 g=0,1,2 and s=0,2 manually with template
         // the spin is vectorized, s=0,1 and s=2,3 are computed at the same time

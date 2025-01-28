@@ -22,7 +22,7 @@ print(f'Machine has {num_threads} threads')
 
 print(settings.capab)
 
-n_measurements = 50
+n_measurements = 100
 n_warmup = 3
 print("n_measurements =",n_measurements)
 
