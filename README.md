@@ -4,6 +4,9 @@ This repository serves as a archive of the different optimization steps
 done in the qcd_ml_accel_dirac package, so that I can still trace and repeat
 those steps later.
 
+Also, it should contain future developments as well, so I will just code new
+functions here.
+
 ## Naming convention
 
 The function names are composed of the following parts:

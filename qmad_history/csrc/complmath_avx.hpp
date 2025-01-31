@@ -81,7 +81,7 @@ inline __m256d realxcompl_vectorreg_mul (__m256d a, __m256d b){
 
 /**
  * @brief pointwise multiply 2 256 bit registers that each contain 2 complex numbers,
- *        with the first number being purely real
+ *        with the first number being purely imaginary
  * 
  * @param a register that contains 2 purely imaginary numbers a1, a2 in the format
  *          (a1,a1,a2,a2)
