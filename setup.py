@@ -21,6 +21,7 @@ def get_extensions():
     extra_compile_args = {
         "cxx": [
             "-O3",
+            #"-g",
         ] + (["-fopenmp"] if parallelise else [])
           + (["-march=native"] if vectorise else []),
         "nvcc": [

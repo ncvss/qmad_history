@@ -2,7 +2,6 @@
 
 #include <torch/extension.h>
 
-#define VECTORISATION_512_ACTIVATED
 #ifdef VECTORISATION_512_ACTIVATED
 
 #include <omp.h>
@@ -150,7 +149,7 @@ namespace qmad_history {
 at::Tensor dw_avx512_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& hops_tensor, double mass){
     
-    TORCH_CHECK(0,"AVX not compiled");
+    TORCH_CHECK(0,"AVX-512 not compiled");
     return torch::zeros({1}, v_tensor.options());
 }
 
