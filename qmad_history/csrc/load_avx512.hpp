@@ -2,16 +2,16 @@
 
 namespace qmad_history{
 
-static const int spin_addr [] = {0,1,6,7,12,13,18,19};
-static const int spin_addr_swap [] = {6,7,0,1,18,19,12,13};
+// static const int spin_addr [] = {0,1,6,7,12,13,18,19};
+// static const int spin_addr_swap [] = {6,7,0,1,18,19,12,13};
 
-__m512d load_spin (const double* addr){
-    return _mm512_i32gather_pd(_mm256_loadu_epi32(spin_addr),addr,1);
-}
+// __m512d load_spin (const double* addr){
+//     return _mm512_i32gather_pd(_mm256_loadu_epi32(spin_addr),addr,1);
+// }
 
-__m512d load_spin_sw (const double* addr){
-    return _mm512_i32gather_pd(_mm256_loadu_epi32(spin_addr_swap),addr,1);
-}
+// __m512d load_spin_sw (const double* addr){
+//     return _mm512_i32gather_pd(_mm256_loadu_epi32(spin_addr_swap),addr,1);
+// }
 
 // template function to load all 4 spin components into the register
 // either after permutation with gamma_mu, or without permutation (if mu is not 0,1,2,3)
@@ -26,6 +26,10 @@ inline __m512d load_spin_g (const double* addr){
             return _mm512_i32gather_pd(_mm256_set_epi32(19,18,13,12,7,6,1,0), addr, 1);
         }
     }
+}
+
+inline void store_spin (const double* addr, __m512d a){
+    _mm512_i32scatter_pd(addr, _mm256_set_epi32(19,18,13,12,7,6,1,0), a, 1);
 }
 
 
