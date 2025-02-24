@@ -12,4 +12,23 @@
 #         wo = li.split()
 #         capab[wo[0]] = bool(wo[1])
 
+# # take settings from text file at execution time
+# def parallelise():
+#     with open(settings_file, "r") as sfile:
+#         data = sfile.readlines()
+#         for li in data:
+#             wo = li.split()
+#             if wo[0] == "parallelise":
+#                 returnvalue = bool(wo[1])
+#     return returnvalue
+
+# def vectorise():
+#     with open(settings_file, "r") as sfile:
+#         data = sfile.readlines()
+#         for li in data:
+#             wo = li.split()
+#             if wo[0] == "vectorise":
+#                 returnvalue = bool(wo[1])
+#     return returnvalue
+
 capab = {"parallelise": True, "vectorise": True}
