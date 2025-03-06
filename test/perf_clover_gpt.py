@@ -7,9 +7,13 @@ import gpt as g # type: ignore
 
 from qmad_history import compat, wilson, clover
 
-n_measurements = 5000
+n_measurements = 10000
 
-lat_dim = [8,8,8,16]
+lat_dim = [16,16,16,32]
+
+print("repetitions=", n_measurements)
+print("grid=",lat_dim)
+print("number of threads=",torch.get_num_threads())
 
 rng = g.random("run")
 U_g = g.qcd.gauge.random(g.grid(lat_dim, g.double), rng)
