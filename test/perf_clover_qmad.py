@@ -7,7 +7,7 @@ import gpt as g # type: ignore
 
 from qmad_history import compat, wilson, clover
 
-n_measurements = 10000
+n_measurements = 5000
 
 lat_dim = [16,16,16,32]
 
