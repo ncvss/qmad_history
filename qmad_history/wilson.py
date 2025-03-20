@@ -205,3 +205,51 @@ class wilson_hop_tmgs:
         return ["tMmghs", "tMmgsh", "tMmgshu", "tmgsMh"] + (["avx_tmgsMhs"] if capab["vectorise"] else [])
 
 
+class wilson_hop_mtsgt:
+    """
+    Dirac Wilson operator that creates a lookup table for the hops.
+    The axes are U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
+    For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
+    """
+    def __init__(self, U, mass_parameter):
+        assert tuple(U.shape[5:7]) == (3,3,)
+        assert U.shape[0] == 4
+        # t axis needs to be divisible by register length
+        tlen = U.shape[4]
+        assert tlen%2 == 0
+        self.mass_parameter = mass_parameter
+
+        # transform U to have neighboring t sites as last index
+        Ueven = U[:,:,:,:,0:tlen:2]
+        Uodd = U[:,:,:,:,1:tlen:2]
+        self.U = torch.stack([Ueven, Uodd], dim=-1)
+
+        grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]/2]
+        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
+        npind = np.indices(grid, sparse=False)
+        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
+
+        hop_inds = []
+        for coord in range(4):
+            # index after a negative step in coord direction
+            minus_hop_ind = torch.clone(indices)
+            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
+            # index after a positive step in coord direction
+            plus_hop_ind = torch.clone(indices)
+            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
+            # compute flattened index by dot product with strides
+            hop_inds.append(torch.matmul(minus_hop_ind, strides))
+            hop_inds.append(torch.matmul(plus_hop_ind, strides))
+        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+
+    def __str__(self):
+        return "dw_hop_mtsgt"
+    
+    def templ_tmgsMht(self, v):
+        return torch.ops.qmad_history.dw_templ_mtsgt_tmgsMht(self.U, v, self.hop_inds,
+                                                             self.mass_parameter)
+    
+    def all_calls(self):
+        return [] + ([self.templ_tmgsMht] if capab["vectorise"] else [])
+    def all_call_names(self):
+        return [] + (["templ_tmgsMht"] if capab["vectorise"] else [])
