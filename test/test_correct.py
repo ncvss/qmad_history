@@ -124,9 +124,9 @@ for order, c in zip(dwc_hn.all_call_names(),dwc_hn.all_calls()):
 check_correct.append(str(dwc_grid))
 for order, c in zip(dwc_grid.all_call_names(),dwc_grid.all_calls()):
     dwcv_grid = c(v_grid)
-    dwcv_grid_back = torch.zeros_like(dwv_py)
-    dwcv_grid_back[:,:,:,0:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,0]
-    dwcv_grid_back[:,:,:,1:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,1]
+    dwcv_grid_back = torch.zeros_like(dwcv_py)
+    dwcv_grid_back[:,:,:,0:lat_dim[3]:2] = dwcv_grid[:,:,:,:,:,:,0]
+    dwcv_grid_back[:,:,:,1:lat_dim[3]:2] = dwcv_grid[:,:,:,:,:,:,1]
     check_correct.append((order,torch.allclose(dwcv_py,dwcv_grid_back)))
 
 print(dwcv_grid_back[0,1,0,1]-dwv_grid_back[0,1,0,1])
