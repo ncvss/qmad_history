@@ -38,23 +38,24 @@ template <int M, int S> inline __m256d gamma_mul_g (__m256d a){
         } else {
             return compl_reg_times_minus_i(a);
         }
-    }
-    if constexpr (M == 1){
-        if constexpr (S == 0 || S == 3){
-            return _mm256_sub_pd(_mm256_setzero_pd(), a);
+    } else {
+        if constexpr (M == 1){
+            if constexpr (S == 0 || S == 3){
+                return _mm256_sub_pd(_mm256_setzero_pd(), a);
+            } else {
+                return a;
+            }
         } else {
-            return a;
+            if constexpr (M == 2) {
+                if constexpr (S == 0 || S == 3){
+                    return compl_reg_times_i(a);
+                } else {
+                    return compl_reg_times_minus_i(a);
+                }
+            } else {
+                return a;
+            }
         }
-    }
-    if constexpr (M == 2) {
-        if constexpr (S == 0 || S == 3){
-            return compl_reg_times_i(a);
-        } else {
-            return compl_reg_times_minus_i(a);
-        }
-    }
-    if constexpr (M == 3){
-        return a;
     }
 }
 
@@ -84,7 +85,7 @@ void dw_templ_mtsgt_tmgsMht_loop (const double * U, const double * v,
 
         // v hop in negative mu * gammma
         __m256d v_Hmum_gam = load_hop<mu,0>(v+vixg(t,gi,gamx[mu][s]), v+vixg(hops[hixd(t,mu,0)],gi,gamx[mu][s]));
-        // multiply the gamma prefactor for s and s+1
+        // multiply the gamma prefactor for
         v_Hmum_gam = gamma_mul_g<mu,s>(v_Hmum_gam);
         
         // v hop in negative mu

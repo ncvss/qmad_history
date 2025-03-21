@@ -224,7 +224,7 @@ class wilson_hop_mtsgt:
         Uodd = U[:,:,:,:,1:tlen:2]
         self.U = torch.stack([Ueven, Uodd], dim=-1)
 
-        grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]/2]
+        grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]//2]
         strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
         npind = np.indices(grid, sparse=False)
         indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)

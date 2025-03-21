@@ -15,17 +15,26 @@ inline int vixg (int t1, int g, int s){
 inline int hixd (int t1, int h, int d){
     return t1*8 + h*2 + d;
 }
-// address for gamfd
-inline int gixd (int mu, int s){
-    return mu*8 + s*2;
-}
-// address for sigfd
-inline int sixd (int munu, int s){
-    return munu*8 + s*2;
-}
-// address for field strength tensors (index order F[t1,munu,g,gi,t2])
-inline int fixg (int t1, int munu, int g, int gi){
-    return t1*216 + munu*36 + g*12 + gi*4;
+// // address for gamfd
+// inline int gixd (int mu, int s){
+//     return mu*8 + s*2;
+// }
+// // address for sigfd
+// inline int sixd (int munu, int s){
+//     return munu*8 + s*2;
+// }
+
+// address for field strength tensors (index order F[t1,triangle number,triangle index,t2])
+// the upper triangle is flattened with the following indices:
+//  0 | 1 | 2 | 3 | 4 | 5
+//  1 | 7 | 8 | 9 |10 |11
+//  2 | 8 |12 |13 |14 |15
+//  3 | 9 |13 |16 |17 |18
+//  4 |10 |14 |17 |19 |20
+//  5 |11 |15 |18 |20 |21
+// (the lower triangles are the same numbers, but conjugated)
+inline int fixg (int t1, int stri, int triix){
+    return t1*168 + stri*84 + triix*4;
 }
 
 

@@ -48,6 +48,30 @@ class _PathBufferTemp:
                     U = torch.roll(U, -1, mu + 1)
 
 
+# gamma and sigma matrices for intermediate computations
+_gamma = [torch.tensor([[0,0,0,1j]
+                ,[0,0,1j,0]
+                ,[0,-1j,0,0]
+                ,[-1j,0,0,0]], dtype=torch.cdouble)
+    , torch.tensor([[0,0,0,-1]
+                ,[0,0,1,0]
+                ,[0,1,0,0]
+                ,[-1,0,0,0]], dtype=torch.cdouble)
+    , torch.tensor([[0,0,1j,0]
+                ,[0,0,0,-1j]
+                ,[-1j,0,0,0]
+                ,[0,1j,0,0]], dtype=torch.cdouble)
+    , torch.tensor([[0,0,1,0]
+                ,[0,0,0,1]
+                ,[1,0,0,0]
+                ,[0,1,0,0]], dtype=torch.cdouble)
+    ]
+
+_sigma = [[(torch.matmul(_gamma[mu], _gamma[nu]) 
+            - torch.matmul(_gamma[nu], _gamma[mu])) / 2
+            for nu in range(4)] for mu in range(4)]
+
+
 class wilson_clover_direct_false:
     """
     Dirac Wilson Clover operator with gauge config U, without precomputations,
@@ -149,27 +173,6 @@ class wilson_clover_sigpre:
     field_strength * sigma.
     """
     def __init__(self, U, mass_parameter, csw):
-        _gamma = [torch.tensor([[0,0,0,1j]
-                      ,[0,0,1j,0]
-                      ,[0,-1j,0,0]
-                      ,[-1j,0,0,0]], dtype=torch.cdouble)
-         , torch.tensor([[0,0,0,-1]
-                        ,[0,0,1,0]
-                        ,[0,1,0,0]
-                        ,[-1,0,0,0]], dtype=torch.cdouble)
-         , torch.tensor([[0,0,1j,0]
-                        ,[0,0,0,-1j]
-                        ,[-1j,0,0,0]
-                        ,[0,1j,0,0]], dtype=torch.cdouble)
-         , torch.tensor([[0,0,1,0]
-                        ,[0,0,0,1]
-                        ,[1,0,0,0]
-                        ,[0,1,0,0]], dtype=torch.cdouble)
-         ]
-
-        _sigma = [[(torch.matmul(_gamma[mu], _gamma[nu]) 
-                    - torch.matmul(_gamma[nu], _gamma[mu])) / 2
-                    for nu in range(4)] for mu in range(4)]
 
         assert tuple(U.shape[5:7]) == (3,3,)
         assert U.shape[0] == 4
@@ -386,4 +389,123 @@ class wilson_clover_hop_tmgs:
         return [self.avx_tmgsMhns] if capab["vectorise"] else []
     def all_call_names(self):
         return ["avx_tmgsMhns"] if capab["vectorise"] else []
+
+
+class wilson_clover_hop_mtsgt_sigpre:
+    """
+    Dirac Wilson Clover operator with gauge config U, layout U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
+    field_strength * sigma * v is precomputed by computing the tensor product of field_strength * sigma,
+    and only the upper triangle of two 6x6 blocks is passed for the field strength.
+    The hops are precomputed.
+    """
+    def __init__(self, U, mass_parameter, csw):
+        assert tuple(U.shape[5:7]) == (3,3,)
+        assert U.shape[0] == 4
+        # t axis needs to be divisible by register length
+        tlen = U.shape[4]
+        assert tlen%2 == 0
+        self.mass_parameter = mass_parameter
+        self.csw = csw
+
+        # transform U to have neighboring t sites as last index
+        Ueven = U[:,:,:,:,0:tlen:2]
+        Uodd = U[:,:,:,:,1:tlen:2]
+        self.U = torch.stack([Ueven, Uodd], dim=-1)
+
+        grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]//2]
+        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
+        npind = np.indices(grid, sparse=False)
+        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
+
+        hop_inds = []
+        for coord in range(4):
+            # index after a negative step in coord direction
+            minus_hop_ind = torch.clone(indices)
+            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
+            # index after a positive step in coord direction
+            plus_hop_ind = torch.clone(indices)
+            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
+            # compute flattened index by dot product with strides
+            hop_inds.append(torch.matmul(minus_hop_ind, strides))
+            hop_inds.append(torch.matmul(plus_hop_ind, strides))
+        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        
+
+        Hp = lambda mu, lst: lst + [(mu, 1)]
+        Hm = lambda mu, lst: lst + [(mu, -1)]
+        
+        plaquette_paths = [[[
+                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
+                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
+                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
+                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
+                ] for nu in range(4)] for mu in range(4)]
+
+        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+
+        # Every path from the clover terms has equal starting and ending points.
+        # This means the transport keeps the position of the vector field unchanged
+        # and only multiplies it with a matrix independent of the vector field.
+        # That matrix can thus be precomputed.
+        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
+        for mu in range(4):
+            for nu in range(4):
+                # the terms for mu = nu cancel out in the final expression, so we do not compute them
+                if mu != nu:
+                    for ii in range(4):
+                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+
+        dim = list(U.shape[1:5])
+        self.dim = dim
+        # tensor product of the sigma matrix and field strength tensor
+        field_strength_sigma = torch.zeros(dim+[4,3,4,3], dtype=torch.cdouble)
+        # the field strength is antisymmetric, so we only need to compute nu < mu
+        for mu in range(4):
+            for nu in range(mu):
+                Fmunu = (Qmunu[mu][nu] - Qmunu[nu][mu]) / 8
+                Fsigma = torch.einsum('xyztgh,sr->xyztsgrh',Fmunu,_sigma[mu][nu])
+                # csw gets absorbed into the matrices
+                field_strength_sigma += 2*(-self.csw/4)*Fsigma
+        
+        field_strength_sigma = field_strength_sigma.contiguous().reshape(dim+[12,12])
+
+        # transform to grid layout (t register as last index)
+        fs_even_t = field_strength_sigma[:,:,:,0:dim[3]:2]
+        fs_odd_t = field_strength_sigma[:,:,:,1:dim[3]:2]
+        fs_sigma_grid = torch.stack([fs_even_t, fs_odd_t], dim=-1)
+
+        # until here, the computation works as expected
+        # this is hermitian and has two 6x6 blocks (diagonal has numerical artifacts)
+        # print(fs_sigma_grid[0,0,2,2,0:6])
+
+        # create masks to choose upper and lower triangle
+        triag_mask_1 = torch.tensor([[(sw < 6 and sh < 6 and sh <= sw)
+                                    for sw in range(12)] for sh in range(12)],
+                                  dtype=torch.bool)
+        triag_mask_2 = torch.tensor([[(sw >= 6 and sh >= 6 and sh <= sw)
+                                    for sw in range(12)] for sh in range(12)],
+                                  dtype=torch.bool)
+        # # these also work as expected
+        # print(triag_mask_1)
+        # print(triag_mask_2)
+
+        self.fs = torch.stack([fs_sigma_grid[:,:,:,:,triag_mask_1],fs_sigma_grid[:,:,:,:,triag_mask_2]],dim=4)
+        assert tuple(self.fs.shape[4:7]) == (2,21,2,)
+
+        # this is also the expected 
+        # print(self.fs[0,0,2,2,0])
+
+    
+    def __str__(self):
+        return "dwc_sigpre_hop_mtsgt"
+        
+    def tmngsMht (self, v):
+        return torch.ops.qmad_history.dwc_templ_mtsgt_tmngsMht(self.U, v, self.fs, self.hop_inds,
+                                                               self.mass_parameter, self.csw)
+        #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
+
+    def all_calls(self):
+        return [] + ([self.tmngsMht] if capab["vectorise"] else [])
+    def all_call_names(self):
+        return [] + (["tmngsMht"] if capab["vectorise"] else [])
 

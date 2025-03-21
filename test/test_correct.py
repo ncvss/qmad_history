@@ -18,7 +18,7 @@ print(f'Machine has {num_threads} threads')
 lat_dim = [8,8,8,16]
 print("lattice_dimensions =",lat_dim)
 
-rng = g.random("alltests")
+rng = g.random("qmad")
 U_g = g.qcd.gauge.random(g.grid(lat_dim, g.double), rng)
 grid = U_g[0].grid
 v_g = rng.cnormal(g.vspincolor(grid))
@@ -51,8 +51,19 @@ dw_hn = wilson.wilson_hop_tmgs(U, mass)
 
 dw_roof = wilson_roofline.wilson_hop_mtsg_roofline(U, mass, lat_dim)
 
+dw_grid = wilson.wilson_hop_mtsgt(U, mass)
+
 ve = v[dw_eo.emask]
 vo = v[dw_eo.omask]
+
+vge = v[:,:,:,0:lat_dim[3]:2]
+vgo = v[:,:,:,1:lat_dim[3]:2]
+v_grid = torch.stack([vge, vgo], dim=-1)
+
+v_grid_back = torch.zeros_like(v)
+v_grid_back[:,:,:,0:lat_dim[3]:2] = v_grid[:,:,:,:,:,:,0]
+v_grid_back[:,:,:,1:lat_dim[3]:2] = v_grid[:,:,:,:,:,:,1]
+print("conversion to grid layout worked: ", torch.allclose(v,v_grid_back))
 
 dwv_py = dw_py(v)
 
@@ -80,6 +91,14 @@ for order, c in zip(dw_roof.all_call_names(),dw_roof.all_calls()):
     dwv_roof = c(v).reshape(lat_dim+[4,3])
     check_correct.append((order, torch.allclose(dwv_roof,dwv_py)))
 
+check_correct.append(str(dw_grid))
+for order, c in zip(dw_grid.all_call_names(),dw_grid.all_calls()):
+    dwv_grid = c(v_grid)
+    dwv_grid_back = torch.zeros_like(dwv_py)
+    dwv_grid_back[:,:,:,0:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,0]
+    dwv_grid_back[:,:,:,1:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,1]
+    check_correct.append((order,torch.allclose(dwv_py,dwv_grid_back)))
+
 
 check_correct.append("\nwilson clover")
 
@@ -91,6 +110,8 @@ dwc_ho = clover.wilson_clover_hop_mtsg(U, mass, csw)
 dwc_hn = clover.wilson_clover_hop_tmgs(U, mass, csw)
 dwc_s = clover.wilson_clover_sigpre(U, mass, csw)
 
+dwc_grid = clover.wilson_clover_hop_mtsgt_sigpre(U, mass, csw)
+
 for dw in [dwc_d, dwc_f, dwc_ho]:
     check_correct.append(str(dw))
     for order, c in zip(dw.all_call_names(),dw.all_calls()):
@@ -100,6 +121,16 @@ check_correct.append(str(dwc_hn))
 for order, c in zip(dwc_hn.all_call_names(),dwc_hn.all_calls()):
     check_correct.append((order,torch.allclose(c(vn).transpose(4,5),dwcv_py)))
 
+check_correct.append(str(dwc_grid))
+for order, c in zip(dwc_grid.all_call_names(),dwc_grid.all_calls()):
+    dwcv_grid = c(v_grid)
+    dwcv_grid_back = torch.zeros_like(dwv_py)
+    dwcv_grid_back[:,:,:,0:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,0]
+    dwcv_grid_back[:,:,:,1:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,1]
+    check_correct.append((order,torch.allclose(dwcv_py,dwcv_grid_back)))
+
+print(dwcv_grid_back[0,1,0,1]-dwv_grid_back[0,1,0,1])
+print(dwcv_py[0,1,0,1]-dwv_py[0,1,0,1])
 
 for cc in check_correct:
     print(cc)

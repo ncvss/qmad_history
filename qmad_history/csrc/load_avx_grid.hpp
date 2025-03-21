@@ -12,7 +12,7 @@ inline __m256d load_site (const double * addr){
 // store function for U and v with grid layout
 inline void store_site (double * addr, __m256d a){
     // simply the store intrinsic function
-    _mm256_store_pd(addr, a);
+    _mm256_storeu_pd(addr, a);
 }
 
 
@@ -39,7 +39,7 @@ inline __m256d load_hop (const double * addr, const double * addrhop){
             return load_site_tplus(addr, addrhop);
         }
     } else {
-        return load_site(addr);
+        return load_site(addrhop);
     }
 }
 
