@@ -112,7 +112,9 @@ dwc_s = clover.wilson_clover_sigpre(U, mass, csw)
 
 dwc_grid = clover.wilson_clover_hop_mtsgt_sigpre(U, mass, csw)
 
-for dw in [dwc_d, dwc_f, dwc_ho]:
+dwc_gridcl = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
+
+for dw in [dwc_d, dwc_f, dwc_ho, dwc_gridcl]:
     check_correct.append(str(dw))
     for order, c in zip(dw.all_call_names(),dw.all_calls()):
         check_correct.append((order,torch.allclose(c(v),dwcv_py)))
@@ -129,8 +131,14 @@ for order, c in zip(dwc_grid.all_call_names(),dwc_grid.all_calls()):
     dwcv_grid_back[:,:,:,1:lat_dim[3]:2] = dwcv_grid[:,:,:,:,:,:,1]
     check_correct.append((order,torch.allclose(dwcv_py,dwcv_grid_back)))
 
-print(dwcv_grid_back[0,1,0,1]-dwv_grid_back[0,1,0,1])
-print(dwcv_py[0,1,0,1]-dwv_py[0,1,0,1])
+# print("my clover:")
+# print(dwcv_grid_back[0,1,0,2]-dwv_grid_back[0,1,0,2])
+# print(dwcv_grid_back[0,1,0,3]-dwv_grid_back[0,1,0,3])
+# print("qcd_ml:")
+# print(dwcv_py[0,1,0,2]-dwv_py[0,1,0,2])
+# print(dwcv_py[0,1,0,3]-dwv_py[0,1,0,3])
+# aktuell: nur der erste Eintrag des 6-Blocks ist korrekt
+# Grund: die Indizes waren off by 1, jetzt stimmt es
 
 for cc in check_correct:
     print(cc)

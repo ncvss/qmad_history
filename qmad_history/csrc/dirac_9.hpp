@@ -34,4 +34,21 @@ at::Tensor dwc_templ_mtsgt_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
                                     const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                     double mass, double csw);
 
+
+/**
+ * @brief Dirac Wilson Clover operator using the qcd_ml memory layout and spin vectorisation,
+ *        but computing the clover term like in Grid
+ * 
+ * @param U_tensor gauge field
+ * @param v_tensor vector field
+ * @param fs_tensors field strength tensor product with sigma,
+ *                   only the upper triangles of two 6x6 matrices are passed
+ * @param hops_tensor addresses for the gauge hops
+ * @param mass mass parameter
+ * @return at::Tensor 
+ */
+at::Tensor dwc_grid_mtsg_tmngsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                  const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                  double mass);
+
 }

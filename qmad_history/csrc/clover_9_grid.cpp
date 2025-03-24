@@ -7,16 +7,16 @@
 // F[x,y,z,t1,triangle index,flattened upper triangle,t2]
 // the upper triangle is flattened with the following indices:
 //  0 | 1 | 2 | 3 | 4 | 5
-//  1 | 7 | 8 | 9 |10 |11
-//  2 | 8 |12 |13 |14 |15
-//  3 | 9 |13 |16 |17 |18
-//  4 |10 |14 |17 |19 |20
-//  5 |11 |15 |18 |20 |21
+//  1 | 6 | 7 | 8 | 9 |10
+//  2 | 7 |11 |12 |13 |14
+//  3 | 8 |12 |15 |16 |17
+//  4 | 9 |13 |16 |18 |19
+//  5 |10 |14 |17 |19 |20
 // (the lower triangles are the same numbers, but conjugated)
 
 
 #include <torch/extension.h>
-#define VECTORISATION_ACTIVATED
+
 #ifdef VECTORISATION_ACTIVATED
 
 #include <omp.h>
@@ -149,11 +149,8 @@ void dwc_templ_mtsgt_triag_clover (const double * v, const double * F,
                                    double * result, int t){
     
     // upper and lower triangle
-    for (int stri = 0; stri < 2; stri++){
-        int sbase = stri*2;
-        if (t==0){
-            std::cout << F[fixg(t,stri,5)];
-        }
+    for (int sbl = 0; sbl < 2; sbl++){
+        int sbase = sbl*2;
 
         // 6 registers, each with the wilson term result for one s,g combination
         __m256d r00 = load_site(result+vixg(t,0,sbase+0));
@@ -168,67 +165,67 @@ void dwc_templ_mtsgt_triag_clover (const double * v, const double * F,
         vreg = load_site(v+vixg(t,0,sbase+0));
         // multiply onto the field strength entry and add to result
         // the lower triangle elements are complex conjugated
-        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,0))));
-        r01 = _mm256_add_pd(r01, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,1))));
-        r02 = _mm256_add_pd(r02, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,2))));
-        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,3))));
-        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,4))));
-        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,5))));
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,0))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,1))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,2))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,3))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,4))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,5))));
 
         // v component s=0,g=1
         vreg = load_site(v+vixg(t,1,sbase+0));
         // multiply onto the field strength entry and add to result
         // the lower triangle elements are complex conjugated
-        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,1))));
-        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,7))));
-        r02 = _mm256_add_pd(r02, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,8))));
-        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,9))));
-        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,10))));
-        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,11))));
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,1))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,6))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,7))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,8))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,9))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,10))));
 
         // v component s=0,g=2
         vreg = load_site(v+vixg(t,2,sbase+0));
         // multiply onto the field strength entry and add to result
         // the lower triangle elements are complex conjugated
-        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,2))));
-        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,8))));
-        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,12))));
-        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,13))));
-        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,14))));
-        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,15))));
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,2))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,7))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,11))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,12))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,13))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,14))));
 
         // v component s=1,g=0
         vreg = load_site(v+vixg(t,0,sbase+1));
         // multiply onto the field strength entry and add to result
         // the lower triangle elements are complex conjugated
-        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,3))));
-        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,9))));
-        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,13))));
-        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,16))));
-        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,17))));
-        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,18))));
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,3))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,8))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,12))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,15))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,16))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,17))));
 
         // v component s=1,g=1
         vreg = load_site(v+vixg(t,1,sbase+1));
         // multiply onto the field strength entry and add to result
         // the lower triangle elements are complex conjugated
-        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,4))));
-        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,10))));
-        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,14))));
-        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,17))));
-        r11 = _mm256_add_pd(r11, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,19))));
-        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,stri,20))));
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,4))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,9))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,13))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,16))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,18))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,19))));
 
         // v component s=1,g=2
         vreg = load_site(v+vixg(t,2,sbase+1));
         // multiply onto the field strength entry and add to result
         // the lower triangle elements are complex conjugated
-        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,5))));
-        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,11))));
-        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,15))));
-        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,18))));
-        r11 = _mm256_add_pd(r11, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,20))));
-        r12 = _mm256_add_pd(r12, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,stri,21))));
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,5))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,10))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,14))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,17))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,19))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,20))));
 
         // store into result tensor
         store_site(result+vixg(t,0,sbase+0), r00);

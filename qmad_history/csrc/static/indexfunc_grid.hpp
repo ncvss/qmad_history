@@ -24,17 +24,17 @@ inline int hixd (int t1, int h, int d){
 //     return munu*8 + s*2;
 // }
 
-// address for field strength tensors (index order F[t1,triangle number,triangle index,t2])
+// address for field strength tensors (index order F[t1,block number,triangle index,t2])
 // the upper triangle is flattened with the following indices:
 //  0 | 1 | 2 | 3 | 4 | 5
-//  1 | 7 | 8 | 9 |10 |11
-//  2 | 8 |12 |13 |14 |15
-//  3 | 9 |13 |16 |17 |18
-//  4 |10 |14 |17 |19 |20
-//  5 |11 |15 |18 |20 |21
+//  1 | 6 | 7 | 8 | 9 |10
+//  2 | 7 |11 |12 |13 |14
+//  3 | 8 |12 |15 |16 |17
+//  4 | 9 |13 |16 |18 |19
+//  5 |10 |14 |17 |19 |20
 // (the lower triangles are the same numbers, but conjugated)
-inline int fixg (int t1, int stri, int triix){
-    return t1*168 + stri*84 + triix*4;
+inline int fixg (int t1, int sblock, int triix){
+    return t1*168 + sblock*84 + triix*4;
 }
 
 

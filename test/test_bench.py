@@ -62,30 +62,30 @@ vge = v[:,:,:,0:lat_dim[3]:2]
 vgo = v[:,:,:,1:lat_dim[3]:2]
 v_grid = torch.stack([vge, vgo], dim=-1)
 
-names = ["gpt"]
+algo_name = ["gpt"]
 funcs = [dw_g]
-dnames = ["gpt"]
+opsetup_name = ["gpt"]
 
 vs = {"gpt": v_g, str(dw_d): v, str(dw_ho): v, str(dw_hn): vn,
       str(dw_eo): veo, str(dw_roof): v, str(dw_grid): v_grid}
 
 for dw in [dw_d, dw_eo, dw_ho, dw_hn, dw_roof, dw_grid]:
-    names += [str(dw)+"."+x for x in dw.all_call_names()]
-    dnames += [str(dw)] * len(dw.all_call_names())
+    algo_name += [str(dw)+"."+x for x in dw.all_call_names()]
+    opsetup_name += [str(dw)] * len(dw.all_call_names())
     funcs += dw.all_calls()
 
-results = {x:np.zeros(n_measurements) for x in names}
+results = {x:np.zeros(n_measurements) for x in algo_name}
 
 for i in range(n_warmup):
-    for j in range(len(names)):
-        vres = funcs[j](vs[dnames[j]])
+    for j in range(len(algo_name)):
+        vres = funcs[j](vs[opsetup_name[j]])
 
 for i in range(n_measurements):
-    for j in range(len(names)):
+    for j in range(len(algo_name)):
         start = time.perf_counter_ns()
-        vres = funcs[j](vs[dnames[j]])
+        vres = funcs[j](vs[opsetup_name[j]])
         stop = time.perf_counter_ns()
-        results[names[j]][i] = stop - start
+        results[algo_name[j]][i] = stop - start
 
 results_sorted = dict()
 for x in results:
@@ -106,33 +106,38 @@ dwc_ho = clover.wilson_clover_hop_mtsg(U, mass, csw)
 dwc_hn = clover.wilson_clover_hop_tmgs(U, mass, csw)
 dwc_s = clover.wilson_clover_sigpre(U, mass, csw)
 
-namesc = ["gpt"]
+dwc_grid = clover.wilson_clover_hop_mtsgt_sigpre(U, mass, csw)
+
+dwc_gridcl = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
+
+algo_name_c = ["gpt"]
 funcsc = [dwc_g]
-dnamesc = ["gpt"]
+opsetup_name_c = ["gpt"]
 
-vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_ho): v, str(dwc_hn): vn, str(dwc_s): v, str(dwc_f): v}
+vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_ho): v, str(dwc_hn): vn,
+       str(dwc_s): v, str(dwc_f): v, str(dwc_grid): v_grid, str(dwc_gridcl): v}
 
-for dw in [dwc_d, dwc_f, dwc_ho, dwc_hn, dwc_s]:
-    namesc += [str(dw)+"."+x for x in dw.all_call_names()]
-    dnamesc += [str(dw)] * len(dw.all_call_names())
+for dw in [dwc_d, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl]:
+    algo_name_c += [str(dw)+"."+x for x in dw.all_call_names()]
+    opsetup_name_c += [str(dw)] * len(dw.all_call_names())
     funcsc += dw.all_calls()
 
-# print(len(namesc))
+# print(len(algo_name_c))
 # print(len(funcsc))
 # for ff in funcsc:
 #     print(ff)
-resultsc = {x:np.zeros(n_measurements) for x in namesc}
+resultsc = {x:np.zeros(n_measurements) for x in algo_name_c}
 
 for i in range(n_warmup):
-    for j in range(len(namesc)):
-        vresc = funcsc[j](vsc[dnamesc[j]])
+    for j in range(len(algo_name_c)):
+        vresc = funcsc[j](vsc[opsetup_name_c[j]])
 
 for i in range(n_measurements):
-    for j in range(len(namesc)):
+    for j in range(len(algo_name_c)):
         start = time.perf_counter_ns()
-        vresc = funcsc[j](vsc[dnamesc[j]])
+        vresc = funcsc[j](vsc[opsetup_name_c[j]])
         stop = time.perf_counter_ns()
-        resultsc[namesc[j]][i] = stop - start
+        resultsc[algo_name_c[j]][i] = stop - start
 
 resultsc_sorted = dict()
 for x in resultsc:
