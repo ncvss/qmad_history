@@ -43,6 +43,19 @@ inline __m256d load_hop (const double * addr, const double * addrhop){
     }
 }
 
+// load function for Grid layout where furthest sites are in one register
+// in memory, the sites are adjacent, so this is loadu
+// exception: when crossing a boundary in t direction, the sites are swapped
+// tbound=0 is the lower and tbound=1 the higher boundary
+template <int mu, int dir, int tbound>
+inline __m256d load_hop_tbound (const double * addr){
+    if constexpr (mu == 3 && dir == tbound){
+        return _mm256_loadu2_m128d(addr,addr+2);
+    } else {
+        return _mm256_loadu_pd(addr);
+    }
+}
+
 
 // the following functions try to optimize the number of accesses,
 // but lose performance somewhere else as a result

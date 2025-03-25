@@ -52,6 +52,7 @@ dw_hn = wilson.wilson_hop_tmgs(U, mass)
 dw_roof = wilson_roofline.wilson_hop_mtsg_roofline(U, mass, lat_dim)
 
 dw_grid = wilson.wilson_hop_mtsgt(U, mass)
+dw_grid2 = wilson.wilson_hop_mtsgt2(U, mass)
 
 ve = v[dw_eo.emask]
 vo = v[dw_eo.omask]
@@ -59,11 +60,17 @@ vo = v[dw_eo.omask]
 vge = v[:,:,:,0:lat_dim[3]:2]
 vgo = v[:,:,:,1:lat_dim[3]:2]
 v_grid = torch.stack([vge, vgo], dim=-1)
+vgfirst = v[:,:,:,0:lat_dim[3]//2]
+vgsecond = v[:,:,:,lat_dim[3]//2:lat_dim[3]]
+v_grid2 = torch.stack([vgfirst, vgsecond], dim=-1)
 
 v_grid_back = torch.zeros_like(v)
 v_grid_back[:,:,:,0:lat_dim[3]:2] = v_grid[:,:,:,:,:,:,0]
 v_grid_back[:,:,:,1:lat_dim[3]:2] = v_grid[:,:,:,:,:,:,1]
-print("conversion to grid layout worked: ", torch.allclose(v,v_grid_back))
+v_grid2_back = torch.cat([v_grid2[:,:,:,:,:,:,0],v_grid2[:,:,:,:,:,:,1]], dim=3)
+print("conversion to grid layout 1 worked: ", torch.allclose(v,v_grid_back))
+print("conversion to grid layout 2 worked: ", torch.allclose(v,v_grid2_back))
+
 
 dwv_py = dw_py(v)
 
@@ -98,6 +105,12 @@ for order, c in zip(dw_grid.all_call_names(),dw_grid.all_calls()):
     dwv_grid_back[:,:,:,0:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,0]
     dwv_grid_back[:,:,:,1:lat_dim[3]:2] = dwv_grid[:,:,:,:,:,:,1]
     check_correct.append((order,torch.allclose(dwv_py,dwv_grid_back)))
+
+check_correct.append(str(dw_grid2))
+for order, c in zip(dw_grid2.all_call_names(),dw_grid2.all_calls()):
+    dwv_grid2 = c(v_grid2)
+    dwv_grid2_back = torch.cat([dwv_grid2[:,:,:,:,:,:,0],dwv_grid2[:,:,:,:,:,:,1]], dim=3)
+    check_correct.append((order,torch.allclose(dwv_py,dwv_grid2_back)))
 
 
 check_correct.append("\nwilson clover")

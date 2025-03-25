@@ -40,3 +40,7 @@ The mass term and hop terms are computed in the same gauge and spin loops.
 
 The vectorisation has the same nomenclature as the loops. If an index is looped and
 vectorised, it appears twice.
+There are two different Grid vectorisation schemes: for the first, the two nearest
+neighbours in t direction are in one register, for the second, the two sites furthest
+from each other in t direction are in one register.
+

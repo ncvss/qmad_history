@@ -53,6 +53,7 @@ dw_hn = wilson.wilson_hop_tmgs(U, mass)
 dw_roof = wilson_roofline.wilson_hop_mtsg_roofline(U, mass, lat_dim)
 
 dw_grid = wilson.wilson_hop_mtsgt(U, mass)
+dw_grid2 = wilson.wilson_hop_mtsgt2(U, mass)
 
 ve = v[dw_eo.emask]
 vo = v[dw_eo.omask]
@@ -61,15 +62,18 @@ veo = [ve, vo]
 vge = v[:,:,:,0:lat_dim[3]:2]
 vgo = v[:,:,:,1:lat_dim[3]:2]
 v_grid = torch.stack([vge, vgo], dim=-1)
+vgfirst = v[:,:,:,0:lat_dim[3]//2]
+vgsecond = v[:,:,:,lat_dim[3]//2:lat_dim[3]]
+v_grid2 = torch.stack([vgfirst, vgsecond], dim=-1)
 
 algo_name = ["gpt"]
 funcs = [dw_g]
 opsetup_name = ["gpt"]
 
 vs = {"gpt": v_g, str(dw_d): v, str(dw_ho): v, str(dw_hn): vn,
-      str(dw_eo): veo, str(dw_roof): v, str(dw_grid): v_grid}
+      str(dw_eo): veo, str(dw_roof): v, str(dw_grid): v_grid, str(dw_grid2): v_grid2}
 
-for dw in [dw_d, dw_eo, dw_ho, dw_hn, dw_roof, dw_grid]:
+for dw in [dw_d, dw_eo, dw_ho, dw_hn, dw_roof, dw_grid, dw_grid2]:
     algo_name += [str(dw)+"."+x for x in dw.all_call_names()]
     opsetup_name += [str(dw)] * len(dw.all_call_names())
     funcs += dw.all_calls()
