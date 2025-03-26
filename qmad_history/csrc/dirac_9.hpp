@@ -66,4 +66,21 @@ at::Tensor dwc_grid_mtsg_tmngsMhs (const at::Tensor& U_tensor, const at::Tensor&
 at::Tensor dw_grid_mtsgt2_tmgsMht (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& hops_tensor, double mass);
 
+/**
+ * @brief Dirac Wilson Clover operator using vectorisation with the Grid memory layout
+ *        (2 sites in t direction that are furthest from each other are in one register,
+ *        this is the fastest runnning index in memory)
+ * 
+ * @param U_tensor gauge field
+ * @param v_tensor vector field
+ * @param fs_tensors field strength tensor product with sigma,
+ *                   only the upper triangles of two 6x6 matrices are passed
+ * @param hops_tensor addresses for the gauge hops
+ * @param mass mass parameter
+ * @return at::Tensor 
+ */
+at::Tensor dwc_grid_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                    const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                    double mass);
+
 }

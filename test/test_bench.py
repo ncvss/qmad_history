@@ -19,7 +19,7 @@ n_measurements = 500
 n_warmup = 20
 print("n_measurements =",n_measurements)
 
-lat_dim = [8,8,8,16]
+lat_dim = [16,16,16,32]
 print("lattice_dimensions =",lat_dim)
 
 rng = g.random("alltests")
@@ -114,14 +114,16 @@ dwc_grid = clover.wilson_clover_hop_mtsgt_sigpre(U, mass, csw)
 
 dwc_gridcl = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
 
+dwc_grid2 = clover.wilson_clover_hop_mtsgt2_sigpre(U, mass, csw)
+
 algo_name_c = ["gpt"]
 funcsc = [dwc_g]
 opsetup_name_c = ["gpt"]
 
 vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_ho): v, str(dwc_hn): vn,
-       str(dwc_s): v, str(dwc_f): v, str(dwc_grid): v_grid, str(dwc_gridcl): v}
+       str(dwc_s): v, str(dwc_f): v, str(dwc_grid): v_grid, str(dwc_gridcl): v,  str(dwc_grid2): v_grid2}
 
-for dw in [dwc_d, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl]:
+for dw in [dwc_d, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl, dwc_grid2]:
     algo_name_c += [str(dw)+"."+x for x in dw.all_call_names()]
     opsetup_name_c += [str(dw)] * len(dw.all_call_names())
     funcsc += dw.all_calls()

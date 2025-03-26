@@ -127,6 +127,8 @@ dwc_grid = clover.wilson_clover_hop_mtsgt_sigpre(U, mass, csw)
 
 dwc_gridcl = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
 
+dwc_grid2 = clover.wilson_clover_hop_mtsgt2_sigpre(U, mass, csw)
+
 for dw in [dwc_d, dwc_f, dwc_ho, dwc_gridcl]:
     check_correct.append(str(dw))
     for order, c in zip(dw.all_call_names(),dw.all_calls()):
@@ -143,6 +145,12 @@ for order, c in zip(dwc_grid.all_call_names(),dwc_grid.all_calls()):
     dwcv_grid_back[:,:,:,0:lat_dim[3]:2] = dwcv_grid[:,:,:,:,:,:,0]
     dwcv_grid_back[:,:,:,1:lat_dim[3]:2] = dwcv_grid[:,:,:,:,:,:,1]
     check_correct.append((order,torch.allclose(dwcv_py,dwcv_grid_back)))
+
+check_correct.append(str(dwc_grid2))
+for order, c in zip(dwc_grid2.all_call_names(),dwc_grid2.all_calls()):
+    dwcv_grid2 = c(v_grid2)
+    dwcv_grid2_back = torch.cat([dwcv_grid2[:,:,:,:,:,:,0],dwcv_grid2[:,:,:,:,:,:,1]], dim=3)
+    check_correct.append((order,torch.allclose(dwcv_py,dwcv_grid2_back)))
 
 # print("my clover:")
 # print(dwcv_grid_back[0,1,0,2]-dwv_grid_back[0,1,0,2])

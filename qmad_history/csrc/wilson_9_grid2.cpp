@@ -179,6 +179,9 @@ at::Tensor dw_grid_mtsgt2_tmgsMht (const at::Tensor& U_tensor, const at::Tensor&
     // thus the space-time loop goes only over half the volume
 
     // outer loop goes over the spatial grid points
+    // this is the same as the Grid parallelisation for up to 8 threads
+    // for more threads, Grid would also parallelise the t axis
+    // we cannot do that, as it would interfere with the t vectorisation
 
 #pragma omp parallel for
     for (int xyz = 0; xyz < vol/2; xyz+=tlen){
