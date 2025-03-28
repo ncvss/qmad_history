@@ -3,34 +3,15 @@ import numpy as np
 
 from .settings import capab
 
-# import os
-
-# this_dir = os.path.dirname(os.path.curdir)
-# settings_file = os.path.join(this_dir, "qmad_history", "settings.txt")
-
-# capab = dict()
-
-# # take the settings from the text file
-# with open(settings_file, "r") as sfile:
-#     data = sfile.readlines()
-#     for li in data:
-#         wo = li.split()
-#         capab[wo[0]] = bool(wo[1])
 
 # path buffer only for intermediate computations
 # derived from the version in qcd_ml
 class _PathBufferTemp:
     def __init__(self, U, path):
-        if isinstance(U, list):
-            # required by torch.roll below.
-            U = torch.stack(U)
         self.path = path
 
         self.accumulated_U = torch.zeros_like(U[0])
-        self.accumulated_U[:,:,:,:] = torch.complex(
-                torch.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=torch.double)
-                , torch.zeros(3, 3, dtype=torch.double)
-                )
+        self.accumulated_U[:,:,:,:] = torch.tensor([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=torch.cdouble)
 
         for mu, nhops in self.path:
             if nhops < 0:
@@ -71,6 +52,11 @@ _sigma = [[(torch.matmul(_gamma[mu], _gamma[nu])
             - torch.matmul(_gamma[nu], _gamma[mu])) / 2
             for nu in range(4)] for mu in range(4)]
 
+# masks to choose upper and lower triangle
+_triag_mask_1 = torch.tensor([[(sw < 6 and sh < 6 and sh <= sw) for sw in range(12)] for sh in range(12)],
+                            dtype=torch.bool)
+_triag_mask_2 = torch.tensor([[(sw >= 6 and sh >= 6 and sh <= sw) for sw in range(12)] for sh in range(12)],
+                            dtype=torch.bool)
 
 class wilson_clover_direct_false:
     """
@@ -120,7 +106,7 @@ class wilson_clover_fpre:
                 , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
                 ] for nu in range(4)] for mu in range(4)]
 
-        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
 
         # Every path from the clover terms has equal starting and ending points.
         # This means the transport keeps the position of the vector field unchanged
@@ -132,7 +118,8 @@ class wilson_clover_fpre:
                 # the terms for mu = nu cancel out in the final expression, so we do not compute them
                 if mu != nu:
                     for ii in range(4):
-                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
         
         # only a flat list, as it needs to be accessed by C++
         self.field_strength = []
@@ -190,7 +177,7 @@ class wilson_clover_sigpre:
                 , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
                 ] for nu in range(4)] for mu in range(4)]
 
-        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
 
         # Every path from the clover terms has equal starting and ending points.
         # This means the transport keeps the position of the vector field unchanged
@@ -202,7 +189,8 @@ class wilson_clover_sigpre:
                 # the terms for mu = nu cancel out in the final expression, so we do not compute them
                 if mu != nu:
                     for ii in range(4):
-                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
 
         dim = list(U.shape[1:5])
         self.dim = dim
@@ -271,7 +259,7 @@ class wilson_clover_hop_mtsg:
                 , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
                 ] for nu in range(4)] for mu in range(4)]
 
-        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
 
         # Every path from the clover terms has equal starting and ending points.
         # This means the transport keeps the position of the vector field unchanged
@@ -283,7 +271,8 @@ class wilson_clover_hop_mtsg:
                 # the terms for mu = nu cancel out in the final expression, so we do not compute them
                 if mu != nu:
                     for ii in range(4):
-                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
         
         field_strength = []
         # the field strength is antisymmetric, so we only need to compute nu < mu
@@ -354,7 +343,7 @@ class wilson_clover_hop_tmgs:
                 , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
                 ] for nu in range(4)] for mu in range(4)]
 
-        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
 
         # Every path from the clover terms has equal starting and ending points.
         # This means the transport keeps the position of the vector field unchanged
@@ -366,7 +355,8 @@ class wilson_clover_hop_tmgs:
                 # the terms for mu = nu cancel out in the final expression, so we do not compute them
                 if mu != nu:
                     for ii in range(4):
-                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
         
         field_strength = []
         # the field strength is antisymmetric, so we only need to compute nu < mu
@@ -441,7 +431,7 @@ class wilson_clover_hop_mtsgt_sigpre:
                 , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
                 ] for nu in range(4)] for mu in range(4)]
 
-        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
 
         # Every path from the clover terms has equal starting and ending points.
         # This means the transport keeps the position of the vector field unchanged
@@ -453,7 +443,8 @@ class wilson_clover_hop_mtsgt_sigpre:
                 # the terms for mu = nu cancel out in the final expression, so we do not compute them
                 if mu != nu:
                     for ii in range(4):
-                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
 
         dim = list(U.shape[1:5])
         self.dim = dim
@@ -472,25 +463,15 @@ class wilson_clover_hop_mtsgt_sigpre:
         # transform to grid layout (t register as last index)
         fs_even_t = field_strength_sigma[:,:,:,0:dim[3]:2]
         fs_odd_t = field_strength_sigma[:,:,:,1:dim[3]:2]
-        fs_sigma_grid = torch.stack([fs_even_t, fs_odd_t], dim=-1)
+        field_strength_sigma = torch.stack([fs_even_t, fs_odd_t], dim=-1)
 
         # until here, the computation works as expected
         # this is hermitian and has two 6x6 blocks (diagonal has numerical artifacts)
         # print(fs_sigma_grid[0,0,2,2,0:6])
 
-        # create masks to choose upper and lower triangle
-        triag_mask_1 = torch.tensor([[(sw < 6 and sh < 6 and sh <= sw)
-                                    for sw in range(12)] for sh in range(12)],
-                                  dtype=torch.bool)
-        triag_mask_2 = torch.tensor([[(sw >= 6 and sh >= 6 and sh <= sw)
-                                    for sw in range(12)] for sh in range(12)],
-                                  dtype=torch.bool)
-        # # these also work as expected
-        # print(triag_mask_1)
-        # print(triag_mask_2)
-
-        self.fs = torch.stack([fs_sigma_grid[:,:,:,:,triag_mask_1],fs_sigma_grid[:,:,:,:,triag_mask_2]],dim=4)
-        assert tuple(self.fs.shape[4:7]) == (2,21,2,)
+        self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,_triag_mask_1],
+                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=4)
+        assert tuple(self.field_strength_sigma.shape[4:7]) == (2,21,2,)
 
         # this is also the expected 
         # print(self.fs[0,0,2,2,0])
@@ -500,8 +481,8 @@ class wilson_clover_hop_mtsgt_sigpre:
         return "dwc_sigpre_hop_mtsgt"
         
     def tmngsMht (self, v):
-        return torch.ops.qmad_history.dwc_templ_mtsgt_tmngsMht(self.U, v, self.fs, self.hop_inds,
-                                                               self.mass_parameter, self.csw)
+        return torch.ops.qmad_history.dwc_templ_mtsgt_tmngsMht(self.U, v, self.field_strength_sigma,
+                                                               self.hop_inds, self.mass_parameter, self.csw)
         #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
     def all_calls(self):
@@ -553,7 +534,7 @@ class wilson_clover_hop_mtsg_sigpre:
                 , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
                 ] for nu in range(4)] for mu in range(4)]
 
-        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
 
         # Every path from the clover terms has equal starting and ending points.
         # This means the transport keeps the position of the vector field unchanged
@@ -565,7 +546,8 @@ class wilson_clover_hop_mtsg_sigpre:
                 # the terms for mu = nu cancel out in the final expression, so we do not compute them
                 if mu != nu:
                     for ii in range(4):
-                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
 
         dim = list(U.shape[1:5])
         self.dim = dim
@@ -584,16 +566,9 @@ class wilson_clover_hop_mtsg_sigpre:
         # this should be hermitian and have two 6x6 blocks (diagonal has numerical artifacts)
         # print(field_strength_sigma[0,0,2,2,0:6])
 
-        # create masks to choose upper and lower triangle
-        triag_mask_1 = torch.tensor([[(sw < 6 and sh < 6 and sh <= sw)
-                                    for sw in range(12)] for sh in range(12)],
-                                  dtype=torch.bool)
-        triag_mask_2 = torch.tensor([[(sw >= 6 and sh >= 6 and sh <= sw)
-                                    for sw in range(12)] for sh in range(12)],
-                                  dtype=torch.bool)
-
-        self.fs = torch.stack([field_strength_sigma[:,:,:,:,triag_mask_1],field_strength_sigma[:,:,:,:,triag_mask_2]],dim=-1)
-        assert tuple(self.fs.shape[4:6]) == (21,2,)
+        self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,_triag_mask_1],
+                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=-1)
+        assert tuple(self.field_strength_sigma.shape[4:6]) == (21,2,)
 
         # print(self.fs[0,0,2,2])
 
@@ -601,8 +576,8 @@ class wilson_clover_hop_mtsg_sigpre:
         return "dwc_sigpre_hop_mtsg"
         
     def tmngsMhs (self, v):
-        return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.U, v, self.fs, self.hop_inds,
-                                                             self.mass_parameter)
+        return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.U, v, self.field_strength_sigma,
+                                                             self.hop_inds, self.mass_parameter)
         #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
     def all_calls(self):
@@ -663,7 +638,7 @@ class wilson_clover_hop_mtsgt2_sigpre:
                 , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
                 ] for nu in range(4)] for mu in range(4)]
 
-        plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
+        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
 
         # Every path from the clover terms has equal starting and ending points.
         # This means the transport keeps the position of the vector field unchanged
@@ -675,7 +650,8 @@ class wilson_clover_hop_mtsgt2_sigpre:
                 # the terms for mu = nu cancel out in the final expression, so we do not compute them
                 if mu != nu:
                     for ii in range(4):
-                        Qmunu[mu][nu] += plaquette_path_buffers[mu][nu][ii].accumulated_U
+                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
 
         dim = list(U.shape[1:5])
         self.dim = dim
@@ -694,25 +670,18 @@ class wilson_clover_hop_mtsgt2_sigpre:
         # transform to grid layout (t register as last index, 2 furthest points are in a register)
         fs_even_t = field_strength_sigma[:,:,:,0:tlen//2]
         fs_odd_t = field_strength_sigma[:,:,:,tlen//2:tlen]
-        fs_sigma_grid = torch.stack([fs_even_t, fs_odd_t], dim=-1)
+        field_strength_sigma = torch.stack([fs_even_t, fs_odd_t], dim=-1)
 
-        # create masks to choose upper and lower triangle
-        triag_mask_1 = torch.tensor([[(sw < 6 and sh < 6 and sh <= sw)
-                                    for sw in range(12)] for sh in range(12)],
-                                  dtype=torch.bool)
-        triag_mask_2 = torch.tensor([[(sw >= 6 and sh >= 6 and sh <= sw)
-                                    for sw in range(12)] for sh in range(12)],
-                                  dtype=torch.bool)
-
-        self.fs = torch.stack([fs_sigma_grid[:,:,:,:,triag_mask_1],fs_sigma_grid[:,:,:,:,triag_mask_2]],dim=4)
-        assert tuple(self.fs.shape[4:7]) == (2,21,2,)
+        self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,_triag_mask_1],
+                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=4)
+        assert tuple(self.field_strength_sigma.shape[4:7]) == (2,21,2,)
     
     def __str__(self):
         return "dwc_sigpre_hop_mtsgt2"
         
     def tmngsMht (self, v):
-        return torch.ops.qmad_history.dwc_grid_mtsgt2_tmngsMht(self.U, v, self.fs, self.hop_inds,
-                                                               self.mass_parameter)
+        return torch.ops.qmad_history.dwc_grid_mtsgt2_tmngsMht(self.U, v, self.field_strength_sigma,
+                                                               self.hop_inds, self.mass_parameter)
         #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
     def all_calls(self):
