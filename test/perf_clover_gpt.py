@@ -5,7 +5,7 @@ import time
 
 import gpt as g # type: ignore
 
-from qmad_history import compat, wilson, clover
+# from qmad_history import compat, wilson, clover
 
 n_measurements = 5000
 
@@ -25,8 +25,8 @@ mass = -0.5
 kappa = 1.0/2.0/(mass + 4.0)
 csw = 1.0
 
-U = torch.tensor(compat.lattice_to_array(U_g))
-v = torch.tensor(compat.lattice_to_array(v_g))
+# U = torch.tensor(compat.lattice_to_array(U_g))
+# v = torch.tensor(compat.lattice_to_array(v_g))
 
 dwc_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
                                             "isAnisotropic":False,"boundary_phases":[1.0,1.0,1.0,1.0],}, )
