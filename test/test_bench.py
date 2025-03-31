@@ -95,7 +95,7 @@ results_sorted = dict()
 for x in results:
     results_sorted[x] = np.sort(results[x])[:(n_measurements//5)]
 
-print(f"\n{"Dirac Wilson":35}: {"time in us":>15} {"std in us":>15}")
+print(f"\n{'Dirac Wilson':35}: {'time in us':>15} {'std in us':>15}")
 
 for x,y in results_sorted.items():
     print(f"{x:35}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
