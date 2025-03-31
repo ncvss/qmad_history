@@ -37,3 +37,18 @@ print("loss:\n", lossc)
 lossc.backward()
 print("gradient of prefactor:\n", prefactorc.grad)
 
+
+print("\ncomplex scalars")
+
+scalar_c = torch.tensor([1.1+0.7j], dtype=torch.cdouble)
+print("first scalar:", scalar_c)
+factor_c = torch.tensor([3.5+2.3j], dtype=torch.cdouble, requires_grad=True)
+print("second scalar (which has derivative):", factor_c)
+pc = scalar_c*factor_c
+print("product:", pc)
+ysc = torch.zeros(1, dtype=torch.cdouble)
+losss = torch.real(pc-ysc)+torch.imag(pc-ysc)
+print("scalar loss:", losss)
+
+losss.backward()
+print("complex scalar gradient:", factor_c.grad)
