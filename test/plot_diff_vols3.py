@@ -243,7 +243,7 @@ with open(f"./test/testresults/plotdata_{dataset}.txt", "w") as plot_out:
         plot_out.write(f"{op}_throughput_means_in_GiB_per_s = {thrpts_mean_GiBps}\n")
         plot_out.write(f"{op}_best_throughput_in_GiB_per_s = {thrpts_peak_GiBps}\n")
 
-        meantsr += f"{op}_runtime_mean_in_us, "
+        meanstr += f"{op}_runtime_mean_in_us, "
         meanstdstr += f"{op}_runtime_stdevs_in_us, "
         thrptstr += f"{op}_throughput_means_in_GiB_per_s, "
     
