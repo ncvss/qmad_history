@@ -163,3 +163,41 @@ for order, c in zip(dwc_grid2.all_call_names(),dwc_grid2.all_calls()):
 
 for cc in check_correct:
     print(cc)
+
+
+# test for correctness of gradients
+print("\ngradient check:")
+
+vgr = torch.randn(lat_dim+[4,3], dtype=torch.cdouble, requires_grad=True)
+vgr2 = vgr.clone().detach().requires_grad_(True)
+
+dwgr_qml = qcd_ml.qcd.dirac.dirac_wilson(U, mass)
+res_qml = dwgr_qml(vgr)
+loss_qml = (res_qml * res_qml.conj()).real.sum()
+loss_qml.backward()
+
+dwgr_qmad = wilson.wilson_hop_mtsg(U, mass)
+res_qmad = dwgr_qmad.templ_tmgsMhs(vgr2)
+loss_qmad = (res_qmad * res_qmad.conj()).real.sum()
+loss_qmad.backward()
+
+print(str(dwgr_qmad))
+print("templ_tmgsMhs:", torch.allclose(vgr.grad, vgr2.grad))
+
+
+vcgr = torch.randn(lat_dim+[4,3], dtype=torch.cdouble, requires_grad=True)
+vcgr2 = vcgr.clone().detach().requires_grad_(True)
+
+dwcgr_qml = qcd_ml.qcd.dirac.dirac_wilson_clover(U, mass, csw)
+res_qml = dwcgr_qml(vcgr)
+loss_qml = (res_qml * res_qml.conj()).real.sum()
+loss_qml.backward()
+
+dwcgr_qmad = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
+res_qmad = dwcgr_qmad.tmngsMhs(vcgr2)
+loss_qmad = (res_qmad * res_qmad.conj()).real.sum()
+loss_qmad.backward()
+
+print(str(dwcgr_qmad))
+print("tmngsMhs:", torch.allclose(vcgr.grad, vcgr2.grad))
+

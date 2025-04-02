@@ -66,6 +66,9 @@ TORCH_LIBRARY(qmad_history, m) {
     m.def("dwc_grid_mtsg_tmngsMhs(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass) -> Tensor");
     m.def("dw_grid_mtsgt2_tmgsMht(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
     m.def("dwc_grid_mtsgt2_tmngsMht(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass) -> Tensor");
+
+    m.def("dw_templ_mtsg_tmgsMhs_backw(Tensor U_tensor, Tensor grad_tensor, Tensor hops_tensor, float mass) -> Tensor");
+    m.def("dwc_grid_mtsg_backw(Tensor U_tensor, Tensor grad_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass) -> Tensor");
 }
 
 // Registers backend implementations
@@ -116,6 +119,9 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
     m.impl("dwc_grid_mtsg_tmngsMhs", &dwc_grid_mtsg_tmngsMhs);
     m.impl("dw_grid_mtsgt2_tmgsMht", &dw_grid_mtsgt2_tmgsMht);
     m.impl("dwc_grid_mtsgt2_tmngsMht", &dwc_grid_mtsgt2_tmngsMht);
+
+    m.impl("dw_templ_mtsg_tmgsMhs_backw", &dw_templ_mtsg_tmgsMhs_backw);
+    m.impl("dwc_grid_mtsg_backw", &dwc_grid_mtsg_backw);
 }
 
 }

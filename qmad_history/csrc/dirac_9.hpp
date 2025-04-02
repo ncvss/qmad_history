@@ -53,6 +53,21 @@ at::Tensor dwc_grid_mtsg_tmngsMhs (const at::Tensor& U_tensor, const at::Tensor&
 
 
 /**
+ * @brief the backward pass of the above operator
+ * 
+ * @param U_tensor 
+ * @param grad_tensor the saved gradients of the succeeding branches
+ * @param fs_tensors 
+ * @param hops_tensor 
+ * @param mass 
+ * @return at::Tensor 
+ */
+at::Tensor dwc_grid_mtsg_backw (const at::Tensor& U_tensor, const at::Tensor& grad_tensor,
+                                  const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                  double mass);
+
+
+/**
  * @brief Dirac Wilson operator using vectorisation with the Grid memory layout
  *        (2 sites in t direction that are furthest from each other are in one register,
  *        this is the fastest runnning index in memory)
@@ -65,6 +80,8 @@ at::Tensor dwc_grid_mtsg_tmngsMhs (const at::Tensor& U_tensor, const at::Tensor&
  */
 at::Tensor dw_grid_mtsgt2_tmgsMht (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& hops_tensor, double mass);
+
+
 
 /**
  * @brief Dirac Wilson Clover operator using vectorisation with the Grid memory layout
