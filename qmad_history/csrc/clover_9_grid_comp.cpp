@@ -29,7 +29,7 @@ namespace qmad_history{
 
 // load function for v for 2 spins with difference 2
 inline __m256d load_split2_spin (const double * addr){
-    // high part of the register should be s+1, so the address is increased by 6
+    // high part of the register should be s+2, so the address is increased by 12
     return _mm256_loadu2_m128d(addr+12,addr);
 }
 // store in v for 2 spins with difference 2
