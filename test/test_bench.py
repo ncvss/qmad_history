@@ -37,6 +37,7 @@ print("csw =", csw)
 U = torch.tensor(compat.lattice_to_array(U_g))
 v = torch.tensor(compat.lattice_to_array(v_g))
 vn = torch.transpose(v, 4, 5).contiguous()
+vgrad = v.clone().detach().requires_grad_(True)
 
 
 dw_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":0.0,"csw_t":0.0,"xi_0":1,"nu":1,
@@ -71,12 +72,17 @@ funcs = [dw_g]
 opsetup_name = ["gpt"]
 
 vs = {"gpt": v_g, str(dw_d): v, str(dw_ho): v, str(dw_hn): vn,
-      str(dw_eo): veo, str(dw_roof): v, str(dw_grid): v_grid, str(dw_grid2): v_grid2}
+      str(dw_eo): veo, str(dw_roof): v, str(dw_grid): v_grid,
+      str(dw_grid2): v_grid2, "dw_hop_mtsg_grad": vgrad}
 
 for dw in [dw_d, dw_eo, dw_ho, dw_hn, dw_roof, dw_grid, dw_grid2]:
     algo_name += [str(dw)+"."+x for x in dw.all_call_names()]
     opsetup_name += [str(dw)] * len(dw.all_call_names())
     funcs += dw.all_calls()
+
+algo_name.append("dw_hop_mtsg_grad.templ_tmgsMhs")
+opsetup_name.append("dw_hop_mtsg_grad")
+funcs.append(dw_ho.templ_tmgsMhs)
 
 results = {x:np.zeros(n_measurements) for x in algo_name}
 
@@ -121,12 +127,17 @@ funcsc = [dwc_g]
 opsetup_name_c = ["gpt"]
 
 vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_ho): v, str(dwc_hn): vn,
-       str(dwc_s): v, str(dwc_f): v, str(dwc_grid): v_grid, str(dwc_gridcl): v,  str(dwc_grid2): v_grid2}
+       str(dwc_s): v, str(dwc_f): v, str(dwc_grid): v_grid, str(dwc_gridcl): v,
+       str(dwc_grid2): v_grid2, "dwc_sigpre_hop_mtsg_grad": vgrad}
 
 for dw in [dwc_d, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl, dwc_grid2]:
     algo_name_c += [str(dw)+"."+x for x in dw.all_call_names()]
     opsetup_name_c += [str(dw)] * len(dw.all_call_names())
     funcsc += dw.all_calls()
+
+algo_name_c.append("dwc_sigpre_hop_mtsg_grad.tmngsMhs")
+opsetup_name_c.append("dwc_sigpre_hop_mtsg_grad")
+funcsc.append(dwc_gridcl.tmngsMhs)
 
 # print(len(algo_name_c))
 # print(len(funcsc))
