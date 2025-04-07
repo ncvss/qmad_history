@@ -1,6 +1,6 @@
 host = 'hpd-node-002'
 threadnumber = 16
-omp_places = sockets
+omp_places = 'sockets'
 n_measurements = 500
 n_batch = 20
 mass = -0.5

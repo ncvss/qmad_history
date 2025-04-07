@@ -210,7 +210,7 @@ with open(f"./test/testresults/rawdata_{dataset}.txt", "w") as output_results:
 
 with open(f"./test/testresults/plotdata_{dataset}.txt", "w") as plot_out:
     plot_out.write(f"host = '{hostname}'\nthreadnumber = {num_threads}\n")
-    plot_out.write(f"omp_places = {omp_places}\n")
+    plot_out.write(f"omp_places = '{omp_places}'\n")
     plot_out.write(f"n_measurements = {n_measurements}\nn_batch = {n_batch}\n")
     plot_out.write(f"mass = {mass}\ncsw = {csw}\n")
     plot_out.write(f"grid_volumes = {grid_vols}\ngrid_dims = {grid_dims}\n\n")
