@@ -11,6 +11,9 @@ from qmad_history import compat, wilson, clover, settings, wilson_roofline
 print(settings.capab)
 
 print()
+num_threads = torch.get_num_threads()
+print("running on host", socket.gethostname())
+print(f'Machine has {num_threads} threads')
 
 n_measurements = 200
 n_warmup = 20
@@ -104,7 +107,7 @@ results_sorted_c = dict()
 for x in results_c:
     results_sorted_c[x] = np.sort(results_c[x])[:(n_measurements//5)]
 
-print(f"\n{'Dirac Wilson':35}: {'time in us':>15} {'std in us':>15}")
+print(f"\n{'Dirac Wilson Clover':35}: {'time in us':>15} {'std in us':>15}")
 
 for x,y in results_sorted_c.items():
     print(f"{x:35}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
