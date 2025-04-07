@@ -2,6 +2,7 @@ import torch
 import socket
 import numpy as np
 import time
+import os
 
 import gpt as g
 import qcd_ml
@@ -11,6 +12,7 @@ from qmad_history import compat, wilson, clover, settings, wilson_roofline
 
 num_threads = torch.get_num_threads()
 hostname = socket.gethostname()
+omp_places = os.environ.get('OMP_PLACES')
 
 # split measurement into batches
 # we alternate between operators and lattice dimensions
@@ -208,6 +210,7 @@ with open(f"./test/testresults/rawdata_{dataset}.txt", "w") as output_results:
 
 with open(f"./test/testresults/plotdata_{dataset}.txt", "w") as plot_out:
     plot_out.write(f"host = '{hostname}'\nthreadnumber = {num_threads}\n")
+    plot_out.write(f"omp_places = {omp_places}\n")
     plot_out.write(f"n_measurements = {n_measurements}\nn_batch = {n_batch}\n")
     plot_out.write(f"mass = {mass}\ncsw = {csw}\n")
     plot_out.write(f"grid_volumes = {grid_vols}\ngrid_dims = {grid_dims}\n\n")
