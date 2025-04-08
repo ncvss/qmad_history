@@ -14,12 +14,12 @@ omp_places = ""
 # read from the raw data file
 # data 007 is hpd for 8 threads, data 008 is hpd for 4 threads
 
-with open(f"./test/testresults/plotdata_009.txt", "r") as datn:
+with open(f"./test/testresults/plotdata_012.txt", "r") as datn:
     plotdata_str = datn.read()
 
 exec(plotdata_str)
 
-omp_places_str = "" if omp_places == "" else f"OMP_PLACES={omp_places}"
+omp_places_str = "" if omp_places == "" else f"OMP_PLACES={omp_places},"
 
 plt.figure()
 
@@ -48,7 +48,7 @@ for ys, na in zip(thrpts, names):
         plt.plot(grid_volumes, ys, label=na)
 
 plt.legend()
-plt.title(f"Throughput of different optimisation levels of the Wilson clover operator\nfor varied grid sizes w/ {omp_places_str}, {threadnumber} thr. on {host}")
+plt.title(f"Throughput of different optimisation levels of the Wilson clover operator\nfor varied grid sizes w/ {omp_places_str} {threadnumber} thr. on {host}")
 plt.xlabel("number of grid points")
 plt.ylabel("throughput in GiB/s")
 plt.grid()
