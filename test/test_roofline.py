@@ -90,9 +90,9 @@ for vo in results:
     results_sorted[vo] = np.sort(results[vo])[:(n_measurements//5)]
 
 
-print(f"\n{"input size in B":>15} {"time in us":>15} {"std in us":>15}  {"grid dimensions"}")
+print(f"\n {"input size in B":>15}  {"time in us":>15}  {"std in us":>15}  {"grid dimensions"}  ")
 
 for x in sorted(test_vols):
     y = results_sorted[x]
-    print(f"{datasizes[x]:>15} {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}  {lat_dict[x]}")
+    print(f"[{datasizes[x]:>15}, {np.mean(y)/1000:>15.3f}, {np.std(y)/1000:>15.3f}, {lat_dict[x]}],")
 
