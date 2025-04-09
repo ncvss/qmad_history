@@ -22,21 +22,23 @@ print(f'Machine has {num_threads} threads')
 
 print(settings.capab)
 
-n_measurements = 100
-n_warmup = 3
+# make measurements in batches, so that we need less initialisations
+n_measurements = 300
+n_batch = 20
+assert n_measurements % n_batch == 0
+n_warmup = 10
 print("n_measurements =",n_measurements)
 
 mass = -0.5
 print("mass_parameter =",mass)
 kappa = 1.0/2.0/(mass + 4.0)
 
-base_lat_dim = [8,8,8,16]
+base_lat_dim = [16,8,8,16]
 print("base_lattice_dimensions =",base_lat_dim)
 
 
 #shrinks = list(range(-2,3))
-test_lat_dims = [[8,8,8,8],[8,8,8,12],[8,8,8,16],[8,8,8,24],[8,8,8,32],[8,8,8,48],
-                 [8,8,8,4]]
+test_lat_dims = [[16,8,8,8],[16,8,8,12],[16,8,8,16],[16,8,8,24],[16,8,8,32],[16,8,8,48]]
 #test_lat_dims = [[8,8,8,16],[8,8,8,8]]
 test_vols = [ld[0]*ld[1]*ld[2]*ld[3] for ld in test_lat_dims]
 lat_dict = {test_vols[i]:test_lat_dims[i] for i in range(len(test_lat_dims))}
@@ -46,7 +48,7 @@ print("input_vols =", test_vols)
 results = {vo:np.zeros(n_measurements) for vo in test_vols}
 datasizes = dict()
 
-for i in range(n_measurements):
+for i in range(0,n_measurements,n_batch):
     print(i, end=" ", flush=True)
     for vol, lat_dim in lat_dict.items():
 
@@ -64,11 +66,11 @@ for i in range(n_measurements):
         for j in range(n_warmup):
             vres = dw.templ_tmgsMhs(v)
 
-        #for i in range(n_measurements):
-        start = time.perf_counter_ns()
-        vres = dw.templ_tmgsMhs(v)
-        stop = time.perf_counter_ns()
-        results[vol][i] = stop - start
+        for j in range(i,i+n_batch):
+            start = time.perf_counter_ns()
+            vres = dw.templ_tmgsMhs(v)
+            stop = time.perf_counter_ns()
+            results[vol][j] = stop - start
         
         # print(lat_dim)
         # print(dw.hop_inds[0])
