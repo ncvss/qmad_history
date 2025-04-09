@@ -14,7 +14,7 @@ omp_places = ""
 # read from the raw data file
 # data 007 is hpd for 8 threads, data 008 is hpd for 4 threads
 
-with open(f"./test/testresults/plotdata_012.txt", "r") as datn:
+with open(f"./test/testresults/plotdata_014.txt", "r") as datn:
     plotdata_str = datn.read()
 
 exec(plotdata_str)

@@ -250,6 +250,7 @@ with open(f"./test/testresults/plotdata_{dataset}.txt", "w") as plot_out:
         meanstdstr += f"{op}_runtime_stdevs_in_us, "
         thrptstr += f"{op}_throughput_means_in_GiB_per_s, "
     
+    plot_out.write("\n# sets of all measurements for python execution\n")
     plot_out.write(meanstr+"]\n")
     plot_out.write(meanstdstr+"]\n")
     plot_out.write(thrptstr+"]\n")
