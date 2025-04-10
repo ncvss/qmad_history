@@ -33,12 +33,12 @@ mass = -0.5
 print("mass_parameter =",mass)
 kappa = 1.0/2.0/(mass + 4.0)
 
-base_lat_dim = [16,8,8,16]
+base_lat_dim = [16,16,16,16]
 print("base_lattice_dimensions =",base_lat_dim)
 
 
 #shrinks = list(range(-2,3))
-test_lat_dims = [[16,8,8,8],[16,8,8,12],[16,8,8,16],[16,8,8,24],[16,8,8,32],[16,8,8,48]]
+test_lat_dims = [[16,16,16,8],[16,16,16,12],[16,16,16,16],[16,16,16,24],[16,16,16,32],[16,16,16,48]]
 #test_lat_dims = [[8,8,8,16],[8,8,8,8]]
 test_vols = [ld[0]*ld[1]*ld[2]*ld[3] for ld in test_lat_dims]
 lat_dict = {test_vols[i]:test_lat_dims[i] for i in range(len(test_lat_dims))}
