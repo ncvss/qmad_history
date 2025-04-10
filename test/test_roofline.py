@@ -18,7 +18,7 @@ rng = g.random("alltests")
 print()
 num_threads = torch.get_num_threads()
 print("running on host", socket.gethostname())
-print(f'Machine has {num_threads} threads')
+print(f"Machine has {num_threads} threads")
 
 print(settings.capab)
 
@@ -90,7 +90,7 @@ for vo in results:
     results_sorted[vo] = np.sort(results[vo])[:(n_measurements//5)]
 
 
-print(f"\n {"input size in B":>15}  {"time in us":>15}  {"std in us":>15}  {"grid dimensions"}  ")
+print(f"\n {'input size in B':>15}  {'time in us':>15}  {'std in us':>15}  {'grid dimensions'}  ")
 
 for x in sorted(test_vols):
     y = results_sorted[x]
