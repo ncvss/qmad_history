@@ -8,9 +8,20 @@ wilson_FLOP = basevol*5496
 # bandwidth of hpd: 19.6 GB/s per core * 4 cores (according to Dr. Bandwidth)
 hpd_bandwidth_B_p_s = 19.6 * 10**9 * 4
 # peak FLOP/s: 2 doubles in register * 4 operations * 4 cores * 2.4 GHz
-hpd_FLOP_p_s = 2 * 4 * 4 * 2.4 * 10**9
+hpd_4core_FLOP_p_s = 2 * 4 * 4 * 2.4 * 10**9
+# as the above value does not agree with experiment, maybe we use execution units from 8 cores?
+hpd_8core_FLOP_p_s = 2 * 4 * 8 * 2.4 * 10**9
 
-data_8thr = []
+
+data_8thr = [
+    [       10027008,        1047.660,          49.088, [16, 8, 8, 8]],
+    [       13172736,        1073.598,         113.635, [16, 8, 8, 12]],
+    [       16318464,        1087.410,         153.164, [16, 8, 8, 16]],
+    [       22609920,        1056.158,           6.446, [16, 8, 8, 24]],
+    [       28901376,        1122.017,          40.018, [16, 8, 8, 32]],
+    [       41484288,        1512.197,          92.072, [16, 8, 8, 48]],
+
+]
 
 # {
 #     1:[
@@ -59,10 +70,11 @@ plt.title("Roofline-style plot of a pseudo Dirac Wilson operator\nthat allows va
 
 plt.plot(x,y, label=f"Wilson Dirac")
 
-plt.plot(x,[hpd_FLOP_p_s for _ in x], label="peak performance using AVX")
+plt.plot(x,[hpd_4core_FLOP_p_s for _ in x], label="peak performance 8 thr. on 4 cores")
+plt.plot(x,[hpd_8core_FLOP_p_s for _ in x], label="peak performance 8 thr. on 8 cores")
 plt.plot(x,[hpd_bandwidth_B_p_s*xx for xx in x],label="bandwidth limited peak performance")
 
-plt.axvline(x=wilson_FLOP/actual_wilson_data,label="actual operator",color="red",linestyle='--')
+plt.axvline(x=wilson_FLOP/actual_wilson_data,label="Intensity of the correct operator",color="red",linestyle='--')
 
 plt.legend()
 plt.xlabel("Intensity in FLOP/byte")
