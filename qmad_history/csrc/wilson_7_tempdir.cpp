@@ -36,7 +36,7 @@ inline int ptridx7 (int mu, int x, int y, int z, int t, int g, int h, int* strid
 // dir is 0 for a negative and 1 for a positive hop
 // dsize is the length of the coord axis
 // stride are the strides of the first 3 axes (the fourth one is always 1)
-// this is not the actual array address, s and t are missing
+// this is not the actual array address, s and g are missing
 // the function seems to be correct
 template <int coord, int dir>
 inline int hopc (int x, int y, int z, int t, int dsize, int* stride){
@@ -384,7 +384,7 @@ at::Tensor dw_tempdir_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor
 #else
 namespace qmad_history {
 
-at::Tensor dw_templ_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+at::Tensor dw_tempdir_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& hops_tensor, double mass){
     
     TORCH_CHECK(0,"AVX not compiled");
