@@ -14,7 +14,7 @@ omp_places = ""
 # read from the raw data file
 # data 007 is hpd for 8 threads, data 008 is hpd for 4 threads
 
-with open(f"./test/testresults/plotdata_014.txt", "r") as datn:
+with open(f"./test/testresults/plotdata_016.txt", "r") as datn:
     plotdata_str = datn.read()
 
 exec(plotdata_str)
@@ -38,7 +38,7 @@ plt.yscale("log")
 xlabels = ["$2^{"+str(int(math.log2(x)))+"}$" for x in grid_volumes]
 plt.xticks(grid_volumes, xlabels)
 
-plt.savefig(f"./test/testresults/clover_voltime_{host[0:3]}_{omp_places}{threadnumber}thr{name_extension}.pdf")
+plt.savefig(f"./test/testresults/clover_voltime_{host[0:3]}{host[-1]}_{omp_places}{threadnumber}thr{name_extension}.pdf")
 
 
 plt.figure()
