@@ -56,5 +56,5 @@ plt.xscale("log")
 
 plt.xticks(grid_volumes,xlabels)
 
-plt.savefig(f"./test/testresults/clover_volthroughput_{host[0:3]}_{omp_places}{threadnumber}thr{name_extension}.pdf")
+plt.savefig(f"./test/testresults/clover_volthroughput_{host[0:3]}{host[-1]}_{omp_places}{threadnumber}thr{name_extension}.pdf")
 
