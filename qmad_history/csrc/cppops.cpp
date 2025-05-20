@@ -69,6 +69,8 @@ TORCH_LIBRARY(qmad_history, m) {
 
     m.def("dw_templ_mtsg_tmgsMhs_backw(Tensor U_tensor, Tensor grad_tensor, Tensor hops_tensor, float mass) -> Tensor");
     m.def("dwc_grid_mtsg_backw(Tensor U_tensor, Tensor grad_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass) -> Tensor");
+
+    m.def("dw_templ_mtsg_tmsgMhs(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, float mass) -> Tensor");
 }
 
 // Registers backend implementations
@@ -122,6 +124,8 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
 
     m.impl("dw_templ_mtsg_tmgsMhs_backw", &dw_templ_mtsg_tmgsMhs_backw);
     m.impl("dwc_grid_mtsg_backw", &dwc_grid_mtsg_backw);
+
+    m.impl("dw_templ_mtsg_tmsgMhs", &dw_templ_mtsg_tmsgMhs);
 }
 
 }

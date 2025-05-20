@@ -8,6 +8,8 @@ at::Tensor dw_templ_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor& 
 at::Tensor dw_templ_mtsg_tmgsMhs_backw (const at::Tensor& U_tensor, const at::Tensor& grad_tensor,
                                   const at::Tensor& hops_tensor, double mass);
 
+at::Tensor dw_templ_mtsg_tmsgMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                  const at::Tensor& hops_tensor, double mass);
 
 
 at::Tensor dwc_templ_mtsg_tmgsMhns (const at::Tensor& U_tensor, const at::Tensor& v_tensor,

@@ -143,11 +143,14 @@ class wilson_hop_mtsg:
     def tempipe_tmgsMhs(self, v):
         return torch.ops.qmad_history.dw_tempipe_mtsg_tmgsMhs(self.U, v, self.hop_inds,
                                                             self.mass_parameter)
+    def templ_tmsgMhs(self, v):
+        return torch.ops.qmad_history.dw_templ_mtsg_tmsgMhs(self.U, v, self.hop_inds,
+                                                            self.mass_parameter)
     
     def all_calls(self):
-        return [self.tMmgsh, self.tMgshm, self.tmgsMh] + ([self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs] if capab["vectorise"] else [])
+        return [self.tMmgsh, self.tMgshm, self.tmgsMh] + ([self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs] if capab["vectorise"] else [])
     def all_call_names(self):
-        return ["tMmgsh", "tMgshm", "tmgsMh"] + (["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs"] if capab["vectorise"] else [])
+        return ["tMmgsh", "tMgshm", "tmgsMh"] + (["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs"] if capab["vectorise"] else [])
 
 
 class wilson_hop_tmgs:
