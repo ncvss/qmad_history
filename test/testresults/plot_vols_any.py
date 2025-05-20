@@ -2,6 +2,11 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 
+plt.rcParams["font.family"] = "cmr10"
+plt.rcParams["mathtext.fontset"] = "cm"
+plt.rcParams["axes.formatter.use_mathtext"] = True
+plt.rcParams["font.size"] = 10
+
 names = ["GPT", "qcd_ml", "naive C++ code", "AVX vectorised code", "AVX code with templates", "AVX code w/ Grid layout + Clover term",
          "AVX code w/ Grid Clover term"]
 
@@ -14,7 +19,7 @@ omp_places = ""
 # read from the raw data file
 # data 007 is hpd for 8 threads, data 008 is hpd for 4 threads
 
-with open(f"./test/testresults/plotdata_016.txt", "r") as datn:
+with open(f"./test/testresults/plotdata_009.txt", "r") as datn:
     plotdata_str = datn.read()
 
 exec(plotdata_str)
