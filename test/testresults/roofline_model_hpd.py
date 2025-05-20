@@ -18,18 +18,28 @@ hpd_4core_FLOP_p_s = 2 * 4 * 4 * 2.4 * 10**9
 # as the above value does not agree with experiment, maybe we use execution units from 8 cores?
 hpd_8core_FLOP_p_s = 2 * 4 * 8 * 2.4 * 10**9
 
+# bandwidth: 25.6 GB/s
+haswell_bandwidth_B_p_s = 25.6*10**9
+# peak FLOP/s: 4 doubles in register * 4 operations * 4 cores * 3.3 GHz
+haswell_FLOP_p_s_avx = 4*4*4*3.3*10**9
 
 
-x = [0.2,0.5]+list(range(1,9))
+
+x = list(range(2,15))
 
 
 plt.figure()
 
 #plt.title(f"Roofline model for 4 cores of node 002 of HPD")
 
-plt.plot(x,[hpd_4core_FLOP_p_s for _ in x], label="peak perf. on 4 cores")
-#plt.plot(x,[hpd_8core_FLOP_p_s for _ in x], label="peak perf. w/ 8 thr. on 8 cores")
-plt.plot(x,[hpd_bandwidth_B_p_s*xx for xx in x],label="bandwidth limited peak perf. on 4 cores")
+# plt.plot(x,[hpd_4core_FLOP_p_s for _ in x], label="peak perf. on 4 cores")
+# #plt.plot(x,[hpd_8core_FLOP_p_s for _ in x], label="peak perf. w/ 8 thr. on 8 cores")
+# plt.plot(x,[hpd_bandwidth_B_p_s*xx for xx in x],label="bandwidth limited peak perf. on 4 cores")
+
+# roofline for my pc
+
+plt.plot(x,[haswell_FLOP_p_s_avx for _ in x], label="peak perf.")
+plt.plot(x,[haswell_bandwidth_B_p_s*xx for xx in x],label="bandwidth limited peak perf.")
 
 plt.axvline(x=wilson_FLOP_per_byte,label=f"Intensity of the Wilson Dirac operator",color="red",linestyle='--')
 
@@ -41,8 +51,8 @@ plt.ylabel("Performance in FLOP/second")
 plt.xscale("log")
 plt.yscale("log")
 
-plt.grid(which="both")
+plt.grid()
 # plt.yticks(range(0,110,10))
 
-plt.savefig(f"./test/testresults/hpd_base_roofline.pdf")
+plt.savefig(f"./test/testresults/pc1_base_roofline.pdf")
 
