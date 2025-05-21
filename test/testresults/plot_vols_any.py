@@ -10,7 +10,13 @@ plt.rcParams["font.size"] = 10
 names = ["GPT", "qcd_ml", "naive C++ code", "AVX vectorised code", "AVX code with templates", "AVX code w/ Grid layout + Clover term",
          "AVX code w/ Grid Clover term"]
 
-exclude = []
+names2 = ["GPT", "qcd ml", "C++ (opt. matrix struct.)", "C++ (+ expl. vect., lookup)", "AVX code with templates", "C++ (Grid layout)",
+         "C++ (+ compiler, clover opt.)"]
+
+exclude = ["AVX code with templates"]
+
+give_title = False
+titlestr = "_notitle" if not give_title else ""
 
 name_extension = "_var" if "qcd_ml" in exclude else ""
 
@@ -28,14 +34,15 @@ omp_places_str = "" if omp_places == "" else f"OMP_PLACES={omp_places},"
 
 plt.figure()
 
-for ys, yerrs, na in zip(means, meanstdevs, names):
+for ys, yerrs, na in zip(means, meanstdevs, names2):
     if na not in exclude:
         plt.errorbar(grid_volumes,ys,yerr=yerrs,capsize=2.0,label=na)
 
 plt.legend()
-plt.title(f"Runtime of different implementations of the Wilson clover operator\nfor varied grid sizes w/ {omp_places_str} {threadnumber} thr. on {host}")
+if give_title:
+    plt.title(f"Runtime of different implementations of the Wilson clover operator\nfor varied grid sizes w/ {omp_places_str} {threadnumber} thr. on {host}")
 plt.xlabel("number of grid points")
-plt.ylabel("runtime in µs")
+plt.ylabel("runtime in $\\mu$s")
 plt.grid()
 plt.xscale("log")
 plt.yscale("log")
@@ -43,17 +50,18 @@ plt.yscale("log")
 xlabels = ["$2^{"+str(int(math.log2(x)))+"}$" for x in grid_volumes]
 plt.xticks(grid_volumes, xlabels)
 
-plt.savefig(f"./test/testresults/clover_voltime_{host[0:3]}{host[-1]}_{omp_places}{threadnumber}thr{name_extension}.pdf")
+plt.savefig(f"./test/testresults/clover_voltime_{host[0:3]}{host[-1]}_{omp_places}{threadnumber}thr{name_extension}{titlestr}.pdf")
 
 
 plt.figure()
 
-for ys, na in zip(thrpts, names):
+for ys, na in zip(thrpts, names2):
     if na not in exclude:
         plt.plot(grid_volumes, ys, label=na)
 
 plt.legend()
-plt.title(f"Throughput of different optimisation levels of the Wilson clover operator\nfor varied grid sizes w/ {omp_places_str} {threadnumber} thr. on {host}")
+if give_title:
+    plt.title(f"Throughput of different optimisation levels of the Wilson clover operator\nfor varied grid sizes w/ {omp_places_str} {threadnumber} thr. on {host}")
 plt.xlabel("number of grid points")
 plt.ylabel("throughput in GiB/s")
 plt.grid()
@@ -61,5 +69,5 @@ plt.xscale("log")
 
 plt.xticks(grid_volumes,xlabels)
 
-plt.savefig(f"./test/testresults/clover_volthroughput_{host[0:3]}{host[-1]}_{omp_places}{threadnumber}thr{name_extension}.pdf")
+plt.savefig(f"./test/testresults/clover_volthroughput_{host[0:3]}{host[-1]}_{omp_places}{threadnumber}thr{name_extension}{titlestr}.pdf")
 
