@@ -6,7 +6,7 @@ import numpy as np
 plt.rcParams["font.family"] = "cmr10"
 plt.rcParams["mathtext.fontset"] = "cm"
 plt.rcParams["axes.formatter.use_mathtext"] = True
-plt.rcParams["font.size"] = 10
+plt.rcParams["font.size"] = 12
 
 
 
@@ -26,17 +26,34 @@ haswell_FLOP_p_s_avx = 4*4*4*3.3*10**9
 
 
 x = list(range(2,15))
-
+x2 = [0.2,0.5]+list(range(1,9))
 
 plt.figure()
 
 #plt.title(f"Roofline model for 4 cores of node 002 of HPD")
 
-# plt.plot(x,[hpd_4core_FLOP_p_s for _ in x], label="peak perf. on 4 cores")
-# #plt.plot(x,[hpd_8core_FLOP_p_s for _ in x], label="peak perf. w/ 8 thr. on 8 cores")
-# plt.plot(x,[hpd_bandwidth_B_p_s*xx for xx in x],label="bandwidth limited peak perf. on 4 cores")
+plt.plot(x2,[hpd_4core_FLOP_p_s for _ in x2], label="peak perf. on 4 cores")
+#plt.plot(x,[hpd_8core_FLOP_p_s for _ in x], label="peak perf. w/ 8 thr. on 8 cores")
+plt.plot(x2,[hpd_bandwidth_B_p_s*xx for xx in x2],label="bandwidth limited peak perf. on 4 cores")
+
+plt.axvline(x=wilson_FLOP_per_byte,label=f"Intensity of the Wilson Dirac operator",color="red",linestyle='--')
+
+
+plt.legend()
+plt.xlabel("Intensity in FLOP/byte")
+plt.ylabel("Performance in FLOP/second")
+
+plt.xscale("log")
+plt.yscale("log")
+
+plt.grid()
+# plt.yticks(range(0,110,10))
+
+plt.savefig(f"./test/testresults/hpd2_base_roofline2.pdf")
 
 # roofline for my pc
+
+plt.figure(figsize=(7,4.8))
 
 plt.plot(x,[haswell_FLOP_p_s_avx for _ in x], label="peak perf.")
 plt.plot(x,[haswell_bandwidth_B_p_s*xx for xx in x],label="bandwidth limited peak perf.")
@@ -54,5 +71,5 @@ plt.yscale("log")
 plt.grid()
 # plt.yticks(range(0,110,10))
 
-plt.savefig(f"./test/testresults/pc1_base_roofline.pdf")
+plt.savefig(f"./test/testresults/pc1_base_roofline2.pdf")
 
