@@ -6,7 +6,7 @@ import numpy as np
 plt.rcParams["font.family"] = "cmr10"
 plt.rcParams["mathtext.fontset"] = "cm"
 plt.rcParams["axes.formatter.use_mathtext"] = True
-plt.rcParams["font.size"] = 12
+plt.rcParams["font.size"] = 13
 
 
 
@@ -25,10 +25,13 @@ haswell_FLOP_p_s_avx = 4*4*4*3.3*10**9
 
 
 
-x = list(range(2,15))
-x2 = [0.2,0.5]+list(range(1,9))
+# x = list(range(2,15))
+# x2 = [0.2,0.5]+list(range(1,9))
 
-plt.figure()
+x = [0.4,0.6]+list(range(1,17))
+x2 = x
+
+plt.figure(figsize=(7,4.8))
 
 #plt.title(f"Roofline model for 4 cores of node 002 of HPD")
 
@@ -45,11 +48,12 @@ plt.ylabel("Performance in FLOP/second")
 
 plt.xscale("log")
 plt.yscale("log")
+plt.ylim(7*10**9,1.5*10**12)
 
 plt.grid()
 # plt.yticks(range(0,110,10))
 
-plt.savefig(f"./test/testresults/hpd2_base_roofline2.pdf")
+plt.savefig(f"./test/testresults/hpd2_base_roofline3.pdf")
 
 # roofline for my pc
 
@@ -71,5 +75,5 @@ plt.yscale("log")
 plt.grid()
 # plt.yticks(range(0,110,10))
 
-plt.savefig(f"./test/testresults/pc1_base_roofline2.pdf")
+plt.savefig(f"./test/testresults/pc1_base_roofline3.pdf")
 
