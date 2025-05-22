@@ -71,6 +71,7 @@ plt.ylabel("Performance in FLOP/second")
 
 plt.xscale("log")
 plt.yscale("log")
+plt.ylim(7*10**9,1.5*10**12)
 
 plt.grid()
 # plt.yticks(range(0,110,10))
