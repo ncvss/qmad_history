@@ -11,6 +11,9 @@ at::Tensor dw_templ_mtsg_tmgsMhs_backw (const at::Tensor& U_tensor, const at::Te
 at::Tensor dw_templ_mtsg_tmsgMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& hops_tensor, double mass);
 
+at::Tensor dw_templbound_mtsg_tmsgMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                  const at::Tensor& hops_tensor, const at::Tensor& bound_tensor, double mass);
+
 
 at::Tensor dwc_templ_mtsg_tmgsMhns (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                     const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,

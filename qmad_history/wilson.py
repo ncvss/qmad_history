@@ -97,8 +97,10 @@ class wilson_hop_mtsg:
     """
     Dirac Wilson operator that creates a lookup table for the hops.
     The axes are U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    The normal boundary phases are 1 for all directions, but can be set to 1 or -1.
+    Most calls currently do not take different boundary phases
     """
-    def __init__(self, U, mass_parameter):
+    def __init__(self, U, mass_parameter, boundary_phases=[1,1,1,1]):
         self.U = U
         assert tuple(U.shape[5:7]) == (3,3,)
         assert U.shape[0] == 4
@@ -121,6 +123,18 @@ class wilson_hop_mtsg:
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
         self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+
+        # for every grid point, the phase for a hop in all 8 directions (negative and positive)
+        hop_phases = torch.ones(list(grid)+[8], dtype=torch.int8)
+        # for the sites at the lower boundary [0], a hop in negative direction has the phase
+        # for the sites at the upper boundary [-1], a hop in positive direction has the phase
+        for edge in range(2):
+            hop_phases[-edge,:,:,:,0+edge] = boundary_phases[0]
+            hop_phases[:,-edge,:,:,2+edge] = boundary_phases[1]
+            hop_phases[:,:,-edge,:,4+edge] = boundary_phases[2]
+            hop_phases[:,:,:,-edge,6+edge] = boundary_phases[3]
+        self.hop_phases = hop_phases
+        
 
     def __str__(self):
         return "dw_hop_mtsg"
@@ -146,11 +160,16 @@ class wilson_hop_mtsg:
     def templ_tmsgMhs(self, v):
         return torch.ops.qmad_history.dw_templ_mtsg_tmsgMhs(self.U, v, self.hop_inds,
                                                             self.mass_parameter)
+    def templbound_tmsgMhs(self, v):
+        return torch.ops.qmad_history.dw_templbound_mtsg_tmsgMhs(self.U, v, self.hop_inds, self.hop_phases,
+                                                            self.mass_parameter)
     
     def all_calls(self):
-        return [self.tMmgsh, self.tMgshm, self.tmgsMh] + ([self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs] if capab["vectorise"] else [])
+        return [self.tMmgsh, self.tMgshm, self.tmgsMh] + (
+            [self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs] if capab["vectorise"] else [])
     def all_call_names(self):
-        return ["tMmgsh", "tMgshm", "tmgsMh"] + (["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs"] if capab["vectorise"] else [])
+        return ["tMmgsh", "tMgshm", "tmgsMh"] + (
+            ["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs"] if capab["vectorise"] else [])
 
 
 class wilson_hop_tmgs:

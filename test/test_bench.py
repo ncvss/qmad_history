@@ -19,7 +19,7 @@ n_measurements = 500
 n_warmup = 20
 print("n_measurements =",n_measurements)
 
-lat_dim = [16,16,16,32]
+lat_dim = [16,8,8,16]
 print("lattice_dimensions =",lat_dim)
 
 rng = g.random("alltests")
@@ -48,7 +48,7 @@ dw_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":0.0,"csw_t":0.0,"
 
 dw_d = wilson.wilson_direct(U, mass)
 dw_eo = wilson.wilson_eo(U, mass)
-dw_ho = wilson.wilson_hop_mtsg(U, mass)
+dw_ho = wilson.wilson_hop_mtsg(U, mass, boundary_phases=[1,1,1,-1])
 dw_hn = wilson.wilson_hop_tmgs(U, mass)
 
 dw_roof = wilson_roofline.wilson_hop_mtsg_roofline(U, mass, lat_dim)

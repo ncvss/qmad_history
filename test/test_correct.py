@@ -165,6 +165,23 @@ for cc in check_correct:
     print(cc)
 
 
+# test correctness of boundary conditions
+print()
+boundconds = [[1,1,1,-1],[-1,1,-1,1]]
+for bound in boundconds:
+    print("check with boundary conditions", bound)
+
+    dw_g_b = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":0.0,"csw_t":0.0,"xi_0":1,"nu":1,
+                                                "isAnisotropic":False,"boundary_phases":bound,}, )
+    resgb = dw_g_b(v_g)
+    resgb_torch = torch.tensor(compat.lattice_to_array(resgb))
+
+    dw_h_b = wilson.wilson_hop_mtsg(U, mass, bound)
+    resbqm = dw_h_b.templbound_tmsgMhs(v)
+    print(str(dw_h_b)+".templbound_tmsgMhs:", torch.allclose(resgb_torch,resbqm))
+
+
+
 # test for correctness of gradients
 print("\ngradient check:")
 
