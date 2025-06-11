@@ -178,7 +178,19 @@ for bound in boundconds:
 
     dw_h_b = wilson.wilson_hop_mtsg(U, mass, bound)
     resbqm = dw_h_b.templbound_tmsgMhs(v)
+    resUb = dw_h_b.templUbound_tmsgMhs(v)
+
     print(str(dw_h_b)+".templbound_tmsgMhs:", torch.allclose(resgb_torch,resbqm))
+    print(str(dw_h_b)+".templUbound_tmsgMhs:", torch.allclose(resgb_torch,resUb))
+
+    dwc_g_b = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
+                                                "isAnisotropic":False,"boundary_phases":bound,}, )
+    resgbc = dwc_g_b(v_g)
+    resgbc_torch = torch.tensor(compat.lattice_to_array(resgbc))
+
+    dwc_b = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw, bound)
+    rescUb = dwc_b.Ubound_tmngsMhs(v)
+    print(str(dwc_b)+".Ubound_tmngsMhs:", torch.allclose(rescUb,resgbc_torch))
 
 
 

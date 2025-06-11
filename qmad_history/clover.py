@@ -498,7 +498,7 @@ class wilson_clover_hop_mtsg_sigpre:
     and only the upper triangle of two 6x6 blocks is passed for the field strength.
     The hops are precomputed.
     """
-    def __init__(self, U, mass_parameter, csw):
+    def __init__(self, U, mass_parameter, csw, boundary_phases=[1,1,1,1]):
         assert tuple(U.shape[5:7]) == (3,3,)
         assert U.shape[0] == 4
         self.mass_parameter = mass_parameter
@@ -572,6 +572,14 @@ class wilson_clover_hop_mtsg_sigpre:
 
         # print(self.fs[0,0,2,2])
 
+        # implementation of the phases: multiply the gauge field at the boundary with the phase
+        phase_U = U.clone()
+        phase_U[0,-1] *= boundary_phases[0]
+        phase_U[1,:,-1] *= boundary_phases[1]
+        phase_U[2,:,:,-1] *= boundary_phases[2]
+        phase_U[3,:,:,:,-1] *= boundary_phases[3]
+        self.phase_U = phase_U
+
     def __str__(self):
         return "dwc_sigpre_hop_mtsg"
         
@@ -579,11 +587,14 @@ class wilson_clover_hop_mtsg_sigpre:
         return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.U, v, self.field_strength_sigma,
                                                              self.hop_inds, self.mass_parameter)
         #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
+    def Ubound_tmngsMhs (self, v):
+        return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.phase_U, v, self.field_strength_sigma,
+                                                             self.hop_inds, self.mass_parameter)
 
     def all_calls(self):
-        return [] + ([self.tmngsMhs] if capab["vectorise"] else [])
+        return [] + ([self.tmngsMhs, self.Ubound_tmngsMhs] if capab["vectorise"] else [])
     def all_call_names(self):
-        return [] + (["tmngsMhs"] if capab["vectorise"] else [])
+        return [] + (["tmngsMhs", "Ubound_tmngsMhs"] if capab["vectorise"] else [])
 
 
 class wilson_clover_hop_mtsgt2_sigpre:

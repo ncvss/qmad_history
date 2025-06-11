@@ -134,6 +134,14 @@ class wilson_hop_mtsg:
             hop_phases[:,:,-edge,:,4+edge] = boundary_phases[2]
             hop_phases[:,:,:,-edge,6+edge] = boundary_phases[3]
         self.hop_phases = hop_phases
+
+        # different implementation of the phases: multiply the gauge field at the boundary with the phase
+        phase_U = U.clone()
+        phase_U[0,-1] *= boundary_phases[0]
+        phase_U[1,:,-1] *= boundary_phases[1]
+        phase_U[2,:,:,-1] *= boundary_phases[2]
+        phase_U[3,:,:,:,-1] *= boundary_phases[3]
+        self.phase_U = phase_U
         
 
     def __str__(self):
@@ -163,13 +171,16 @@ class wilson_hop_mtsg:
     def templbound_tmsgMhs(self, v):
         return torch.ops.qmad_history.dw_templbound_mtsg_tmsgMhs(self.U, v, self.hop_inds, self.hop_phases,
                                                             self.mass_parameter)
+    def templUbound_tmsgMhs(self, v):
+        return torch.ops.qmad_history.dw_templ_mtsg_tmsgMhs(self.phase_U, v, self.hop_inds,
+                                                            self.mass_parameter)
     
     def all_calls(self):
         return [self.tMmgsh, self.tMgshm, self.tmgsMh] + (
-            [self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs] if capab["vectorise"] else [])
+            [self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs, self.templUbound_tmsgMhs] if capab["vectorise"] else [])
     def all_call_names(self):
         return ["tMmgsh", "tMgshm", "tmgsMh"] + (
-            ["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs"] if capab["vectorise"] else [])
+            ["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs", "templUbound_tmsgMhs"] if capab["vectorise"] else [])
 
 
 class wilson_hop_tmgs:
