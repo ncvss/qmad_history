@@ -1,0 +1,30 @@
+# test if operator works on a cuda machine
+# and if the output is then correct
+
+import torch
+import qmad_history
+
+lat_dim = [8,8,8,16]
+cuda0 = torch.device("cuda:0")
+mass = -0.5
+
+print("test if wilson dirac operator works on cuda the same as on cpu")
+print("lattice:", lat_dim)
+print("mass:",mass)
+
+U = torch.randn([4]+lat_dim+[3,3], dtype=torch.cdouble)
+v = torch.randn(lat_dim+[4,3], dtype=torch.cdouble)
+
+Ucu = U.to(cuda0)
+vcu = v.to(cuda0)
+
+w_cpu = qmad_history.wilson.wilson_hop_mtsg(U, mass)
+w_cu = qmad_history.wilson.wilson_hop_mtsg(Ucu, mass)
+
+res = w_cpu.tmsgMh(v)
+rescu = w_cu.tmsgMh(vcu)
+
+rescu_back = rescu.cpu()
+
+print("cpu and cuda computations equal:", torch.allclose(res,rescu_back))
+
