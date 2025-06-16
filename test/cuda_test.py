@@ -2,7 +2,7 @@
 # and if the output is then correct
 
 import torch
-import qmad_history
+import qmad_history.wilson
 
 lat_dim = [8,8,8,16]
 cuda0 = torch.device("cuda:0")
