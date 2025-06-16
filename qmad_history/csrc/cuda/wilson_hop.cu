@@ -16,8 +16,8 @@
 
 namespace qmad_history {
 
-__global__ void dw_hop_mtsg_tmsgMh_kernel(const <c10::complex<double>> * U, const <c10::complex<double>> * v,
-                                          const int32_t * hops, double mass, <c10::complex<double>> * result, int vol) {
+__global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, double mass, c10::complex<double> * result, int vol) {
     int t = blockIdx.x * blockDim.x + threadIdx.x;
     if (t < vol){
         // mass term and mu = 0 term in same loop to minimize result access
@@ -91,10 +91,10 @@ at::Tensor dw_hop_mtsg_tmsgMh_cu (const at::Tensor& U_ten, const at::Tensor& v_t
     int vol = hops_ten.size(0);
 
     at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
-    const <c10::complex<double>>* U = U_ten.const_data_ptr<c10::complex<double>>();
-    const <c10::complex<double>>* v = v_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
-    <c10::complex<double>>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+    c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
     // allocate one thread for each site, in 1024-thread blocks
     dw_hop_mtsg_tmsgMh_kernel<<<(vol+1023)/1024,1024>>>(U,v,hops,mass,result,vol);
