@@ -98,6 +98,9 @@ at::Tensor dw_hop_mtsg_tmsgMh_cu (const at::Tensor& U_ten, const at::Tensor& v_t
 
     // allocate one thread for each site, in 1024-thread blocks
     dw_hop_mtsg_tmsgMh_kernel<<<(vol+1023)/1024,1024>>>(U,v,hops,mass,result,vol);
+    // alternatively: do not allocate more than 40 blocks (number of streaming multiprocessors)
+    // int blocknum = (vol+1023)/1024;
+    // if (blocknum > 40) blocknum = 40;
 
     return result_ten;
 }

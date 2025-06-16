@@ -37,6 +37,7 @@ TORCH_LIBRARY(qmad_history, m) {
     m.def("dw_hop_mtsg_tMmgsh(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
     m.def("dw_hop_mtsg_tMgshm(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
     m.def("dw_hop_mtsg_tmgsMh(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
+    m.def("dw_hop_mtsg_tmsgMh(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
 
     m.def("dw_hop_tmgs_tMmghs(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
     m.def("dw_hop_tmgs_tMmgsh(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
@@ -93,6 +94,7 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
     m.impl("dw_hop_mtsg_tMmgsh", &dw_hop_mtsg_tMmgsh);
     m.impl("dw_hop_mtsg_tMgshm", &dw_hop_mtsg_tMgshm);
     m.impl("dw_hop_mtsg_tmgsMh", &dw_hop_mtsg_tmgsMh);
+    m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh);
 
     m.impl("dw_hop_tmgs_tMmghs", &dw_hop_tmgs_tMmghs);
     m.impl("dw_hop_tmgs_tMmgsh", &dw_hop_tmgs_tMmgsh);
