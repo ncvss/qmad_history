@@ -110,9 +110,9 @@ class wilson_hop_mtsg:
         # device of U must be the device of all other tensors
 
         grid = U.shape[1:5]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32, device=op_device)
+        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
         npind = np.indices(grid, sparse=False)
-        indices = torch.tensor(npind, dtype=torch.int32, device=op_device).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
+        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
 
         hop_inds = []
         for coord in range(4):
@@ -125,10 +125,10 @@ class wilson_hop_mtsg:
             # compute flattened index by dot product with strides
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(op_device)
 
         # for every grid point, the phase for a hop in all 8 directions (negative and positive)
-        hop_phases = torch.ones(list(grid)+[8], dtype=torch.int8, device=op_device)
+        hop_phases = torch.ones(list(grid)+[8], dtype=torch.int8)
         # for the sites at the lower boundary [0], a hop in negative direction has the phase
         # for the sites at the upper boundary [-1], a hop in positive direction has the phase
         for edge in range(2):
@@ -136,7 +136,7 @@ class wilson_hop_mtsg:
             hop_phases[:,-edge,:,:,2+edge] = boundary_phases[1]
             hop_phases[:,:,-edge,:,4+edge] = boundary_phases[2]
             hop_phases[:,:,:,-edge,6+edge] = boundary_phases[3]
-        self.hop_phases = hop_phases
+        self.hop_phases = hop_phases.to(op_device)
 
         # different implementation of the phases: multiply the gauge field at the boundary with the phase
         phase_U = U.clone()
