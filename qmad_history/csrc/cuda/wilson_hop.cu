@@ -29,7 +29,7 @@ __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const 
                 for (int gi = 0; gi < 3; gi++){
                     
                     result[vixo(t,g,s)] += (
-                        std::cuda::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                        cuda::std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                         * (
                             -v[vixo(hops[hix(t,mu,0)],gi,s)]
                             -gamf[mu][s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu][s])]
@@ -50,7 +50,7 @@ __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const 
                     for (int gi = 0; gi < 3; gi++){
                         
                         result[vixo(t,g,s)] += (
-                            std::cuda::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                            cuda::std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                             * (
                                 -v[vixo(hops[hix(t,mu,0)],gi,s)]
                                 -gamf[mu][s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu][s])]
