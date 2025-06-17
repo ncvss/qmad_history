@@ -25,7 +25,7 @@ w_cu = qmad_history.wilson.wilson_hop_mtsg(Ucu, mass)
 
 cpust = time.perf_counter_ns()
 for i in range(n_reps):
-    res = w_cpu.tmsgMh(v)
+    res = w_cpu.templ_tmsgMhs(v)
 cpuen = time.perf_counter_ns()
 
 torch.cuda.synchronize()
@@ -38,5 +38,5 @@ cuen = time.perf_counter_ns()
 rescu_back = rescu.cpu()
 
 print("cpu and cuda computations equal:", torch.allclose(res,rescu_back))
-print("cpu time per call in us:",(cpuen-cpust)/1000/n_reps)
+print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
 print("cuda time per call in us:",(cuen-cust)/1000/n_reps)
