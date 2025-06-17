@@ -13,7 +13,7 @@ at::Tensor dw_hop_mtsg_tMgshm (const at::Tensor& U_ten, const at::Tensor& v_ten,
 at::Tensor dw_hop_mtsg_tmgsMh (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                const at::Tensor& hops_ten, double mass);
 
-at::Tensor dw_hop_mtsg_tmsgMh (const at::Tensor& U_ten, const at::Tensor& v_ten,
+at::Tensor dw_hop_mtsg_tmsgMh_cpu (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                const at::Tensor& hops_ten, double mass);
 
 

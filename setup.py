@@ -20,8 +20,8 @@ else:
 
 
 def get_extensions():
-    use_cuda_st = True
-    use_cuda = use_cuda_st and torch.cuda.is_available() and CUDA_HOME is not None
+    use_cuda_hardcoded = True
+    use_cuda = use_cuda_hardcoded and torch.cuda.is_available() and CUDA_HOME is not None
     extension = CUDAExtension if use_cuda else CppExtension
 
     parallelise = True
@@ -40,8 +40,8 @@ def get_extensions():
     }
 
     this_dir = os.path.dirname(os.path.curdir)
-    extensions_dir = os.path.join(this_dir, library_name)
-    sources = list(glob.glob(os.path.join(extensions_dir, "csrc", "*.cpp")))
+    extensions_dir = os.path.join(this_dir, library_name, "csrc")
+    sources = list(glob.glob(os.path.join(extensions_dir, "*.cpp")))
 
     extensions_cuda_dir = os.path.join(extensions_dir, "cuda")
     cuda_sources = list(glob.glob(os.path.join(extensions_cuda_dir, "*.cu")))

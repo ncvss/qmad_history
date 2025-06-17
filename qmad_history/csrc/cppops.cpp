@@ -94,7 +94,7 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
     m.impl("dw_hop_mtsg_tMmgsh", &dw_hop_mtsg_tMmgsh);
     m.impl("dw_hop_mtsg_tMgshm", &dw_hop_mtsg_tMgshm);
     m.impl("dw_hop_mtsg_tmgsMh", &dw_hop_mtsg_tmgsMh);
-    m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh);
+    m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cpu);
 
     m.impl("dw_hop_tmgs_tMmghs", &dw_hop_tmgs_tMmghs);
     m.impl("dw_hop_tmgs_tMmgsh", &dw_hop_tmgs_tMmgsh);
