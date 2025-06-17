@@ -35,7 +35,6 @@ def get_extensions():
           + (["-march=native"] if vectorise else []),
         "nvcc": [
             "-O3",
-            "-fopenmp",
         ],
     }
 
