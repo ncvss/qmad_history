@@ -6,6 +6,7 @@
 
 #include <torch/extension.h>
 #include <omp.h>
+#include <iostream>
 
 #include "static/indexfunc_2.hpp"
 #include "static/gamma_1.hpp"
@@ -234,6 +235,8 @@ at::Tensor dw_hop_mtsg_tmsgMh_cpu (const at::Tensor& U_ten, const at::Tensor& v_
     const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+
+    //std::cout << "\n\n\n" << U_ten.scalar_type() << "\n\n\n";
 
 #pragma omp parallel for
     for (int t = 0; t < vol; t++){

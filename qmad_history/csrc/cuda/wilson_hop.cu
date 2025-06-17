@@ -4,15 +4,15 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <cuda/std/complex>
+//#include <cuda/std/complex>
 
 // .cuh ist die Endung für CUDA-Header, sie sind aber das gleiche wie .h
 #include "indexfunc_2.cuh"
 #include "gamma_1.cuh"
 
 // I do not know how complex numbers work in Pytorch CUDA
-// so I used the Pytorch C++ datatypes, but the std::cuda funciton for complex conjugate
-// this needs testing
+// so I used the Pytorch C++ datatypes, but the cuda::std funciton for complex conjugate
+// the test result: cuda::std does not work with this datatype
 
 namespace qmad_history {
 
@@ -29,7 +29,7 @@ __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const 
                 for (int gi = 0; gi < 3; gi++){
                     
                     result[vixo(t,g,s)] += (
-                        cuda::std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                        std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                         * (
                             -v[vixo(hops[hix(t,mu,0)],gi,s)]
                             -gamf[mu][s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu][s])]
@@ -50,7 +50,7 @@ __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const 
                     for (int gi = 0; gi < 3; gi++){
                         
                         result[vixo(t,g,s)] += (
-                            cuda::std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                            std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                             * (
                                 -v[vixo(hops[hix(t,mu,0)],gi,s)]
                                 -gamf[mu][s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu][s])]
