@@ -32,12 +32,12 @@ __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const 
                         std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                         * (
                             -v[vixo(hops[hix(t,mu,0)],gi,s)]
-                            -gamf[mu][s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu][s])]
+                            -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
                         )
                         + U[uixo(t,mu,g,gi,vol)]
                         * (
                             -v[vixo(hops[hix(t,mu,1)],gi,s)]
-                            +gamf[mu][s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu][s])]
+                            +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
                         )
                     ) * 0.5;
                 }
@@ -53,12 +53,12 @@ __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const 
                             std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                             * (
                                 -v[vixo(hops[hix(t,mu,0)],gi,s)]
-                                -gamf[mu][s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu][s])]
+                                -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
                             )
                             + U[uixo(t,mu,g,gi,vol)]
                             * (
                                 -v[vixo(hops[hix(t,mu,1)],gi,s)]
-                                +gamf[mu][s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu][s])]
+                                +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
                             )
                         ) * 0.5;
                     }

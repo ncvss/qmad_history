@@ -12,18 +12,18 @@ namespace qmad_history{
 // vmu_{i} = gamf[mu][i] * v_{gamx[mu][i]}
 
 // gamx[mu][i] is the spin component of v that is proportional to spin component i of gammamu @ v
-static const int gamx [4][4] =
-    {{3, 2, 1, 0},
-     {3, 2, 1, 0},
-     {2, 3, 0, 1},
-     {2, 3, 0, 1} };
+static __constant__ int gamx [4*4] =
+    {3, 2, 1, 0,
+     3, 2, 1, 0,
+     2, 3, 0, 1,
+     2, 3, 0, 1 };
 
 // gamf[mu][i] is the prefactor of spin component i of gammamu @ v
-static const c10::complex<double> gamf [4][4] =
-    {{c10::complex<double>(0, 1), c10::complex<double>(0, 1), c10::complex<double>(0,-1), c10::complex<double>(0,-1)},
-     { -1,   1,   1,  -1},
-     {c10::complex<double>(0, 1), c10::complex<double>(0,-1), c10::complex<double>(0,-1), c10::complex<double>(0, 1)},
-     {  1,   1,   1,   1} };
+static __constant__ c10::complex<double> gamf [4*4] =
+    {c10::complex<double>(0, 1), c10::complex<double>(0, 1), c10::complex<double>(0,-1), c10::complex<double>(0,-1),
+      -1,   1,   1,  -1,
+     c10::complex<double>(0, 1), c10::complex<double>(0,-1), c10::complex<double>(0,-1), c10::complex<double>(0, 1),
+       1,   1,   1,   1 };
 // gamf = [[ i, i,-i,-i],
 //         [-1, 1, 1,-1],
 //         [ i,-i,-i, i],
