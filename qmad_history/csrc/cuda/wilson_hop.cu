@@ -203,7 +203,7 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 // so considering it as two doubles should work
 // also, the thread index is now 2-dimensional
 
-__global__ gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+__global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, double * result, int vol, int mu){
 
     int t = blockIdx.x * blockDim.y + threadIdx.y;
@@ -269,11 +269,11 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     int blocknum = (vol*36+threadnum-1)/threadnum;
 
     // mass term
-    mass_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(v,mass,result,vol);
+    mass_mtsg_kernel<<<(vol*36+1023)/1024,1024>>>(v,mass,result,vol);
     // gauge transport terms
     gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,0);
     gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,1);
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_D,vol,2);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,2);
     gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,3);
 
 
