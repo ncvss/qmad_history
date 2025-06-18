@@ -212,8 +212,10 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
     int g = (sgcomp%9)/3;
     int gi = sgcomp%3;
 
+    c10::complex<double> gi_step;
+
     if (t<vol){
-        c10::complex<double> gi_step = (
+        gi_step = (
                 std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                 * (
                     -v[vixo(hops[hix(t,mu,0)],gi,s)]
@@ -225,10 +227,12 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
                     +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
                 )
             ) * 0.5;
+            
+        atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
+        atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
     }
 
-    atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
-    atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+    
 }
 
 
