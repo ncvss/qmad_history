@@ -75,6 +75,7 @@ TORCH_LIBRARY(qmad_history, m) {
     m.def("dw_templbound_mtsg_tmsgMhs(Tensor U_tensor, Tensor v_tensor, Tensor hops_tensor, Tensor bound_tensor, float mass) -> Tensor");
 
     m.def("dw_hop_mtsg_cuv2(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
+    m.def("dw_hop_mtsg_cuv3(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
 }
 
 // Registers backend implementations
