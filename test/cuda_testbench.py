@@ -42,10 +42,19 @@ for i in range(n_reps):
 torch.cuda.synchronize()
 cuen2 = time.perf_counter_ns()
 
+torch.cuda.synchronize()
+cust3 = time.perf_counter_ns()
+for i in range(n_reps):
+    rescu3 = w_cu.cuv3(vcu)
+torch.cuda.synchronize()
+cuen3 = time.perf_counter_ns()
+
 rescu_back = rescu.cpu()
 rescu2_back = rescu2.cpu()
+rescu3_back = rescu3.cpu()
 
-print("cpu and cuda computations equal:", torch.allclose(res,rescu_back) and torch.allclose(res,rescu2_back))
+print("cpu and cuda computations equal:", torch.allclose(res,rescu_back) and torch.allclose(res,rescu2_back) and torch.allclose(res,rescu3_back))
 print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
 print("cuda time per call in us:",(cuen-cust)/1000/n_reps)
 print("cuda v2 time per call in us:",(cuen2-cust2)/1000/n_reps)
+print("cuda v3 time per call in us:",(cuen3-cust3)/1000/n_reps)
