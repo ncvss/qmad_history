@@ -16,6 +16,9 @@
 
 namespace qmad_history {
 
+
+// naive implementation: simply put the entire cpu function inside the kernel
+// very bad performance
 __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, double mass, c10::complex<double> * result, int vol) {
     int t = blockIdx.x * blockDim.x + threadIdx.x;
@@ -106,9 +109,97 @@ at::Tensor dw_hop_mtsg_tmsgMh_cu (const at::Tensor& U_ten, const at::Tensor& v_t
 }
 
 
+
+// second guess: split the computation into different kernels
+// 1 thread is one output component now
+// this means changes in the components do not work
+// thus we need to compute t, g and s again
+
+__global__ void mass_mtsg_kernel (const c10::complex<double> * v, double mass, c10::complex<double> * result, int vol){
+    int comp = blockIdx.x * blockDim.x + threadIdx.x;
+    if (comp < vol*4*3){
+        result[comp] = (4.0 + mass) * v[comp];
+    }
+}
+
+__global__ void gaugeterms_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, c10::complex<double> * result, int vol, int mu){
+
+    int comp = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = comp/12;
+    int sgcomp = comp%12;
+    int s = sgcomp/3;
+    int g = sgcomp%3;
+
+    if (t<vol){
+        for (int gi = 0; gi < 3; gi++){
+            result[comp] += (
+                std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                * (
+                    -v[vixo(hops[hix(t,mu,0)],gi,s)]
+                    -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
+                )
+                + U[uixo(t,mu,g,gi,vol)]
+                * (
+                    -v[vixo(hops[hix(t,mu,1)],gi,s)]
+                    +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
+                )
+            ) * 0.5;
+        }
+    }
+
+}
+
+
+at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                  const at::Tensor& hops_ten, double mass){
+    
+    TORCH_CHECK(v_ten.dim() == 6);
+    TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
+    TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
+    TORCH_CHECK(U_ten.size(3) == v_ten.size(2));
+    TORCH_CHECK(U_ten.size(4) == v_ten.size(3));
+    TORCH_CHECK(v_ten.size(4) == 4);
+    TORCH_CHECK(v_ten.size(5) == 3);
+    
+    TORCH_CHECK(U_ten.is_contiguous());
+    TORCH_CHECK(v_ten.is_contiguous());
+    TORCH_CHECK(hops_ten.is_contiguous());
+
+    TORCH_INTERNAL_ASSERT(U_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(v_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(hops_ten.device().type() == at::DeviceType::CUDA);
+
+    int vol = hops_ten.size(0);
+    int vvol = vol*4*3;
+
+    at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
+    const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
+    const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
+    c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+
+    // allocate one thread for each vector component, in 1024-thread blocks
+    int threadnum = 1024;
+    int blocknum = (vvol+threadnum-1)/threadnum;
+
+    // mass term
+    mass_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(v,mass,result,vol);
+    // gauge transport terms
+    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,0);
+    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,1);
+    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,2);
+    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,3);
+
+
+    return result_ten;
+}
+
+
 // Registers CUDA implementations
 TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
   m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cu);
+  m.impl("dw_hop_mtsg_cuv2", &dw_hop_mtsg_cuv2);
 }
 // muss wirklich jeder CUDA-Operator eine Variante eines C++-Operators sein?
 

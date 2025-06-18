@@ -180,13 +180,20 @@ class wilson_hop_mtsg:
     def templUbound_tmsgMhs(self, v):
         return torch.ops.qmad_history.dw_templ_mtsg_tmsgMhs(self.phase_U, v, self.hop_inds,
                                                             self.mass_parameter)
+    def cuv2(self, v):
+        return torch.ops.qmad_history.dw_hop_mtsg_cuv2.default(self.U, v, self.hop_inds,
+                                                               self.mass_parameter)
     
     def all_calls(self):
         return [self.tMmgsh, self.tMgshm, self.tmgsMh, self.tmsgMh] + (
-            [self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs, self.templUbound_tmsgMhs] if capab["vectorise"] else [])
+            ([self.avx_tmgsMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs, self.templUbound_tmsgMhs] if capab["vectorise"] else [])
+            + ([self.cuv2,] if torch.cuda.is_available() else [])
+            )
     def all_call_names(self):
         return ["tMmgsh", "tMgshm", "tmgsMh", "tmsgMh"] + (
-            ["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs", "templUbound_tmsgMhs"] if capab["vectorise"] else [])
+            (["avx_tmgsMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs", "templUbound_tmsgMhs"] if capab["vectorise"] else [])
+            + (["cuv2",] if torch.cuda.is_available() else [])
+            )
 
 
 class wilson_hop_tmgs:
