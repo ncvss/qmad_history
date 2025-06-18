@@ -206,15 +206,16 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, double * result, int vol, int mu){
 
-    int t = blockIdx.x * blockDim.y + threadIdx.y;
-    int sgcomp = threadIdx.x;
-    int s = sgcomp/9;
-    int g = (sgcomp%9)/3;
-    int gi = sgcomp%3;
-
-    c10::complex<double> gi_step;
+    int t = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (t<vol){
+        int sgcomp = threadIdx.y;
+        int s = sgcomp/9;
+        int g = (sgcomp%9)/3;
+        int gi = sgcomp%3;
+
+        c10::complex<double> gi_step;
+
         gi_step = (
                 std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                 * (
@@ -227,7 +228,7 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
                     +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
                 )
             ) * 0.5;
-            
+
         atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
         atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
     }
@@ -266,14 +267,14 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     double * result_d = (double*) result;
 
     // allocate one thread for each vector component
-    // the x thread index (faster running) is the gsgi component (36 possible combinations)
-    // the y thread index are different sites (28 sites, 28*36=1008 maximum number that is <1024)
-    dim3 thread_partition = (36,28);
+    // the y thread index is the gsgi component (36 possible combinations)
+    // the x thread index are different sites (28 sites, 28*36=1008 is the maximum prod that is <1024)
+    dim3 thread_partition = (28,36);
     int threadnum = 36*28;
     int blocknum = (vol*36+threadnum-1)/threadnum;
 
     // mass term
-    mass_mtsg_kernel<<<(vol*36+1023)/1024,1024>>>(v,mass,result,vol);
+    mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
     // gauge transport terms
     gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,0);
     gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,1);

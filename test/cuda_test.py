@@ -24,9 +24,11 @@ w_cu = qmad_history.wilson.wilson_hop_mtsg(Ucu, mass)
 res = w_cpu.tmsgMh(v)
 rescu = w_cu.tmsgMh(vcu)
 rescuv2 = w_cu.cuv2(vcu)
+rescuv3 = w_cu.cuv3(vcu)
 
 rescu_back = rescu.cpu()
 rescuv2_b = rescuv2.cpu()
+rescuv3_b = rescuv3.cpu()
 
-print("cpu and cuda computations equal:", torch.allclose(res,rescu_back) and torch.allclose(res,rescuv2_b))
+print("cpu and cuda computations equal:", torch.allclose(res,rescu_back), torch.allclose(res,rescuv2_b), torch.allclose(res,rescuv3_b))
 

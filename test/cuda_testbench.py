@@ -53,7 +53,7 @@ rescu_back = rescu.cpu()
 rescu2_back = rescu2.cpu()
 rescu3_back = rescu3.cpu()
 
-print("cpu and cuda computations equal:", torch.allclose(res,rescu_back) and torch.allclose(res,rescu2_back) and torch.allclose(res,rescu3_back))
+print("cpu and cuda computations equal:", torch.allclose(res,rescu_back), torch.allclose(res,rescu2_back), torch.allclose(res,rescu3_back))
 print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
 print("cuda time per call in us:",(cuen-cust)/1000/n_reps)
 print("cuda v2 time per call in us:",(cuen2-cust2)/1000/n_reps)
