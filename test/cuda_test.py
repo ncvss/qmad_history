@@ -35,5 +35,7 @@ rescuv4_b = rescuv4.cpu()
 print("cpu and cuda computations equal:",
       torch.allclose(res,rescu_back), torch.allclose(res,rescuv2_b), torch.allclose(res,rescuv3_b), torch.allclose(res,rescuv4_b))
 
-print("difference in places:",torch.sum(torch.abs(res-rescuv4_b)>0.01))
-print(rescuv4_b[0,1,2,3])
+print("number of sites that differ:",torch.sum(torch.abs(res-rescuv4_b)>0.01))
+print("tensors:")
+print(res[0,1,2,4])
+print(rescuv4_b[0,1,2,4])
