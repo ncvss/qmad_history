@@ -35,12 +35,16 @@ for i in range(n_reps):
 torch.cuda.synchronize()
 cuen = time.perf_counter_ns()
 
+rescu_back = rescu.cpu()
+
 torch.cuda.synchronize()
 cust2 = time.perf_counter_ns()
 for i in range(n_reps):
     rescu2 = w_cu.cuv2(vcu)
 torch.cuda.synchronize()
 cuen2 = time.perf_counter_ns()
+
+rescu2_back = rescu2.cpu()
 
 torch.cuda.synchronize()
 cust3 = time.perf_counter_ns()
@@ -49,12 +53,22 @@ for i in range(n_reps):
 torch.cuda.synchronize()
 cuen3 = time.perf_counter_ns()
 
-rescu_back = rescu.cpu()
-rescu2_back = rescu2.cpu()
 rescu3_back = rescu3.cpu()
 
-print("cpu and cuda computations equal:", torch.allclose(res,rescu_back), torch.allclose(res,rescu2_back), torch.allclose(res,rescu3_back))
+torch.cuda.synchronize()
+cust4 = time.perf_counter_ns()
+for i in range(n_reps):
+    rescu4 = w_cu.cuv4(vcu)
+torch.cuda.synchronize()
+cuen4 = time.perf_counter_ns()
+
+rescu4_back = rescu4.cpu()
+
+
+print("cpu and cuda computations equal:",
+      torch.allclose(res,rescu_back), torch.allclose(res,rescu2_back), torch.allclose(res,rescu3_back), torch.allclose(res,rescu4_back))
 print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
 print("cuda time per call in us:",(cuen-cust)/1000/n_reps)
 print("cuda v2 time per call in us:",(cuen2-cust2)/1000/n_reps)
 print("cuda v3 time per call in us:",(cuen3-cust3)/1000/n_reps)
+print("cuda v3 time per call in us:",(cuen4-cust4)/1000/n_reps)

@@ -44,11 +44,11 @@ print("number of sites that are the same:",torch.sum(differsites))
 #             print("all correct at x,y,z=",x,y,z,":",torch.all(differsites[x,y,z]))
 
 # test how the tensor looks like
-swaps = 0
-diffflat = torch.flatten(differsites)
-for i in range(torch.numel(diffflat)-1):
-    if diffflat[i] != diffflat[i+1]:
-        swaps += 1
-        print("swap at",i)
+# swaps = 0
+# diffflat = torch.flatten(differsites)
+# for i in range(torch.numel(diffflat)-1):
+#     if diffflat[i] != diffflat[i+1]:
+#         swaps += 1
+#         print("swap at",i)
 
-print("correctness swaps at the following number of spots:",swaps)
+# print("correctness swaps at the following number of spots:",swaps)
