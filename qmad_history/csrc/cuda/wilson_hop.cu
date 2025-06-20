@@ -237,8 +237,32 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
         result[vixo(t,g,s)] += gi_step;
 
     }
+}
 
-    
+__global__ void gaugeterms_mtsg_gi2_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, c10::complex<double> * result, int vol, int mu, int gi){
+
+    int comp = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = comp/12;
+
+    if (t<vol){
+        int sgcomp = comp%12;
+        int s = sgcomp/3;
+        int g = sgcomp%3;
+        result[comp] += (
+            std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+            * (
+                -v[vixo(hops[hix(t,mu,0)],gi,s)]
+                -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
+            )
+            + U[uixo(t,mu,g,gi,vol)]
+            * (
+                -v[vixo(hops[hix(t,mu,1)],gi,s)]
+                +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
+            )
+        ) * 0.5;
+    }
+
 }
 
 
@@ -269,7 +293,7 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
-    double * result_d = (double*) result;
+    // double * result_d = (double*) result;
 
     // allocate one thread for each vector component
     // the y thread index is the gsgi component (36 possible combinations)
@@ -278,15 +302,27 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // const int threadnum = 36*28;
     int threadnum = 1024;
     int thread_partition = threadnum;
-    int blocknum = (vol*36+threadnum-1)/threadnum;
+    // int blocknum = (vol*36+threadnum-1)/threadnum;
+    int blocknum = (vol*12+1023)/1024;
 
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
     // gauge transport terms
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,0);
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,1);
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,2);
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,0,0);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,0,1);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,0,2);
+
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,1,0);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,1,1);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,1,2);
+
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,2,0);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,1);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,2,2);
+
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,0);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,1);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,2);
 
 
     return result_ten;
