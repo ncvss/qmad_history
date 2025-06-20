@@ -465,7 +465,7 @@ __global__ void gaugeterms_gimu_mtsg_kernel (const c10::complex<double> * U, con
     int t = compstep/(4*4*3*3);
 
     if (t<vol){
-        int sgmucomp = compstep%(4*4*3*3)
+        int sgmucomp = compstep%(4*4*3*3);
         int mu = sgmucomp/4;
         int sgcomp = sgmucomp%36;
         int s = sgcomp/9;
