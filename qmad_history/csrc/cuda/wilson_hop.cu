@@ -196,7 +196,35 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 }
 
 
-// try 3: use atomic add to also unroll the gi loop
+// try 3 (inserted for debug): unroll the gi loop
+
+__global__ void gaugeterms_mtsg_gi2_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, c10::complex<double> * result, int vol, int mu, int gi){
+
+    int comp = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = comp/12;
+
+    if (t<vol){
+        int sgcomp = comp%12;
+        int s = sgcomp/3;
+        int g = sgcomp%3;
+        result[comp] += (
+            std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+            * (
+                -v[vixo(hops[hix(t,mu,0)],gi,s)]
+                -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
+            )
+            + U[uixo(t,mu,g,gi,vol)]
+            * (
+                -v[vixo(hops[hix(t,mu,1)],gi,s)]
+                +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
+            )
+        ) * 0.5;
+    }
+
+}
+
+// try 4: use atomic add to also unroll the gi loop
 // mass term is the same
 // problem: atomics do not exist for complex numbers
 // however, the real and imaginary component of the output are independent
@@ -204,7 +232,7 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 // also, the thread index is now 2-dimensional
 
 __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
-                                          const int32_t * hops, c10::complex<double> * result, int vol, int mu){
+                                          const int32_t * hops, double * result, int vol, int mu){
 
     //int t = blockIdx.x * 28 + threadIdx.x;
     int compstep = blockIdx.x * blockDim.x + threadIdx.x;
@@ -232,37 +260,11 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
                 )
             ) * 0.5;
 
-        // atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
-        // atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
-        result[vixo(t,g,s)] += gi_step;
+        atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
+        atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+        // result[vixo(t,g,s)] += gi_step;
 
     }
-}
-
-__global__ void gaugeterms_mtsg_gi2_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
-                                          const int32_t * hops, c10::complex<double> * result, int vol, int mu, int gi){
-
-    int comp = blockIdx.x * blockDim.x + threadIdx.x;
-    int t = comp/12;
-
-    if (t<vol){
-        int sgcomp = comp%12;
-        int s = sgcomp/3;
-        int g = sgcomp%3;
-        result[comp] += (
-            std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
-            * (
-                -v[vixo(hops[hix(t,mu,0)],gi,s)]
-                -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
-            )
-            + U[uixo(t,mu,g,gi,vol)]
-            * (
-                -v[vixo(hops[hix(t,mu,1)],gi,s)]
-                +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
-            )
-        ) * 0.5;
-    }
-
 }
 
 
@@ -329,11 +331,64 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 }
 
 
+at::Tensor dw_hop_mtsg_cuv4 (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                  const at::Tensor& hops_ten, double mass){
+    
+    TORCH_CHECK(v_ten.dim() == 6);
+    TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
+    TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
+    TORCH_CHECK(U_ten.size(3) == v_ten.size(2));
+    TORCH_CHECK(U_ten.size(4) == v_ten.size(3));
+    TORCH_CHECK(v_ten.size(4) == 4);
+    TORCH_CHECK(v_ten.size(5) == 3);
+    
+    TORCH_CHECK(U_ten.is_contiguous());
+    TORCH_CHECK(v_ten.is_contiguous());
+    TORCH_CHECK(hops_ten.is_contiguous());
+
+    TORCH_INTERNAL_ASSERT(U_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(v_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(hops_ten.device().type() == at::DeviceType::CUDA);
+
+    int vol = hops_ten.size(0);
+    //int vvol = vol*4*3;
+
+    at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
+    const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
+    const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
+    c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+    double * result_d = (double*) result;
+
+    // allocate one thread for each vector component
+    // the y thread index is the gsgi component (36 possible combinations)
+    // the x thread index are different sites (28 sites, 28*36=1008 is the maximum prod that is <1024)
+    // dim3 thread_partition = (28,36);
+    // const int threadnum = 36*28;
+    int threadnum = 1024;
+    int thread_partition = threadnum;
+    // int blocknum = (vol*36+threadnum-1)/threadnum;
+    int blocknum = (vol*12+1023)/1024;
+
+    // mass term
+    mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
+    // gauge transport terms
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,0);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,1);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,2);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,3);
+
+    return result_ten;
+}
+
+
+
 // Registers CUDA implementations
 TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
   m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cu);
   m.impl("dw_hop_mtsg_cuv2", &dw_hop_mtsg_cuv2);
   m.impl("dw_hop_mtsg_cuv3", &dw_hop_mtsg_cuv3);
+  m.impl("dw_hop_mtsg_cuv4", &dw_hop_mtsg_cuv4);
 }
 // muss wirklich jeder CUDA-Operator eine Variante eines C++-Operators sein?
 
