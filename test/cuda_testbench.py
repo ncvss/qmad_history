@@ -8,7 +8,7 @@ print("do a very simple benchmark try")
 lat_dim = [16,16,8,16]
 cuda0 = torch.device("cuda:0")
 mass = -0.5
-n_reps = 10000
+n_reps = 2000
 print("lattice:", lat_dim)
 print("mass:",mass)
 print("number of calls:",n_reps)
@@ -64,11 +64,22 @@ cuen4 = time.perf_counter_ns()
 
 rescu4_back = rescu4.cpu()
 
+torch.cuda.synchronize()
+cust5 = time.perf_counter_ns()
+for i in range(n_reps):
+    rescu5 = w_cu.cuv5(vcu)
+torch.cuda.synchronize()
+cuen5 = time.perf_counter_ns()
+
+rescu5_back = rescu5.cpu()
+
 
 print("cpu and cuda computations equal:",
-      torch.allclose(res,rescu_back), torch.allclose(res,rescu2_back), torch.allclose(res,rescu3_back), torch.allclose(res,rescu4_back))
+      torch.allclose(res,rescu_back), torch.allclose(res,rescu2_back), torch.allclose(res,rescu3_back),
+      torch.allclose(res,rescu4_back), torch.allclose(res,rescu5_back))
 print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
 print("cuda time per call in us:",(cuen-cust)/1000/n_reps)
 print("cuda v2 time per call in us:",(cuen2-cust2)/1000/n_reps)
 print("cuda v3 time per call in us:",(cuen3-cust3)/1000/n_reps)
-print("cuda v3 time per call in us:",(cuen4-cust4)/1000/n_reps)
+print("cuda v4 time per call in us:",(cuen4-cust4)/1000/n_reps)
+print("cuda v5 time per call in us:",(cuen5-cust5)/1000/n_reps)
