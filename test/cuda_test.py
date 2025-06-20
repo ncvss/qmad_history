@@ -48,4 +48,4 @@ print(res[5,5,5,4])
 print(rescuv4_b[5,5,5,4])
 
 print("tensor of differing sites:")
-print(differsites[0,0,0])
+print(differsites[0,1,2])
