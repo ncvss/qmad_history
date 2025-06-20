@@ -204,7 +204,7 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 // also, the thread index is now 2-dimensional
 
 __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
-                                          const int32_t * hops, const c10::complex<double> * result, int vol, int mu){
+                                          const int32_t * hops, c10::complex<double> * result, int vol, int mu){
 
     int t = blockIdx.x * 28 + threadIdx.x;
 
