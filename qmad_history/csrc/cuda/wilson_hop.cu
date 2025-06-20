@@ -224,49 +224,6 @@ __global__ void gaugeterms_mtsg_gi2_kernel (const c10::complex<double> * U, cons
 
 }
 
-// try 4: use atomic add to also unroll the gi loop
-// mass term is the same
-// problem: atomics do not exist for complex numbers
-// however, the real and imaginary component of the output are independent
-// so considering it as two doubles should work
-// also, the thread index is now 2-dimensional
-
-__global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
-                                          const int32_t * hops, double * result, int vol, int mu){
-
-    //int t = blockIdx.x * 28 + threadIdx.x;
-    int compstep = blockIdx.x * blockDim.x + threadIdx.x;
-    int t = compstep/36;
-
-    if (t<vol){
-        //int sgcomp = threadIdx.y;
-        int sgcomp = compstep%36;
-        int s = sgcomp/9;
-        int g = (sgcomp%9)/3;
-        int gi = sgcomp%3;
-
-        c10::complex<double> gi_step;
-
-        gi_step = (
-                std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
-                * (
-                    -v[vixo(hops[hix(t,mu,0)],gi,s)]
-                    -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
-                )
-                + U[uixo(t,mu,g,gi,vol)]
-                * (
-                    -v[vixo(hops[hix(t,mu,1)],gi,s)]
-                    +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
-                )
-            ) * 0.5;
-
-        atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
-        atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
-        // result[vixo(t,g,s)] += gi_step;
-
-    }
-}
-
 
 at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                   const at::Tensor& hops_ten, double mass){
@@ -328,6 +285,50 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 
 
     return result_ten;
+}
+
+
+// try 4: use atomic add to also unroll the gi loop
+// mass term is the same
+// problem: atomics do not exist for complex numbers
+// however, the real and imaginary component of the output are independent
+// so considering it as two doubles should work
+// also, the thread index is now 2-dimensional
+
+__global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, double * result, int vol, int mu){
+
+    //int t = blockIdx.x * 28 + threadIdx.x;
+    int compstep = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = compstep/36;
+
+    if (t<vol){
+        //int sgcomp = threadIdx.y;
+        int sgcomp = compstep%36;
+        int s = sgcomp/9;
+        int g = (sgcomp%9)/3;
+        int gi = sgcomp%3;
+
+        c10::complex<double> gi_step;
+
+        gi_step = (
+                std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                * (
+                    -v[vixo(hops[hix(t,mu,0)],gi,s)]
+                    -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
+                )
+                + U[uixo(t,mu,g,gi,vol)]
+                * (
+                    -v[vixo(hops[hix(t,mu,1)],gi,s)]
+                    +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
+                )
+            ) * 0.5;
+
+        atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
+        atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+        // result[vixo(t,g,s)] += gi_step;
+
+    }
 }
 
 
