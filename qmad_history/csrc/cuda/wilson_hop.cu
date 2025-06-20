@@ -443,7 +443,7 @@ at::Tensor dw_hop_mtsg_cuv5 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // the y index is s
     // the z thread index are different sites (28 sites, 28*36=1008 is the maximum prod that is <1024)
     int threadnum = 9*4*28;
-    dim3 thread_partition = (9,4,28);
+    dim3 thread_partition (9,4,28);
     int blocknum = (vol*36+threadnum-1)/threadnum;
 
     // mass term
