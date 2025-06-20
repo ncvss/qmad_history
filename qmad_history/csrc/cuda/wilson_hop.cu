@@ -317,7 +317,7 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,1,2);
 
     gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,2,0);
-    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,1);
+    gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,2,1);
     gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,2,2);
 
     gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,0);
