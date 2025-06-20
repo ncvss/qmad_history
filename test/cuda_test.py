@@ -38,7 +38,16 @@ print("cpu and cuda computations equal:",
 differsites = (torch.abs(res-rescuv4_b)<0.01)
 print("number of sites that are the same:",torch.sum(differsites))
 
-for x in range(8):
-    for y in range(8):
-        for z in range(8):
-            print("all correct at x,y,z=",x,y,z,":",torch.all(differsites[x,y,z]))
+# for x in range(8):
+#     for y in range(8):
+#         for z in range(8):
+#             print("all correct at x,y,z=",x,y,z,":",torch.all(differsites[x,y,z]))
+
+# test how the tensor looks like
+swaps = 0
+diffflat = torch.flatten(differsites)
+for i in range(diffflat.nelements()-1):
+    if diffflat[i] != diffflat[i+1]:
+        swaps += 1
+
+print("correctness swaps at the following number of spots:",swaps)
