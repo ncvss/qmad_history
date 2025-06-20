@@ -206,10 +206,13 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, c10::complex<double> * result, int vol, int mu){
 
-    int t = blockIdx.x * 28 + threadIdx.y;
+    //int t = blockIdx.x * 28 + threadIdx.x;
+    int compstep = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = compstep/36;
 
     if (t<vol){
-        int sgcomp = threadIdx.x;
+        //int sgcomp = threadIdx.y;
+        int sgcomp = compstep%36;
         int s = sgcomp/9;
         int g = (sgcomp%9)/3;
         int gi = sgcomp%3;
@@ -271,8 +274,10 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // allocate one thread for each vector component
     // the y thread index is the gsgi component (36 possible combinations)
     // the x thread index are different sites (28 sites, 28*36=1008 is the maximum prod that is <1024)
-    dim3 thread_partition = (28,36);
-    const int threadnum = 36*28;
+    // dim3 thread_partition = (28,36);
+    // const int threadnum = 36*28;
+    int threadnum = 1024;
+    int thread_partition = threadnum;
     int blocknum = (vol*36+threadnum-1)/threadnum;
 
     // mass term
