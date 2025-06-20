@@ -369,7 +369,7 @@ at::Tensor dw_hop_mtsg_cuv4 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     int threadnum = 1024;
     int thread_partition = threadnum;
     // int blocknum = (vol*36+threadnum-1)/threadnum;
-    int blocknum = (vol*12+1023)/1024;
+    int blocknum = (vol*36+1023)/1024;
 
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
