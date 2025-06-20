@@ -46,7 +46,7 @@ print("number of sites that are the same:",torch.sum(differsites))
 # test how the tensor looks like
 swaps = 0
 diffflat = torch.flatten(differsites)
-for i in range(diffflat.nelements()-1):
+for i in range(diffflat.nelement()-1):
     if diffflat[i] != diffflat[i+1]:
         swaps += 1
 
