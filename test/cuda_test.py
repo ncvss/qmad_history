@@ -22,18 +22,23 @@ w_cpu = qmad_history.wilson.wilson_hop_mtsg(U, mass)
 w_cu = qmad_history.wilson.wilson_hop_mtsg(Ucu, mass)
 
 res = w_cpu.tmsgMh(v)
-rescu = w_cu.tmsgMh(vcu)
-rescuv2 = w_cu.cuv2(vcu)
-rescuv3 = w_cu.cuv3(vcu)
-rescuv4 = w_cu.cuv4(vcu)
-rescuv5 = w_cu.cuv5(vcu)
-rescuv6 = w_cu.cuv6(vcu)
 
+rescu = w_cu.tmsgMh(vcu)
 rescu_back = rescu.cpu()
+
+rescuv2 = w_cu.cuv2(vcu)
 rescuv2_b = rescuv2.cpu()
+
+rescuv3 = w_cu.cuv3(vcu)
 rescuv3_b = rescuv3.cpu()
+
+rescuv4 = w_cu.cuv4(vcu)
 rescuv4_b = rescuv4.cpu()
+
+rescuv5 = w_cu.cuv5(vcu)
 rescuv5_b = rescuv5.cpu()
+
+rescuv6 = w_cu.cuv6(vcu)
 rescuv6_b = rescuv6.cpu()
 
 print("cpu and cuda computations equal:",
