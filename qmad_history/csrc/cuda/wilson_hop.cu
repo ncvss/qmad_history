@@ -127,11 +127,11 @@ __global__ void gaugeterms_mtsg_kernel (const c10::complex<double> * U, const c1
 
     int comp = blockIdx.x * blockDim.x + threadIdx.x;
     int t = comp/12;
-    int sgcomp = comp%12;
-    int s = sgcomp/3;
-    int g = sgcomp%3;
 
     if (t<vol){
+        int sgcomp = comp%12;
+        int s = sgcomp/3;
+        int g = sgcomp%3;
         for (int gi = 0; gi < 3; gi++){
             result[comp] += (
                 std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
@@ -204,9 +204,9 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 // also, the thread index is now 2-dimensional
 
 __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
-                                          const int32_t * hops, double * result, int vol, int mu){
+                                          const int32_t * hops, const c10::complex<double> * result, int vol, int mu){
 
-    int t = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = blockIdx.x * 28 + threadIdx.x;
 
     if (t<vol){
         int sgcomp = threadIdx.y;
@@ -229,8 +229,10 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
                 )
             ) * 0.5;
 
-        atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
-        atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+        // atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
+        // atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+        result[vixo(t,g,s)] += gi_step;
+
     }
 
     
@@ -270,16 +272,16 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // the y thread index is the gsgi component (36 possible combinations)
     // the x thread index are different sites (28 sites, 28*36=1008 is the maximum prod that is <1024)
     dim3 thread_partition = (28,36);
-    int threadnum = 36*28;
+    const int threadnum = 36*28;
     int blocknum = (vol*36+threadnum-1)/threadnum;
 
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
     // gauge transport terms
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,0);
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,1);
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,2);
-    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,3);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,0);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,1);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,2);
+    gaugeterms_gi_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3);
 
 
     return result_ten;
