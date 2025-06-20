@@ -206,10 +206,10 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, c10::complex<double> * result, int vol, int mu){
 
-    int t = blockIdx.x * 28 + threadIdx.x;
+    int t = blockIdx.x * 28 + threadIdx.y;
 
     if (t<vol){
-        int sgcomp = threadIdx.y;
+        int sgcomp = threadIdx.x;
         int s = sgcomp/9;
         int g = (sgcomp%9)/3;
         int gi = sgcomp%3;
