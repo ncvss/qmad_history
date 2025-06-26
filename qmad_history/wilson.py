@@ -195,6 +195,9 @@ class wilson_hop_mtsg:
     def cuv6(self, v):
         return torch.ops.qmad_history.dw_hop_mtsg_cuv6.default(self.U, v, self.hop_inds,
                                                                self.mass_parameter)
+    def cuv7(self, v):
+        return torch.ops.qmad_history.dw_hop_mtsg_cuv7.default(self.U, v, self.hop_inds,
+                                                               self.mass_parameter)
     
     def all_calls(self):
         return [self.tMmgsh, self.tMgshm, self.tmgsMh, self.tmsgMh] + (
