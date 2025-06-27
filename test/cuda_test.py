@@ -45,7 +45,7 @@ rescuv7 = w_cu.cuv7(vcu)
 rescuv7_b = rescuv7.cpu()
 
 rescuv8 = w_cu.cuv8(vcu)
-rescuv8_b = rescuv7.cpu()
+rescuv8_b = rescuv8.cpu()
 
 print("cpu and cuda computations equal:",
       torch.allclose(res,rescu_back), torch.allclose(res,rescuv2_b), torch.allclose(res,rescuv3_b),
