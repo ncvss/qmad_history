@@ -44,12 +44,15 @@ rescuv6_b = rescuv6.cpu()
 rescuv7 = w_cu.cuv7(vcu)
 rescuv7_b = rescuv7.cpu()
 
+rescuv8 = w_cu.cuv8(vcu)
+rescuv8_b = rescuv7.cpu()
+
 print("cpu and cuda computations equal:",
       torch.allclose(res,rescu_back), torch.allclose(res,rescuv2_b), torch.allclose(res,rescuv3_b),
       torch.allclose(res,rescuv4_b), torch.allclose(res,rescuv5_b), torch.allclose(res,rescuv6_b),
-      torch.allclose(res,rescuv7_b))
+      torch.allclose(res,rescuv7_b), torch.allclose(res,rescuv8_b))
 
-differsites = (torch.abs(res-rescuv7_b)<0.01)
+differsites = (torch.abs(res-rescuv8_b)<0.01)
 print("number of sites that are the same:",torch.sum(differsites))
 
 # for x in range(8):

@@ -94,11 +94,20 @@ cuen7 = time.perf_counter_ns()
 
 rescu7_back = rescu7.cpu()
 
+torch.cuda.synchronize()
+cust8 = time.perf_counter_ns()
+for i in range(n_reps):
+    rescu8 = w_cu.cuv8(vcu)
+torch.cuda.synchronize()
+cuen8 = time.perf_counter_ns()
+
+rescu8_back = rescu8.cpu()
+
 
 print("cpu and cuda computations equal:",
       torch.allclose(res,rescu_back), torch.allclose(res,rescu2_back), torch.allclose(res,rescu3_back),
       torch.allclose(res,rescu4_back), torch.allclose(res,rescu5_back), torch.allclose(res,rescu6_back),
-      torch.allclose(res,rescu7_back))
+      torch.allclose(res,rescu7_back), torch.allclose(res,rescu8_back), )
 print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
 print("cuda time per call in us:",(cuen-cust)/1000/n_reps)
 print("cuda v2 time per call in us:",(cuen2-cust2)/1000/n_reps)
@@ -107,3 +116,4 @@ print("cuda v4 time per call in us:",(cuen4-cust4)/1000/n_reps)
 print("cuda v5 time per call in us:",(cuen5-cust5)/1000/n_reps)
 print("cuda v6 time per call in us:",(cuen6-cust6)/1000/n_reps)
 print("cuda v7 time per call in us:",(cuen7-cust7)/1000/n_reps)
+print("cuda v8 time per call in us:",(cuen8-cust8)/1000/n_reps)

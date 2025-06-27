@@ -615,16 +615,99 @@ at::Tensor dw_hop_mtsg_cuv7 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 }
 
 
+// do 40 thread blocks again, this time with all 1024 threads
+// all threads are enough to compute 284 sites
+// the upper 64 threads are not used so that the musggi component stays the same
+__global__ void gaugeterms_gimu_tloop2_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, double * result, int vol){
+
+    int compstep = blockIdx.x * blockDim.x + threadIdx.x;
+    if (compstep < 40896){
+        int t0 = compstep/(4*4*3*3);
+        int stride = 284;
+        int sgmucomp = compstep%(4*4*3*3);
+        int mu = sgmucomp/36;
+        int sgcomp = sgmucomp%36;
+        int s = sgcomp/9;
+        int g = (sgcomp%9)/3;
+        int gi = sgcomp%3;
+
+        for (int t = t0; t < vol; t+=stride){
+            c10::complex<double> gi_step;
+
+            gi_step = (
+                    std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                    * (
+                        -v[vixo(hops[hix(t,mu,0)],gi,s)]
+                        -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
+                    )
+                    + U[uixo(t,mu,g,gi,vol)]
+                    * (
+                        -v[vixo(hops[hix(t,mu,1)],gi,s)]
+                        +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
+                    )
+                ) * 0.5;
+
+            atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
+            atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+        }
+    }
+}
+
+
+at::Tensor dw_hop_mtsg_cuv8 (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                  const at::Tensor& hops_ten, double mass){
+    
+    TORCH_CHECK(v_ten.dim() == 6);
+    TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
+    TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
+    TORCH_CHECK(U_ten.size(3) == v_ten.size(2));
+    TORCH_CHECK(U_ten.size(4) == v_ten.size(3));
+    TORCH_CHECK(v_ten.size(4) == 4);
+    TORCH_CHECK(v_ten.size(5) == 3);
+    
+    TORCH_CHECK(U_ten.is_contiguous());
+    TORCH_CHECK(v_ten.is_contiguous());
+    TORCH_CHECK(hops_ten.is_contiguous());
+
+    TORCH_INTERNAL_ASSERT(U_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(v_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(hops_ten.device().type() == at::DeviceType::CUDA);
+
+    int vol = hops_ten.size(0);
+    //int vvol = vol*4*3;
+
+    at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
+    const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
+    const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
+    c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+    double * result_d = (double*) result;
+
+    // allocate only 40 blocks, which is the number of streaming multiprocessors
+    int threadnum = 1024;
+    int blocknum = 40;
+
+    // mass term
+    mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
+    // gauge transport terms
+    gaugeterms_gimu_tloop2_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
+
+    return result_ten;
+}
+
+
 
 // Registers CUDA implementations
 TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
-  m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cu);
-  m.impl("dw_hop_mtsg_cuv2", &dw_hop_mtsg_cuv2);
-  m.impl("dw_hop_mtsg_cuv3", &dw_hop_mtsg_cuv3);
-  m.impl("dw_hop_mtsg_cuv4", &dw_hop_mtsg_cuv4);
-  m.impl("dw_hop_mtsg_cuv5", &dw_hop_mtsg_cuv5);
-  m.impl("dw_hop_mtsg_cuv6", &dw_hop_mtsg_cuv6);
-  m.impl("dw_hop_mtsg_cuv7", &dw_hop_mtsg_cuv7);
+    m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cu);
+    m.impl("dw_hop_mtsg_cuv2", &dw_hop_mtsg_cuv2);
+    m.impl("dw_hop_mtsg_cuv3", &dw_hop_mtsg_cuv3);
+    m.impl("dw_hop_mtsg_cuv4", &dw_hop_mtsg_cuv4);
+    m.impl("dw_hop_mtsg_cuv5", &dw_hop_mtsg_cuv5);
+    m.impl("dw_hop_mtsg_cuv6", &dw_hop_mtsg_cuv6);
+    m.impl("dw_hop_mtsg_cuv7", &dw_hop_mtsg_cuv7);
+    m.impl("dw_hop_mtsg_cuv8", &dw_hop_mtsg_cuv8);
 }
 // muss wirklich jeder CUDA-Operator eine Variante eines C++-Operators sein?
 
