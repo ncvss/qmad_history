@@ -609,7 +609,7 @@ at::Tensor dw_hop_mtsg_cuv7 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
     // gauge transport terms
-    gaugeterms_gimu_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
+    gaugeterms_gimu_tloop_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
 
     return result_ten;
 }
