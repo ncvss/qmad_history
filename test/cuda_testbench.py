@@ -126,7 +126,7 @@ print("cpu and cuda computations equal:", list(enumerate(correctnesses)))
 print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
 print("cuda times per call in us:")
 for i,t in enumerate(cutimes):
-    print("v"+str(i)*":",t/1000/n_reps)
+    print("v"+str(i)+":",t/1000/n_reps)
 # print("cuda time per call in us:",(cuen-cust)/1000/n_reps)
 # print("cuda v2 time per call in us:",(cuen2-cust2)/1000/n_reps)
 # print("cuda v3 time per call in us:",(cuen3-cust3)/1000/n_reps)
