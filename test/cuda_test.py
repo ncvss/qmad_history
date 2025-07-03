@@ -25,17 +25,17 @@ res = w_cpu.tmsgMh(v)
 
 w_cu_versions = [w_cu.tmsgMh, w_cu.cuv2, w_cu.cuv3, w_cu.cuv4, w_cu.cuv5, w_cu.cuv6, w_cu.cuv7, w_cu.cuv8, w_cu.cuv9]
 
-rescus = []
+correctnesses = []
 
 for w_cu_call in w_cu_versions:
     rescu = w_cu_call(vcu)
     rescu_b = rescu.cpu()
-    rescus.append(rescu_b)
+    correctnesses.append(torch.allclose(res, rescu_b))
 
 
-print("cpu and cuda computations equal:", [torch.allclose(res, rescu_b) for rescu_b in rescus])
+print("cpu and cuda computations equal:", list(enumerate(correctnesses)))
 
-differsites = (torch.abs(res-rescus[-1])<0.01)
+differsites = (torch.abs(res-rescu_b[-1])<0.01)
 print("number of sites that are the same:",torch.sum(differsites))
 
 # for x in range(8):
