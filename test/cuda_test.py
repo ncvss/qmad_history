@@ -35,7 +35,7 @@ for w_cu_call in w_cu_versions:
 
 print("cpu and cuda computations equal:", list(enumerate(correctnesses)))
 
-differsites = (torch.abs(res-rescu_b[-1])<0.01)
+differsites = (torch.abs(res-rescu_b)<0.01)
 print("number of sites that are the same:",torch.sum(differsites))
 
 # for x in range(8):
