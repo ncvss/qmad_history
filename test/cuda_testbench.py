@@ -23,6 +23,8 @@ vcu = v.to(cuda0)
 w_cpu = qmad_history.wilson.wilson_hop_mtsg(U, mass)
 w_cu = qmad_history.wilson.wilson_hop_mtsg(Ucu, mass)
 
+# w_cu_versions = [w_cu.tmsgMh, w_cu.cuv2, w_cu.cuv3, w_cu.cuv4, w_cu.cuv5, w_cu.cuv6, w_cu.cuv7, w_cu.cuv8, w_cu.cuv9]
+
 for i in range(n_reps):
     res = w_cpu.templ_tmsgMhs(v)
 
@@ -30,6 +32,14 @@ cpust = time.perf_counter_ns()
 for i in range(n_reps):
     res = w_cpu.templ_tmsgMhs(v)
 cpuen = time.perf_counter_ns()
+
+# for w_cu_call in w_cu_versions:
+#     torch.cuda.synchronize()
+#     cust = time.perf_counter_ns()
+#     for i in range(n_reps):
+#         rescu = w_cu_call(vcu)
+#     torch.cuda.synchronize()
+#     cuen = time.perf_counter_ns()
 
 torch.cuda.synchronize()
 cust = time.perf_counter_ns()

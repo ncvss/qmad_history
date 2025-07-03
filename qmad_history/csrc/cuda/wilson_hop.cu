@@ -698,6 +698,115 @@ at::Tensor dw_hop_mtsg_cuv8 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 
 
 
+// write multiple kernels for the substeps
+
+__global__ void mass_mtsg_kernel2 (const c10::complex<double> * v, double mass, c10::complex<double> * result, int vol){
+    int comp = blockIdx.x * blockDim.x + threadIdx.x;
+    if (comp < vol*4*3){
+        result[comp] = (4.0 + mass) * v[comp];
+    }
+}
+
+__global__ void minushop_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, double * result, int vol, int mu){
+
+    int compstep = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = compstep/36;
+
+    if (t<vol){
+        int sgcomp = compstep%36;
+        int s = sgcomp/9;
+        int g = (sgcomp%9)/3;
+        int gi = sgcomp%3;
+
+        c10::complex<double> gi_step;
+
+        gi_step = std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
+                * (
+                    -v[vixo(hops[hix(t,mu,0)],gi,s)]
+                    -gamf[mu*4+s] * v[vixo(hops[hix(t,mu,0)],gi,gamx[mu*4+s])]
+                ) * 0.5;
+
+        atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
+        atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+    }
+}
+
+__global__ void plushop_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
+                                          const int32_t * hops, double * result, int vol, int mu){
+
+    int compstep = blockIdx.x * blockDim.x + threadIdx.x;
+    int t = compstep/36;
+
+    if (t<vol){
+        int sgcomp = compstep%36;
+        int s = sgcomp/9;
+        int g = (sgcomp%9)/3;
+        int gi = sgcomp%3;
+
+        c10::complex<double> gi_step;
+
+        gi_step = U[uixo(t,mu,g,gi,vol)]
+                * (
+                    -v[vixo(hops[hix(t,mu,1)],gi,s)]
+                    +gamf[mu*4+s] * v[vixo(hops[hix(t,mu,1)],gi,gamx[mu*4+s])]
+                ) * 0.5;
+
+        atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
+        atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
+    }
+}
+
+at::Tensor dw_hop_mtsg_cuv9 (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                  const at::Tensor& hops_ten, double mass){
+    
+    TORCH_CHECK(v_ten.dim() == 6);
+    TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
+    TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
+    TORCH_CHECK(U_ten.size(3) == v_ten.size(2));
+    TORCH_CHECK(U_ten.size(4) == v_ten.size(3));
+    TORCH_CHECK(v_ten.size(4) == 4);
+    TORCH_CHECK(v_ten.size(5) == 3);
+    
+    TORCH_CHECK(U_ten.is_contiguous());
+    TORCH_CHECK(v_ten.is_contiguous());
+    TORCH_CHECK(hops_ten.is_contiguous());
+
+    TORCH_INTERNAL_ASSERT(U_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(v_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(hops_ten.device().type() == at::DeviceType::CUDA);
+
+    int vol = hops_ten.size(0);
+
+    at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
+    const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
+    const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
+    c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+    double * result_d = (double*) result;
+
+    // allocate one thread for each vector component
+    int threadnum = 1024;
+    // int blocknum = (vol*36+threadnum-1)/threadnum;
+    int blocknum = (vol*36+1023)/1024;
+
+    // mass term
+    mass_mtsg_kernel2<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
+    // gauge transport terms
+    minushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,0);
+    plushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,0);
+    minushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,1);
+    plushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,1);
+    minushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,2);
+    plushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,2);
+    minushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,3);
+    plushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,3);
+
+    return result_ten;
+}
+
+
+
 // Registers CUDA implementations
 TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
     m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cu);
@@ -708,6 +817,7 @@ TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
     m.impl("dw_hop_mtsg_cuv6", &dw_hop_mtsg_cuv6);
     m.impl("dw_hop_mtsg_cuv7", &dw_hop_mtsg_cuv7);
     m.impl("dw_hop_mtsg_cuv8", &dw_hop_mtsg_cuv8);
+    m.impl("dw_hop_mtsg_cuv9", &dw_hop_mtsg_cuv9);
 }
 // muss wirklich jeder CUDA-Operator eine Variante eines C++-Operators sein?
 

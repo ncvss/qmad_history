@@ -23,36 +23,19 @@ w_cu = qmad_history.wilson.wilson_hop_mtsg(Ucu, mass)
 
 res = w_cpu.tmsgMh(v)
 
-rescu = w_cu.tmsgMh(vcu)
-rescu_back = rescu.cpu()
+w_cu_versions = [w_cu.tmsgMh, w_cu.cuv2, w_cu.cuv3, w_cu.cuv4, w_cu.cuv5, w_cu.cuv6, w_cu.cuv7, w_cu.cuv8, w_cu.cuv9]
 
-rescuv2 = w_cu.cuv2(vcu)
-rescuv2_b = rescuv2.cpu()
+rescus = []
 
-rescuv3 = w_cu.cuv3(vcu)
-rescuv3_b = rescuv3.cpu()
+for w_cu_call in w_cu_versions:
+    rescu = w_cu_call(vcu)
+    rescu_b = rescu.cpu()
+    rescus.append(rescu_b)
 
-rescuv4 = w_cu.cuv4(vcu)
-rescuv4_b = rescuv4.cpu()
 
-rescuv5 = w_cu.cuv5(vcu)
-rescuv5_b = rescuv5.cpu()
+print("cpu and cuda computations equal:", [torch.allclose(res, rescu_b) for rescu_b in rescus])
 
-rescuv6 = w_cu.cuv6(vcu)
-rescuv6_b = rescuv6.cpu()
-
-rescuv7 = w_cu.cuv7(vcu)
-rescuv7_b = rescuv7.cpu()
-
-rescuv8 = w_cu.cuv8(vcu)
-rescuv8_b = rescuv8.cpu()
-
-print("cpu and cuda computations equal:",
-      torch.allclose(res,rescu_back), torch.allclose(res,rescuv2_b), torch.allclose(res,rescuv3_b),
-      torch.allclose(res,rescuv4_b), torch.allclose(res,rescuv5_b), torch.allclose(res,rescuv6_b),
-      torch.allclose(res,rescuv7_b), torch.allclose(res,rescuv8_b))
-
-differsites = (torch.abs(res-rescuv8_b)<0.01)
+differsites = (torch.abs(res-rescus[-1])<0.01)
 print("number of sites that are the same:",torch.sum(differsites))
 
 # for x in range(8):
