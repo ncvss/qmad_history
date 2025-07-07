@@ -856,7 +856,7 @@ at::Tensor dw_full_cuv10 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
     int blocknum = (vol*4*3*49+1023)/1024;
 
     // multiplication
-    sparse_matmul_kernel<<<blocknum,threadnum>>>(dw,v,addr,result_d,vol)
+    sparse_matmul_kernel<<<blocknum,threadnum>>>(dw,v,addr,result_d,vol);
 
     return result_ten;
 }
