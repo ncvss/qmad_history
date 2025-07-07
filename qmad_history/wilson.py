@@ -381,3 +381,57 @@ class wilson_hop_mtsgt2:
     def all_call_names(self):
         return [] + (["grid_tmgsMht"] if capab["vectorise"] else [])
 
+
+class wilson_full:
+    """
+    Wilson Dirac operator that computes the full matrix in space-time-spinor-colour space.
+    Currently, it just does a dummy computation that uses the wrong numbers.
+    """
+    def __init__(self, U: torch.Tensor, mass_parameter, boundary_phases=[1,1,1,1]):
+        U
+        assert tuple(U.shape[5:7]) == (3,3,)
+        assert U.shape[0] == 4
+        self.mass_parameter = mass_parameter
+
+        op_device = U.device
+        # device of U must be the device of all other tensors
+
+        grid = U.shape[1:5]
+        vol = grid[0]*grid[1]*grid[2]*grid[3]
+        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
+        npind = np.indices(grid, sparse=False)
+        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
+
+        hop_inds = []
+        for coord in range(4):
+            # index after a negative step in coord direction
+            minus_hop_ind = torch.clone(indices)
+            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
+            # index after a positive step in coord direction
+            plus_hop_ind = torch.clone(indices)
+            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
+            # compute flattened index by dot product with strides
+            hop_inds.append(torch.matmul(minus_hop_ind, strides))
+            hop_inds.append(torch.matmul(plus_hop_ind, strides))
+        hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(op_device)
+
+        self.dummy_dw = torch.randn([vol,4,3,49],dtype=torch.cdouble,device=op_device)
+
+        gamx = [[3,2,1,0],[3,2,1,0],[2,3,0,1],[2,3,0,1]]
+
+        self.sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
+        for t in range(vol):
+            for s in range(4):
+                for g in range(3):
+                    self.sparse_addr[t,s,g,0] = t*12+s*3+g
+                    for mu in range(8):
+                        for gi in range(3):
+                            self.sparse_addr[t,s,g,mu*6+gi] = hop_inds[t,mu]*12+s*3+gi
+                            self.sparse_addr[t,s,g,mu*6+gi+3] = hop_inds[t,mu]*12+gamx[mu][s]*3+gi
+        assert torch.all(self.sparse_addr>0) and torch.all(self.sparse_addr<vol*4*3)
+        
+    def __call__(self, v):
+        return torch.ops.qmad_history.dw_full_cuv10.default(self.dummy_dw, v, self.sparse_addr)
+
+
+
