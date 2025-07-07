@@ -843,7 +843,7 @@ at::Tensor dw_full_cuv10 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
     // int vol = addr_ten.size(0);
     int vol = v_ten.size(0)*v_ten.size(1)*v_ten.size(2)*v_ten.size(3);
 
-    at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
+    at::Tensor result_ten = torch::zeros(v_ten.sizes(), v_ten.options());
     const c10::complex<double>* dw = dw_ten.const_data_ptr<c10::complex<double>>();
     const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
     const int32_t* addr = addr_ten.const_data_ptr<int32_t>();
@@ -862,6 +862,61 @@ at::Tensor dw_full_cuv10 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
 }
 
 
+// do all computations that belong to the same component in one kernel
+__global__ void sparse_matmul2_kernel (const c10::complex<double> * dw, const c10::complex<double> * v,
+                                      const int32_t * sparse_addr, c10::complex<double>  * result, int vol){
+    
+    int thrix = blockIdx.x * blockDim.x + threadIdx.x;
+    if (thrix < vol*4*3){
+        c10::complex<double> substep (0.0,0.0);
+        for (int ii = 0; ii < 49; ii++){
+            substep += dw[thrix*49+ii] * v[sparse_addr[thrix*49+ii]];
+        }
+        result[thrix] = substep;
+    }
+}
+
+at::Tensor dw_full_cuv11 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
+                          const at::Tensor& addr_ten){
+    
+    TORCH_CHECK(v_ten.dim() == 6);
+    // TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
+    // TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
+    // TORCH_CHECK(U_ten.size(3) == v_ten.size(2));
+    // TORCH_CHECK(U_ten.size(4) == v_ten.size(3));
+    TORCH_CHECK(v_ten.size(4) == 4);
+    TORCH_CHECK(v_ten.size(5) == 3);
+    
+    TORCH_CHECK(dw_ten.is_contiguous());
+    TORCH_CHECK(v_ten.is_contiguous());
+    TORCH_CHECK(addr_ten.is_contiguous());
+
+    TORCH_INTERNAL_ASSERT(dw_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(v_ten.device().type() == at::DeviceType::CUDA);
+    TORCH_INTERNAL_ASSERT(addr_ten.device().type() == at::DeviceType::CUDA);
+
+    // int vol = addr_ten.size(0);
+    int vol = v_ten.size(0)*v_ten.size(1)*v_ten.size(2)*v_ten.size(3);
+
+    at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
+    const c10::complex<double>* dw = dw_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
+    const int32_t* addr = addr_ten.const_data_ptr<int32_t>();
+    c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+    double * result_d = (double*) result;
+
+    // allocate one thread for each component
+    int threadnum = 1024;
+    // int blocknum = (vol*36+threadnum-1)/threadnum;
+    int blocknum = (vol*4*3+1023)/1024;
+
+    // multiplication
+    sparse_matmul2_kernel<<<blocknum,threadnum>>>(dw,v,addr,result,vol);
+
+    return result_ten;
+}
+
+
 // Registers CUDA implementations
 TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
     m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cu);
@@ -874,6 +929,7 @@ TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
     m.impl("dw_hop_mtsg_cuv8", &dw_hop_mtsg_cuv8);
     m.impl("dw_hop_mtsg_cuv9", &dw_hop_mtsg_cuv9);
     m.impl("dw_full_cuv10", &dw_full_cuv10);
+    m.impl("dw_full_cuv11", &dw_full_cuv11);
 }
 // muss wirklich jeder CUDA-Operator eine Variante eines C++-Operators sein?
 

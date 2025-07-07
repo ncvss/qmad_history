@@ -419,6 +419,11 @@ class wilson_full:
 
         gamx = [[3,2,1,0],[3,2,1,0],[2,3,0,1],[2,3,0,1]]
 
+        # addr_ind_np = np.indices([vol,4,3],sparse=False)
+        # addr_ind = torch.tensor(addr_ind_np, dtype=torch.int32,device=op_device).permute((1,2,3,0,))
+        # tsg_strides = torch.tensor([12,3,1], dtype=torch.int32,device=op_device)
+        # sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
+        # sparse_addr[:,:,:,0] = torch.matmul(addr_ind,tsg_strides)
         self.sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
         for t in range(vol):
             for s in range(4):
@@ -430,8 +435,10 @@ class wilson_full:
                             self.sparse_addr[t,s,g,mu*6+gi+3] = hop_inds[t,mu]*12+gamx[mu//2][s]*3+gi
         assert torch.all(self.sparse_addr>=0) and torch.all(self.sparse_addr<vol*4*3)
         
-    def __call__(self, v):
+    def cuv10(self, v):
         return torch.ops.qmad_history.dw_full_cuv10.default(self.dummy_dw, v, self.sparse_addr)
+    def cuv11(self, v):
+        return torch.ops.qmad_history.dw_full_cuv11.default(self.dummy_dw, v, self.sparse_addr)
 
 
 
