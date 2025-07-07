@@ -428,7 +428,7 @@ class wilson_full:
                         for gi in range(3):
                             self.sparse_addr[t,s,g,mu*6+gi] = hop_inds[t,mu]*12+s*3+gi
                             self.sparse_addr[t,s,g,mu*6+gi+3] = hop_inds[t,mu]*12+gamx[mu//2][s]*3+gi
-        assert torch.all(self.sparse_addr>0) and torch.all(self.sparse_addr<vol*4*3)
+        assert torch.all(self.sparse_addr>=0) and torch.all(self.sparse_addr<vol*4*3)
         
     def __call__(self, v):
         return torch.ops.qmad_history.dw_full_cuv10.default(self.dummy_dw, v, self.sparse_addr)
