@@ -851,9 +851,8 @@ at::Tensor dw_full_cuv10 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
     double * result_d = (double*) result;
 
     // allocate one thread for each sum term
-    int threadnum = 1024;
-    // int blocknum = (vol*36+threadnum-1)/threadnum;
-    int blocknum = (vol*4*3*49+1023)/1024;
+    int threadnum = 980;
+    int blocknum = (vol*4*3*49+threadnum-1)/threadnum;
 
     // multiplication
     sparse_matmul_kernel<<<blocknum,threadnum>>>(dw,v,addr,result_d,vol);
