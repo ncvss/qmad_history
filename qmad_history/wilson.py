@@ -414,26 +414,54 @@ class wilson_full:
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
         hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(op_device)
+        assert tuple(hop_inds.shape) == (vol,8,)
 
         self.dummy_dw = torch.randn([vol,4,3,49],dtype=torch.cdouble,device=op_device)
 
-        gamx = [[3,2,1,0],[3,2,1,0],[2,3,0,1],[2,3,0,1]]
+        # computation taken directly (very slow)
+        # gamx = [[3,2,1,0],[3,2,1,0],[2,3,0,1],[2,3,0,1]]
+        # self.sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
+        # for t in range(vol):
+        #     for s in range(4):
+        #         for g in range(3):
+        #             self.sparse_addr[t,s,g,0] = t*12+s*3+g
+        #             for mu in range(8):
+        #                 for gi in range(3):
+        #                     self.sparse_addr[t,s,g,1+mu*6+gi] = hop_inds[t,mu]*12+s*3+gi
+        #                     self.sparse_addr[t,s,g,1+mu*6+gi+3] = hop_inds[t,mu]*12+gamx[mu//2][s]*3+gi
+        # assert torch.all(self.sparse_addr>=0) and torch.all(self.sparse_addr<vol*4*3)
 
-        # addr_ind_np = np.indices([vol,4,3],sparse=False)
-        # addr_ind = torch.tensor(addr_ind_np, dtype=torch.int32,device=op_device).permute((1,2,3,0,))
-        # tsg_strides = torch.tensor([12,3,1], dtype=torch.int32,device=op_device)
-        # sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
-        # sparse_addr[:,:,:,0] = torch.matmul(addr_ind,tsg_strides)
-        self.sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
-        for t in range(vol):
-            for s in range(4):
-                for g in range(3):
-                    self.sparse_addr[t,s,g,0] = t*12+s*3+g
-                    for mu in range(8):
-                        for gi in range(3):
-                            self.sparse_addr[t,s,g,mu*6+gi] = hop_inds[t,mu]*12+s*3+gi
-                            self.sparse_addr[t,s,g,mu*6+gi+3] = hop_inds[t,mu]*12+gamx[mu//2][s]*3+gi
-        assert torch.all(self.sparse_addr>=0) and torch.all(self.sparse_addr<vol*4*3)
+        # the sparse address tensor will have the indices t,s,g,contributions
+        # the contributions will be: first the mass term, then hops in order mu,dir,gamma/no gamma,gi
+        # first the mass term, which is simply the address of each site at that same site
+        mass_ind_np = np.indices([vol,4,3],sparse=False)
+        mass_ind = torch.tensor(mass_ind_np, dtype=torch.int32,device=op_device).permute((1,2,3,0,))
+        tsg_strides = torch.tensor([12,3,1], dtype=torch.int32,device=op_device)
+        mass_ind = torch.matmul(mass_ind,tsg_strides)
+        mass_ind = torch.reshape(mass_ind, [vol,4,3,1])
+        assert tuple(mass_ind.shape) == (vol,4,3,1,)
+        # now the hop term contributions
+        # hop_inds already is in order t,mu,dir (mu,dir are one axis)
+        # so we first take the correct hop address by broadcasting hop_inds to the sparse shape
+        # multiplied by 12, as hop_inds takes sites but we take spin-colour components
+        sparse2 = torch.broadcast_to(hop_inds,[4,3,2,3,vol,8])*12
+        # gamx is brought to the mu,dir,s shape
+        gamx_tensor = torch.tensor([[3,2,1,0]]*4+[[2,3,0,1]]*4,dtype=torch.int32,device=op_device)
+        s_tensor = torch.tensor([0,1,2,3],dtype=torch.int32,device=op_device)
+        # permute sparse2 so we can add gamx
+        sparse2 = torch.permute(sparse2, (2,4,1,3,5,0))
+        # multiplied by 3, as gamx takes spin components but we take spin-colour components
+        sparse2[0] += s_tensor*3
+        sparse2[1] += gamx_tensor*3
+        # now reshape to add gi term
+        sparse2 = torch.permute(sparse2, (1,5,2,4,0,3))
+        gi_tensor = torch.tensor([0,1,2],dtype=torch.int32,device=op_device)
+        sparse2 += gi_tensor
+        assert tuple(sparse2.shape) == (vol,4,3,8,2,3)
+        sparse2 = torch.reshape(sparse2, [vol,4,3,48])
+        sparse_addr_2 = torch.cat([mass_ind, sparse2],dim=3).contiguous()
+        self.sparse_addr = sparse_addr_2
+         
         
     def cuv10(self, v):
         return torch.ops.qmad_history.dw_full_cuv10.default(self.dummy_dw, v, self.sparse_addr)
