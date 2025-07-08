@@ -416,7 +416,7 @@ class wilson_full:
         hop_inds = torch.stack(hop_inds, dim=1).contiguous()
         assert tuple(hop_inds.shape) == (vol,8,)
 
-        self.dummy_dw = torch.randn([vol,4,3,49],dtype=torch.cdouble)
+        self.dummy_dw = torch.randn([vol,4,3,49],dtype=torch.cdouble,device=op_device)
 
         # computation taken directly (very slow)
         # gamx = [[3,2,1,0],[3,2,1,0],[2,3,0,1],[2,3,0,1]]
