@@ -851,7 +851,7 @@ at::Tensor dw_full_cuv10 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
     double * result_d = (double*) result;
 
     // allocate one thread for each sum term
-    int threadnum = 980;
+    int threadnum = 1024;
     int blocknum = (vol*4*3*49+threadnum-1)/threadnum;
 
     // multiplication
