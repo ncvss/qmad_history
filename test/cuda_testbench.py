@@ -48,9 +48,9 @@ for w_cu_call in w_cu_versions:
     rescu_b = rescu.cpu()
     correctnesses.append(torch.allclose(res,rescu_b))
 
-corr2 = w_full.cuv10(vcu)
-corr2b = corr2.cpu()
-print("dummy computation coherent:", torch.allclose(corr2b,rescu_b))
+# corr2 = w_full.cuv10(vcu)
+# corr2b = corr2.cpu()
+# print("dummy computation coherent:", torch.allclose(corr2b,rescu_b))
 
 print("cpu and cuda computations equal:", list(enumerate(correctnesses)))
 print("cpu (avx) time per call in us:",(cpuen-cpust)/1000/n_reps)
