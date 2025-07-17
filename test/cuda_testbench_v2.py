@@ -6,7 +6,7 @@ import time
 import numpy as np
 
 print("benchmark with multiple calls and warmup")
-lat_dim = [32,32,32,32]
+lat_dim = [32,32,32,64]
 vol = lat_dim[0]*lat_dim[1]*lat_dim[2]*lat_dim[3]
 cuda0 = torch.device("cuda:0")
 mass = -0.5
@@ -57,6 +57,6 @@ for t in cutimes:
     times_sorted.append(np.sort(t)[:(n_rep//5)])
 
 
-print("cuda times and standard deviations (best 20%) in ns:")
+print("cuda times and standard deviations (best 20%) in ms:")
 for i,t in enumerate(times_sorted):
-    print(names[i],"|",np.mean(t),"|",np.std(t))
+    print(names[i],"|",np.mean(t)/1000/1000,"|",np.std(t)/1000/1000)
