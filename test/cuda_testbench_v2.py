@@ -14,7 +14,7 @@ n_rep = 200
 n_warmup = 30
 print("lattice:", lat_dim)
 print("mass:",mass)
-print("number of calls:",n_reps)
+print("number of calls:",n_rep)
 
 U = torch.randn([4]+lat_dim+[3,3], dtype=torch.cdouble)
 v = torch.randn(lat_dim+[4,3], dtype=torch.cdouble)
