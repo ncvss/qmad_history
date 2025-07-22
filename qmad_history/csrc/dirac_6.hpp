@@ -19,6 +19,10 @@ at::Tensor dwc_templ_mtsg_tmgsMhns (const at::Tensor& U_tensor, const at::Tensor
                                     const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                     double mass, double csw);
 
+at::Tensor dwc_templ_mtsg_tmsgMhns (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                    const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                    double mass, double csw);
+
 at::Tensor dw_roof_templ_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                        const at::Tensor& hops_tensor, double mass);
 

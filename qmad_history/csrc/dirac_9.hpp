@@ -50,6 +50,10 @@ at::Tensor dwc_templ_mtsgt_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
 at::Tensor dwc_grid_mtsg_tmngsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                   double mass);
+                        
+at::Tensor dwc_grid_mtsg_tmnsgMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                  const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                  double mass);
 
 
 /**

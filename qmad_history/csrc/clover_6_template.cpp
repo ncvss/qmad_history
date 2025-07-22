@@ -240,11 +240,109 @@ at::Tensor dwc_templ_mtsg_tmgsMhns (const at::Tensor& U_tensor, const at::Tensor
     return result_tensor;
 }
 
+
+
+at::Tensor dwc_templ_mtsg_tmsgMhns (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                    const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                    double mass, double csw){
+
+    // memory layout has to be U[mu,x,y,z,t,g,gi] and v[x,y,z,t,s,gi]
+
+    TORCH_CHECK(v_tensor.dim() == 6);
+    TORCH_CHECK(U_tensor.size(1) == v_tensor.size(0));
+    TORCH_CHECK(U_tensor.size(2) == v_tensor.size(1));
+    TORCH_CHECK(U_tensor.size(3) == v_tensor.size(2));
+    TORCH_CHECK(U_tensor.size(4) == v_tensor.size(3));
+    TORCH_CHECK(v_tensor.size(4) == 4);
+    TORCH_CHECK(v_tensor.size(5) == 3);
+
+    TORCH_CHECK(U_tensor.dtype() == at::kComplexDouble);
+    TORCH_CHECK(v_tensor.dtype() == at::kComplexDouble);
+
+    TORCH_CHECK(U_tensor.is_contiguous());
+    TORCH_CHECK(v_tensor.is_contiguous());
+    TORCH_CHECK(fs_tensors.is_contiguous());
+
+    int vol = U_tensor.size(1) * U_tensor.size(2) * U_tensor.size(3) * U_tensor.size(4);
+    
+
+    at::Tensor result_tensor = torch::empty(v_tensor.sizes(), v_tensor.options());
+
+    // we create a pointer to the complex tensor, then typecast it to double*
+    // this allows us to access the complex numbers as doubles in riri format
+    const double* U = (double*)U_tensor.const_data_ptr<c10::complex<double>>();
+    const double* v = (double*)v_tensor.const_data_ptr<c10::complex<double>>();
+    const double* F = (double*)fs_tensors.const_data_ptr<c10::complex<double>>();
+    const int* hops = hops_tensor.const_data_ptr<int>();
+    double* result = (double*)result_tensor.mutable_data_ptr<c10::complex<double>>();
+
+    // register for the mass prefactor
+    __m256d massf_reg = _mm256_set1_pd(4.0 + mass);
+
+    // register for the field strength term prefactor -1/2*csw
+    __m256d csw_reg = _mm256_set1_pd(-0.5*csw);
+
+
+#pragma omp parallel for
+    for (int t = 0; t < vol; t++){
+
+        // loop over mu=0,1,2,3 g=0,1,2 and s=0,2 manually with template
+        // the spin is vectorized, s=0,1 and s=2,3 are computed at the same time
+
+
+        dwc_templ_mtsg_tmgsMhns_loop<0,0,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<0,1,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<0,2,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+        dwc_templ_mtsg_tmgsMhns_loop<0,0,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<0,1,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<0,2,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+
+        dwc_templ_mtsg_tmgsMhns_loop<1,0,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<1,1,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<1,2,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+        dwc_templ_mtsg_tmgsMhns_loop<1,0,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<1,1,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<1,2,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+
+        dwc_templ_mtsg_tmgsMhns_loop<2,0,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<2,1,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<2,2,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+        dwc_templ_mtsg_tmgsMhns_loop<2,0,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<2,1,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<2,2,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+
+        dwc_templ_mtsg_tmgsMhns_loop<3,0,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<3,1,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<3,2,0>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+        dwc_templ_mtsg_tmgsMhns_loop<3,0,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<3,1,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+        dwc_templ_mtsg_tmgsMhns_loop<3,2,2>(U,v,F,hops,massf_reg,csw_reg,result,t,vol);
+
+
+    }
+
+    return result_tensor;
+}
+
 }
 #else
 namespace qmad_history {
 
 at::Tensor dwc_templ_mtsg_tmgsMhns (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                    const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                    double mass, double csw){
+    TORCH_CHECK(0,"AVX not compiled");
+    return torch::zeros({1}, v_tensor.options());
+}
+
+at::Tensor dwc_templ_mtsg_tmsgMhns (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                     const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                     double mass, double csw){
     TORCH_CHECK(0,"AVX not compiled");
