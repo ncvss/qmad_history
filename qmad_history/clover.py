@@ -290,6 +290,10 @@ class wilson_clover_hop_mtsg:
         return torch.ops.qmad_history.dwc_avx_mtsg_tmgsMhns(self.U, v, self.field_strength,
                                                             self.hop_inds, self.mass_parameter,
                                                             self.csw)
+    def avx_tmsgMhns(self, v):
+        return torch.ops.qmad_history.dwc_avx_mtsg_tmsgMhns(self.U, v, self.field_strength,
+                                                            self.hop_inds, self.mass_parameter,
+                                                            self.csw)
     def templ_tmgsMhns(self, v):
         return torch.ops.qmad_history.dwc_templ_mtsg_tmgsMhns(self.U, v, self.field_strength,
                                                               self.hop_inds, self.mass_parameter,
@@ -300,9 +304,9 @@ class wilson_clover_hop_mtsg:
                                                               self.csw)
     
     def all_calls(self):
-        return [self.avx_tmgsMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else []
+        return [self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else []
     def all_call_names(self):
-        return ["avx_tmgsMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab["vectorise"] else []
+        return ["avx_tmgsMhns", "avx_tmsgMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab["vectorise"] else []
 
 
 
