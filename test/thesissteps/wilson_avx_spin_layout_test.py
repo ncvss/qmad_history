@@ -29,7 +29,8 @@ print("mass =", mass)
 rng = g.random("thesis")
 
 start_grid = [4,4,2,4]
-n_vols = 14
+# mehr als 32x32x32x32 ist nicht möglich, zu wenig Speicher führt zu Absturz
+n_vols = 13
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
