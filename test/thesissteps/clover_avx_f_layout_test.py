@@ -34,15 +34,15 @@ print("mass =", mass)
 rng = g.random("thesis")
 
 start_grid = [4,4,2,4]
-# mehr als 32x32x32x32 ist nicht möglich, zu wenig Speicher führt zu Absturz
-n_vols = 13
+# mehr als 32x32x32x32 ist auf meinem PC nicht möglich, zu wenig Speicher führt zu Absturz
+n_vols = 15
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
     all_grids.append(copy.copy(start_grid))
 
 vols = [4*4*4*4*2**ii for ii in range(n_vols)]
-names = ["mtsg","tmgs","mtsg_v","tmgs_v"]
+names = ["Fmunu","sigmaF","Fmunu_v","sigmaF_v"]
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
@@ -64,43 +64,40 @@ for nb in range(0,n_measurements,n_batchlen):
 
         U_mtsg = torch.tensor(compat.lattice_to_array(U_gpt))
         v_mtsg = torch.tensor(compat.lattice_to_array(v_gpt))
-        v_tmgs = torch.permute(v_mtsg,(0,1,2,3,5,4)).contiguous()
 
-        dw_mtsg = wilson.wilson_hop_mtsg(U_mtsg,mass)
-        dw_tmgs = wilson.wilson_hop_tmgs(U_mtsg,mass)
-        dw_ref = qcd_ml.qcd.dirac.dirac_wilson(U_mtsg,mass)
+        dwc_F = clover.wilson_clover_hop_mtsg(U_mtsg,mass,csw)
+        dwc_sF = clover.wilson_clover_hop_mtsg_sigpre(U_mtsg,mass,csw)
+        dwc_ref = qcd_ml.qcd.dirac.dirac_wilson_clover(U_mtsg,mass,csw)
 
         for n in range(n_warmup):
-            res_mtsg = dw_mtsg.tmsgMh(v_mtsg)
-            res_tmgs = dw_tmgs.tmgsMh(v_tmgs)
-            res_mtsg_v = dw_mtsg.avx_tmsgMhs(v_mtsg)
-            res_tmgs_v = dw_tmgs.avx_tmgsMhs(v_tmgs)
+            res_F = dwc_F.tmsgMhn(v_mtsg)
+            res_F_v = dwc_F.avx_tmsgMhns(v_mtsg)
+            res_sF = dwc_sF.tmnsgMh(v_mtsg)
+            res_sF_v = dwc_sF.avx_tmnsgMhs(v_mtsg)
             if n == 0 and nb == 0:
-                res_ref = dw_ref(v_mtsg)
-                res_tmgs_back = torch.permute(res_tmgs,(0,1,2,3,5,4))
-                res_tmgs_v_back = torch.permute(res_tmgs_v,(0,1,2,3,5,4))
-                print("computations equal:",[torch.allclose(res_ref,res_c) for res_c in [res_mtsg,res_mtsg_v,res_tmgs_back,res_tmgs_v_back]])
+                res_ref = dwc_ref(v_mtsg)
+                print("computations equal:",[torch.allclose(res_ref,res_c) for res_c in [res_F,res_F_v,res_sF,res_sF_v]])
 
         for n in range(nb,nb+n_batchlen):
             start = time.perf_counter_ns()
-            res_mtsg = dw_mtsg.tmsgMh(v_mtsg)
+            res_F = dwc_F.tmsgMhn(v_mtsg)
             stop = time.perf_counter_ns()
-            results[vol]["mtsg"][n] = stop - start
+            results[vol]["Fmunu"][n] = stop - start
 
             start = time.perf_counter_ns()
-            res_tmgs = dw_tmgs.tmgsMh(v_tmgs)
+            res_F_v = dwc_F.avx_tmsgMhns(v_mtsg)
             stop = time.perf_counter_ns()
-            results[vol]["tmgs"][n] = stop - start
+            results[vol]["Fmunu_v"][n] = stop - start
 
             start = time.perf_counter_ns()
-            res_mtsg_v = dw_mtsg.avx_tmsgMhs(v_mtsg)
+            res_sF = dwc_sF.tmnsgMh(v_mtsg)
             stop = time.perf_counter_ns()
-            results[vol]["mtsg_v"][n] = stop - start
+            results[vol]["sigmaF"][n] = stop - start
 
             start = time.perf_counter_ns()
-            res_tmgs_v = dw_tmgs.avx_tmgsMhs(v_tmgs)
+            res_sF_v = dwc_sF.avx_tmnsgMhs(v_mtsg)
             stop = time.perf_counter_ns()
-            results[vol]["tmgs_v"][n] = stop - start
+            results[vol]["sigmaF_v"][n] = stop - start
 
 
 for vol,cgrid in zip(vols,all_grids):
