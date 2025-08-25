@@ -25,4 +25,8 @@ at::Tensor dwc_avx_mtsg_tmsgMhns (const at::Tensor& U_tensor, const at::Tensor& 
                                   const at::Tensor& fs_tensors,
                                   const at::Tensor& hops_tensor, double mass, double csw);
 
+at::Tensor dwc_avx_mtsg_tmnsgMhs_sigpre (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                  const at::Tensor& fs_tensors,
+                                  const at::Tensor& hops_tensor, double mass);
+
 }

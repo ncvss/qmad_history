@@ -162,7 +162,11 @@ for order, c in zip(dwc_grid2.all_call_names(),dwc_grid2.all_calls()):
 # Grund: die Indizes waren off by 1, jetzt stimmt es
 
 for cc in check_correct:
-    print(cc)
+    if type(cc) is tuple:
+        print(f"{cc[0]:20} {str(cc[1]):6}")
+    else:
+        print("---")
+        print(cc)
 
 
 # test correctness of boundary conditions

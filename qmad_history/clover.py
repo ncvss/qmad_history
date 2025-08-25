@@ -285,7 +285,11 @@ class wilson_clover_hop_mtsg:
     
     def __str__(self):
         return "dwc_hop_mtsg"
-
+    
+    def tmsgMhn(self, v):
+        return torch.ops.qmad_history.dwc_hop_mtsg_tmsgMhn_fpre(self.U, v, self.field_strength,
+                                                            self.hop_inds, self.mass_parameter,
+                                                            self.csw)
     def avx_tmgsMhns(self, v):
         return torch.ops.qmad_history.dwc_avx_mtsg_tmgsMhns(self.U, v, self.field_strength,
                                                             self.hop_inds, self.mass_parameter,
@@ -304,9 +308,9 @@ class wilson_clover_hop_mtsg:
                                                               self.csw)
     
     def all_calls(self):
-        return [self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else []
+        return [self.tmsgMhn] + ([self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else [])
     def all_call_names(self):
-        return ["avx_tmgsMhns", "avx_tmsgMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab["vectorise"] else []
+        return ["tmsgMhn"] + (["avx_tmgsMhns", "avx_tmsgMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab["vectorise"] else [])
 
 
 
@@ -590,7 +594,14 @@ class wilson_clover_hop_mtsg_sigpre:
 
     def __str__(self):
         return "dwc_sigpre_hop_mtsg"
-        
+    
+
+    def tmnsgMh (self, v):
+        return torch.ops.qmad_history.dwc_hop_mtsg_tmnsgMh_sigpre(self.U, v, self.field_strength_sigma,
+                                                             self.hop_inds, self.mass_parameter)
+    def avx_tmnsgMhs (self, v):
+        return torch.ops.qmad_history.dwc_avx_mtsg_tmnsgMhs_sigpre(self.U, v, self.field_strength_sigma,
+                                                             self.hop_inds, self.mass_parameter)
     def tmngsMhs (self, v):
         return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.U, v, self.field_strength_sigma,
                                                              self.hop_inds, self.mass_parameter)
@@ -603,9 +614,9 @@ class wilson_clover_hop_mtsg_sigpre:
                                                              self.hop_inds, self.mass_parameter)
 
     def all_calls(self):
-        return [] + ([self.tmngsMhs, self.tmnsgMhs, self.Ubound_tmngsMhs] if capab["vectorise"] else [])
+        return [self.tmnsgMh] + ([self.avx_tmnsgMhs, self.tmngsMhs, self.tmnsgMhs, self.Ubound_tmngsMhs] if capab["vectorise"] else [])
     def all_call_names(self):
-        return [] + (["tmngsMhs", "tmnsgMhs", "Ubound_tmngsMhs"] if capab["vectorise"] else [])
+        return ["tmnsgMh"] + (["avx_tmnsgMhs", "tmngsMhs", "tmnsgMhs", "Ubound_tmngsMhs"] if capab["vectorise"] else [])
 
 
 class wilson_clover_hop_mtsgt2_sigpre:
