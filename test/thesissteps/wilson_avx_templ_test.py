@@ -44,7 +44,7 @@ for i in range(n_vols):
     all_grids.append(copy.copy(start_grid))
 
 vols = [4*4*4*4*2**ii for ii in range(n_vols)]
-names = ["mtsg_v","mtsg_templ","mtsg_c_v","mtsg_c_templ"]
+names = ["w_v","w_templ","cs_v","cs_templ","cF_v","cF_templ"]
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
@@ -64,45 +64,58 @@ for nb in range(0,n_measurements,n_batchlen):
         grid = U_gpt[0].grid
         v_gpt = rng.cnormal(g.vspincolor(grid))
 
-        U_mtsg = torch.tensor(compat.lattice_to_array(U_gpt))
-        v_mtsg = torch.tensor(compat.lattice_to_array(v_gpt))
+        U = torch.tensor(compat.lattice_to_array(U_gpt))
+        v = torch.tensor(compat.lattice_to_array(v_gpt))
 
-        dw_mtsg = wilson.wilson_hop_mtsg(U_mtsg,mass)
-        dwc_mtsg = clover.wilson_clover_hop_mtsg_sigpre(U_mtsg,mass,csw)
-        dw_ref = qcd_ml.qcd.dirac.dirac_wilson(U_mtsg,mass)
-        dwc_ref = qcd_ml.qcd.dirac.dirac_wilson_clover(U_mtsg,mass,csw)
+        dw = wilson.wilson_hop_mtsg(U,mass)
+        dwc_sigpre = clover.wilson_clover_hop_mtsg_sigpre(U,mass,csw)
+        dwc_F = clover.wilson_clover_hop_mtsg(U,mass,csw)
+        dw_ref = qcd_ml.qcd.dirac.dirac_wilson(U,mass)
+        dwc_ref = qcd_ml.qcd.dirac.dirac_wilson_clover(U,mass,csw)
 
         for n in range(n_warmup):
-            res_v = dw_mtsg.avx_tmsgMhs(v_mtsg)
-            res_c_v = dwc_mtsg.avx_tmnsgMhs(v_mtsg)
-            res_templ = dw_mtsg.templ_tmsgMhs(v_mtsg)
-            res_c_templ = dwc_mtsg.tmnsgMhs(v_mtsg)
+            res_v = dw.avx_tmsgMhs(v)
+            res_templ = dw.templ_tmsgMhs(v)
+            res_c_v = dwc_sigpre.avx_tmnsgMhs(v)
+            res_c_templ = dwc_sigpre.tmnsgMhs(v)
+            res_F_v = dwc_F.avx_tmsgMhns(v)
+            res_F_templ = dwc_F.templ_tmsgMhns(v)
             if n == 0 and nb == 0:
-                res_ref = dw_ref(v_mtsg)
+                res_ref = dw_ref(v)
                 print("computations equal (wilson):",[torch.allclose(res_ref,res_ch) for res_ch in [res_v,res_templ]])
-                res_c_ref = dwc_ref(v_mtsg)
-                print("computations equal (clover):",[torch.allclose(res_c_ref,res_ch) for res_ch in [res_c_v,res_c_templ]])
+                res_c_ref = dwc_ref(v)
+                print("computations equal (clover):",[torch.allclose(res_c_ref,res_ch) for res_ch in [res_c_v,res_c_templ,res_F_v,res_F_templ]])
 
         for n in range(nb,nb+n_batchlen):
             start = time.perf_counter_ns()
-            res_mtsg = dw_mtsg.tmsgMh(v_mtsg)
+            res_mtsg = dw.tmsgMh(v)
             stop = time.perf_counter_ns()
-            results[vol]["mtsg_v"][n] = stop - start
+            results[vol]["w_v"][n] = stop - start
 
             start = time.perf_counter_ns()
-            res_templ = dw_mtsg.templ_tmsgMhs(v_mtsg)
+            res_templ = dw.templ_tmsgMhs(v)
             stop = time.perf_counter_ns()
-            results[vol]["mtsg_templ"][n] = stop - start
+            results[vol]["w_templ"][n] = stop - start
 
             start = time.perf_counter_ns()
-            res_c_v = dwc_mtsg.avx_tmnsgMhs(v_mtsg)
+            res_c_v = dwc_sigpre.avx_tmnsgMhs(v)
             stop = time.perf_counter_ns()
-            results[vol]["mtsg_c_v"][n] = stop - start
+            results[vol]["cs_v"][n] = stop - start
 
             start = time.perf_counter_ns()
-            res_c_templ = dwc_mtsg.tmnsgMhs(v_mtsg)
+            res_c_templ = dwc_sigpre.tmnsgMhs(v)
             stop = time.perf_counter_ns()
-            results[vol]["mtsg_c_templ"][n] = stop - start
+            results[vol]["cs_templ"][n] = stop - start
+
+            start = time.perf_counter_ns()
+            res_F_v = dwc_F.avx_tmsgMhns(v)
+            stop = time.perf_counter_ns()
+            results[vol]["cF_v"][n] = stop - start
+
+            start = time.perf_counter_ns()
+            res_F_templ = dwc_F.templ_tmsgMhns(v)
+            stop = time.perf_counter_ns()
+            results[vol]["cF_templ"][n] = stop - start
 
 
 for vol,cgrid in zip(vols,all_grids):
