@@ -88,7 +88,7 @@ for nb in range(0,n_measurements,n_batchlen):
 
         for n in range(nb,nb+n_batchlen):
             start = time.perf_counter_ns()
-            res_mtsg = dw.tmsgMh(v)
+            res_v = dw.avx_tmsgMhs(v)
             stop = time.perf_counter_ns()
             results[vol]["w_v"][n] = stop - start
 
