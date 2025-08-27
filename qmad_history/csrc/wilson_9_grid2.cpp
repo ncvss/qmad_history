@@ -68,7 +68,7 @@ template <int M, int S> inline __m256d gamma_mul_g (__m256d a){
 // tbou=0 is the lower and tbou=1 the higher boundary, anything else is inside
 
 template <int mu, int g, int s, int tbou>
-void dw_grid_mtsgt2_tmgsMht_loop (const double * U, const double * v,
+inline void dw_grid_mtsgt2_tmgsMht_loop (const double * U, const double * v,
                                  const int * hops, __m256d massf_reg,
                                  double * result, int t, int vol){
 

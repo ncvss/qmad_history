@@ -22,7 +22,7 @@ namespace qmad_history{
 // also, now gamma works as a template function too
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
-void dw_templ_mtsg_tmgsMhs_loop (const double * U, const double * v,
+inline void dw_templ_mtsg_tmgsMhs_loop (const double * U, const double * v,
                                  const int * hops, __m256d massf_reg,
                                  double * result, int t, int vol){
 

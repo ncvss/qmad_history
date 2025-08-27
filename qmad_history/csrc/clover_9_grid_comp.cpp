@@ -47,7 +47,7 @@ inline int fixo (int t, int triix){
 // also, now gamma works as a template function too
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
-void dw_templ_mtsg_tmgsMhs_loop (const double * U, const double * v,
+inline void dw_templ_mtsg_tmgsMhs_loop (const double * U, const double * v,
                                  const int * hops, __m256d massf_reg,
                                  double * result, int t, int vol){
 
@@ -126,7 +126,7 @@ void dw_templ_mtsg_tmgsMhs_loop (const double * U, const double * v,
 }
 
 
-void dwc_grid_mtsg_tmngsMhs_clover (const double * v, const double * F,
+inline void dwc_grid_mtsg_tmngsMhs_clover (const double * v, const double * F,
                                     double * result, int t){
     
     // 6 registers, each with the wilson term result for one s,g combination
