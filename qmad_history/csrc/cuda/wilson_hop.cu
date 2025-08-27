@@ -131,7 +131,7 @@ __global__ void gaugeterms_mtsg_kernel (const c10::complex<double> * U, const c1
     if (t<vol){
         int sgcomp = comp%12;
         int s = sgcomp/3;
-        int g = sgcomp%3;
+        int g = comp%3;
         for (int gi = 0; gi < 3; gi++){
             result[comp] += (
                 std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
