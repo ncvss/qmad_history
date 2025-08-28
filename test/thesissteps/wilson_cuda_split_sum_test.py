@@ -71,7 +71,7 @@ for nb in range(0,n_measurements,n_batchlen):
             torch.cuda.synchronize()
             res_tmsgh = dw_cu.cu_Mtmsgh(vcu)
             torch.cuda.synchronize()
-            res_3d_tsg = dw_cu.cu_3d_tsg(vcu)
+            res_3d_tsg = dw_cu.cuv2(vcu)
             torch.cuda.synchronize()
             if n == 0 and nb == 0:
                 # res_ref = dw_ref(vcu)
@@ -101,7 +101,7 @@ for nb in range(0,n_measurements,n_batchlen):
 
             torch.cuda.synchronize()
             start = time.perf_counter_ns()
-            res_3d_tsg = dw_cu.cu_3d_tsg(vcu)
+            res_3d_tsg = dw_cu.cuv2(vcu)
             torch.cuda.synchronize()
             stop = time.perf_counter_ns()
             results[vol]["tsg_3d_kernel"][n] = stop - start
