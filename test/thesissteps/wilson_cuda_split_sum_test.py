@@ -27,13 +27,14 @@ print("using device",cuda0)
 
 # this is on the gpu, so we need way larger lattices
 start_grid = [8,8,4,8]
+start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
 n_vols = 13
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
     all_grids.append(copy.copy(start_grid))
 
-vols = [4*4*4*4*2**ii for ii in range(n_vols)]
+vols = [start_vol*2**ii for ii in range(n_vols)]
 names = ["tsg_kernel","tmsg_kernel","tmsgh_kernel","tsg_3d_kernel"]
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
