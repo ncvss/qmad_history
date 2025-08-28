@@ -35,7 +35,7 @@ for i in range(n_vols):
     all_grids.append(copy.copy(start_grid))
 
 vols = [start_vol*2 *2**ii for ii in range(n_vols)]
-names = ["tsg_kernel","tmsg_kernel","tmsgh_kernel","tsg_3d_kernel"]
+names = ["1_kernel","mu_kernels","mu_gi_kernels",]
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
@@ -65,46 +65,37 @@ for nb in range(0,n_measurements,n_batchlen):
 
         for n in range(n_warmup):
             torch.cuda.synchronize()
-            #res_tsg = dw_cu.cu_tsg(vcu)
+            res_1 = dw_cu.cu_tsg(vcu)
             torch.cuda.synchronize()
-            #res_tmsg = dw_cu.cu_Mtmsg(vcu)
+            res_mu = dw_cu.cuv2(vcu)
             torch.cuda.synchronize()
-            res_tmsgh = dw_cu.cu_Mtmsgh(vcu)
+            res_mugi = dw_cu.cuv3(vcu)
             torch.cuda.synchronize()
-            res_3d_tsg = dw_cu.cuv2(vcu)
-            torch.cuda.synchronize()
-            #if n == 0 and nb == 0:
+            if n == 0 and nb == 0:
                 # res_ref = dw_ref(vcu)
-                #print("computations equal:",[torch.allclose(res_tsg,res_ch) for res_ch in [res_tmsg,res_tmsgh]])
+                print("computations equal:",[torch.allclose(res_1,res_ch) for res_ch in [res_mu,res_mugi]])
 
         for n in range(nb,nb+n_batchlen):
             torch.cuda.synchronize()
             start = time.perf_counter_ns()
-            #res_tsg = dw_cu.cu_tsg(vcu)
+            res_1 = dw_cu.cu_tsg(vcu)
             torch.cuda.synchronize()
             stop = time.perf_counter_ns()
-            results[vol]["tsg_kernel"][n] = stop - start
+            results[vol]["1_kernel"][n] = stop - start
 
             torch.cuda.synchronize()
             start = time.perf_counter_ns()
-            #res_tmsg = dw_cu.cu_Mtmsg(vcu)
+            res_mu = dw_cu.cuv2(vcu)
             torch.cuda.synchronize()
             stop = time.perf_counter_ns()
-            results[vol]["tmsg_kernel"][n] = stop - start
+            results[vol]["mu_kernels"][n] = stop - start
 
             torch.cuda.synchronize()
             start = time.perf_counter_ns()
-            res_tmsgh = dw_cu.cu_Mtmsgh(vcu)
+            res_mugi = dw_cu.cuv3(vcu)
             torch.cuda.synchronize()
             stop = time.perf_counter_ns()
-            results[vol]["tmsgh_kernel"][n] = stop - start
-
-            torch.cuda.synchronize()
-            start = time.perf_counter_ns()
-            res_3d_tsg = dw_cu.cuv2(vcu)
-            torch.cuda.synchronize()
-            stop = time.perf_counter_ns()
-            results[vol]["tsg_3d_kernel"][n] = stop - start
+            results[vol]["mu_gi_kernels"][n] = stop - start
 
 
 for vol,cgrid in zip(vols,all_grids):
