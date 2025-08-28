@@ -13,6 +13,7 @@
 // I do not know how complex numbers work in Pytorch CUDA
 // so I used the Pytorch C++ datatypes, but the cuda::std funciton for complex conjugate
 // the test result: cuda::std does not work with this datatype
+// but std:: works
 
 namespace qmad_history {
 
@@ -931,5 +932,6 @@ TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
     m.impl("dw_full_cuv11", &dw_full_cuv11);
 }
 // muss wirklich jeder CUDA-Operator eine Variante eines C++-Operators sein?
+// Die Antwort ist: Nein!
 
 }
