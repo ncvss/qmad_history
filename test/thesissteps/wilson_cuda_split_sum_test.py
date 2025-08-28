@@ -34,7 +34,7 @@ for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
     all_grids.append(copy.copy(start_grid))
 
-vols = [start_vol*2*2**ii for ii in range(n_vols)]
+vols = [start_vol*2 *2**ii for ii in range(n_vols)]
 names = ["tsg_kernel","tmsg_kernel","tmsgh_kernel","tsg_3d_kernel"]
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
@@ -67,7 +67,7 @@ for nb in range(0,n_measurements,n_batchlen):
             torch.cuda.synchronize()
             res_tsg = dw_cu.cu_tsg(vcu)
             torch.cuda.synchronize()
-            #res_tmsg = dw_cu.cu_Mtmsg(vcu)
+            res_tmsg = dw_cu.cu_Mtmsg(vcu)
             torch.cuda.synchronize()
             #res_tmsgh = dw_cu.cu_Mtmsgh(vcu)
             torch.cuda.synchronize()
@@ -87,7 +87,7 @@ for nb in range(0,n_measurements,n_batchlen):
 
             torch.cuda.synchronize()
             start = time.perf_counter_ns()
-            #res_tmsg = dw_cu.cu_Mtmsg(vcu)
+            res_tmsg = dw_cu.cu_Mtmsg(vcu)
             torch.cuda.synchronize()
             stop = time.perf_counter_ns()
             results[vol]["tmsg_kernel"][n] = stop - start
