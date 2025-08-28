@@ -130,8 +130,7 @@ __global__ void gaugeterms_mtsg_kernel (const c10::complex<double> * U, const c1
     int t = comp/12;
 
     if (t<vol){
-        int sgcomp = comp%12;
-        int s = sgcomp/3;
+        int s = (comp%12)/3;
         int g = comp%3;
         for (int gi = 0; gi < 3; gi++){
             result[comp] += (
@@ -206,9 +205,8 @@ __global__ void gaugeterms_mtsg_gi2_kernel (const c10::complex<double> * U, cons
     int t = comp/12;
 
     if (t<vol){
-        int sgcomp = comp%12;
-        int s = sgcomp/3;
-        int g = sgcomp%3;
+        int s = (comp%12)/3;
+        int g = comp%3;
         result[comp] += (
             std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
             * (
@@ -304,10 +302,9 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
 
     if (t<vol){
         //int sgcomp = threadIdx.y;
-        int sgcomp = compstep%36;
-        int s = sgcomp/9;
-        int g = (sgcomp%9)/3;
-        int gi = sgcomp%3;
+        int s = (compstep%36)/9;
+        int g = (compstep%9)/3;
+        int gi = compstep%3;
 
         c10::complex<double> gi_step;
 
@@ -463,15 +460,13 @@ __global__ void gaugeterms_gimu_mtsg_kernel (const c10::complex<double> * U, con
                                           const int32_t * hops, double * result, int vol){
 
     int compstep = blockIdx.x * blockDim.x + threadIdx.x;
-    int t = compstep/(4*4*3*3);
+    int t = compstep/144;
 
     if (t<vol){
-        int sgmucomp = compstep%(4*4*3*3);
-        int mu = sgmucomp/36;
-        int sgcomp = sgmucomp%36;
-        int s = sgcomp/9;
-        int g = (sgcomp%9)/3;
-        int gi = sgcomp%3;
+        int mu = (compstep%144)/36;
+        int s = (compstep%36)/9;
+        int g = (compstep%9)/3;
+        int gi = compstep%3;
 
         c10::complex<double> gi_step;
 
