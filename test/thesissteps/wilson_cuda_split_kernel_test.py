@@ -28,7 +28,7 @@ print("using device",cuda0)
 # this is on the gpu, so we need way larger lattices
 start_grid = [8,8,4,8]
 start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
-n_vols = 13
+n_vols = 12
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2

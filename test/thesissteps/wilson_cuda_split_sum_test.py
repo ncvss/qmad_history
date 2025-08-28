@@ -28,7 +28,7 @@ print("using device",cuda0)
 # this is on the gpu, so we need way larger lattices
 start_grid = [8,8,4,8]
 start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
-n_vols = 13
+n_vols = 12
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
@@ -65,29 +65,29 @@ for nb in range(0,n_measurements,n_batchlen):
 
         for n in range(n_warmup):
             torch.cuda.synchronize()
-            #res_tsg = dw_cu.cu_tsg(vcu)
+            res_tsg = dw_cu.cu_tsg(vcu)
             torch.cuda.synchronize()
-            #res_tmsg = dw_cu.cu_Mtmsg(vcu)
+            res_tmsg = dw_cu.cu_Mtmsg(vcu)
             torch.cuda.synchronize()
             res_tmsgh = dw_cu.cu_Mtmsgh(vcu)
             torch.cuda.synchronize()
             res_3d_tsg = dw_cu.cuv2(vcu)
             torch.cuda.synchronize()
-            #if n == 0 and nb == 0:
+            if n == 0 and nb == 0:
                 # res_ref = dw_ref(vcu)
-                #print("computations equal:",[torch.allclose(res_tsg,res_ch) for res_ch in [res_tmsg,res_tmsgh]])
+                print("computations equal:",[torch.allclose(res_tsg,res_ch) for res_ch in [res_tmsg,res_tmsgh,res_3d_tsg]])
 
         for n in range(nb,nb+n_batchlen):
             torch.cuda.synchronize()
             start = time.perf_counter_ns()
-            #res_tsg = dw_cu.cu_tsg(vcu)
+            res_tsg = dw_cu.cu_tsg(vcu)
             torch.cuda.synchronize()
             stop = time.perf_counter_ns()
             results[vol]["tsg_kernel"][n] = stop - start
 
             torch.cuda.synchronize()
             start = time.perf_counter_ns()
-            #res_tmsg = dw_cu.cu_Mtmsg(vcu)
+            res_tmsg = dw_cu.cu_Mtmsg(vcu)
             torch.cuda.synchronize()
             stop = time.perf_counter_ns()
             results[vol]["tmsg_kernel"][n] = stop - start
