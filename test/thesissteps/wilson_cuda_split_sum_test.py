@@ -3,8 +3,6 @@ import numpy as np
 import time
 import copy
 
-import gpt as g
-
 from qmad_history import wilson
 
 
@@ -26,8 +24,6 @@ print("mass =", mass)
 
 cuda0 = torch.device("cuda:0")
 print("using device",cuda0)
-
-rng = g.random("thesisst")
 
 start_grid = [4,4,2,4]
 n_vols = 15
