@@ -25,8 +25,9 @@ print("mass =", mass)
 cuda0 = torch.device("cuda:0")
 print("using device",cuda0)
 
-start_grid = [4,4,2,4]
-n_vols = 15
+# this is on the gpu, so we need way larger lattices
+start_grid = [8,8,4,8]
+n_vols = 13
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
