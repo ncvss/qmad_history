@@ -34,7 +34,7 @@ for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
     all_grids.append(copy.copy(start_grid))
 
-vols = [start_vol*2**ii for ii in range(n_vols)]
+vols = [start_vol*2*2**ii for ii in range(n_vols)]
 names = ["tsg_kernel","tmsg_kernel","tmsgh_kernel","tsg_3d_kernel"]
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
