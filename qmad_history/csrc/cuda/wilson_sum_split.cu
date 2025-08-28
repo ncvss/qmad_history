@@ -240,6 +240,7 @@ at::Tensor dw_hop_mtsg_cu_Mtmsgh (const at::Tensor& U_ten, const at::Tensor& v_t
     const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+    double * result_d = (double*) result;
 
     // allocate one thread for each vector component times mu and gi, in 1024-thread blocks
     int threadnum = 1024;
@@ -249,7 +250,7 @@ at::Tensor dw_hop_mtsg_cu_Mtmsgh (const at::Tensor& U_ten, const at::Tensor& v_t
     // mass term
     dw_mass_kernel_tsg<<<mass_blocknum,threadnum>>>(v,result,mass,vol);
     // neighbour hop terms
-    dw_neighbour_kernel_tmsgh<<<blocknum,threadnum>>>(U,v,hops,result,vol);
+    dw_neighbour_kernel_tmsgh<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
 
     return result_ten;
 }
@@ -266,11 +267,11 @@ __global__ void dw_kernel_3d_tsg (const c10::complex<double> * U, const c10::com
         int s = threadIdx.y;
         int g = threadIdx.z;
 
-        result[comp] = (4.0 + mass) * v[comp];
+        result[vixo(t,g,s)] = (4.0 + mass) * v[vixo(t,g,s)];
 
         for (int mu = 0; mu < 4; mu++){
             for (int gi = 0; gi < 3; gi++){
-                result[comp] += (
+                result[vixo(t,g,s)] += (
                     std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                     * (
                         -v[vixo(hops[hix(t,mu,0)],gi,s)]
