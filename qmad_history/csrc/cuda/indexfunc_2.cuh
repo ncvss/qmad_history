@@ -19,7 +19,7 @@ __device__ __forceinline__ int vixo (int t, int g, int s){
 }
 
 // address for F in layout t,munu,g,gi
-inline int fix (int t, int munu, int g, int gi){
+__device__ __forceinline__ int fix (int t, int munu, int g, int gi){
     return t*54 + munu*9 + g*3 + gi;
 }
 
@@ -33,7 +33,7 @@ inline int fix (int t, int munu, int g, int gi){
 //  4 | 9 |13 |16 |18 |19
 //  5 |10 |14 |17 |19 |20
 // (the lower triangles are the same numbers, but conjugated)
-inline int sfix (int t, int sblock, int triix){
+__device__ __forceinline__ int sfix (int t, int sblock, int triix){
     return t*42 + triix*2 + sblock;
 }
 

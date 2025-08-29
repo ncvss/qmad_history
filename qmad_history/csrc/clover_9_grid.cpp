@@ -280,7 +280,7 @@ at::Tensor dwc_templ_mtsgt_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
     __m256d massf_reg = _mm256_set1_pd(4.0 + mass);
 
     // register for the field strength term prefactor -1/2*csw
-    __m256d csw_reg = _mm256_set1_pd(-0.5*csw);
+    //__m256d csw_reg = _mm256_set1_pd(-0.5*csw);
 
     // vectorization over 2 sites in time
     // thus the space-time loop goes only over half the volume
