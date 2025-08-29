@@ -578,7 +578,7 @@ class wilson_clover_hop_mtsg_sigpre:
         dim = list(U.shape[1:5])
         self.dim = dim
         # tensor product of the sigma matrix and field strength tensor
-        field_strength_sigma = torch.zeros(dim+[4,3,4,3], dtype=torch.cdouble)
+        field_strength_sigma = torch.zeros(dim+[4,3,4,3], dtype=torch.cdouble, device=op_device)
         # the field strength is antisymmetric, so we only need to compute nu < mu
         for mu in range(4):
             for nu in range(mu):
@@ -593,7 +593,7 @@ class wilson_clover_hop_mtsg_sigpre:
         # print(field_strength_sigma[0,0,2,2,0:6])
 
         self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,_triag_mask_1],
-                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=-1).to(op_device)
+                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=-1)
         assert tuple(self.field_strength_sigma.shape[4:6]) == (21,2,)
 
         # print(self.fs[0,0,2,2])
