@@ -26,6 +26,7 @@ cuda0 = torch.device("cuda:0")
 print("using device",cuda0)
 
 # this is on the gpu, so we need way larger lattices
+# but also, these lattices are currently too large
 start_grid = [8,8,4,8]
 start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
 n_vols = 12
@@ -60,19 +61,16 @@ for nb in range(0,n_measurements,n_batchlen):
 
         dwc_f = clover.wilson_clover_hop_mtsg(Ucu, mass, csw)
         dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
-        # dw_ref = qcd_ml.qcd.dirac.dirac_wilson(Ucu, mass)
 
-        # calls = [dw_cu.cu_tsg,dw_cu.cu_Mtmsg,dw_cu.cu_Mtmsgh,dw_cu.cu_3d_tsg]
 
         for n in range(n_warmup):
             torch.cuda.synchronize()
             res_f = dwc_f.cu_tsg(vcu)
             torch.cuda.synchronize()
-            #res_sf = dwc_sf.cu_tsg_tn(vcu)
+            res_sf = dwc_sf.cu_tsg_tn(vcu)
             torch.cuda.synchronize()
-            #if n == 0 and nb == 0:
-            #    # res_ref = dw_ref(vcu)
-            #    print("computations equal:",torch.allclose(res_f,res_sf))
+            if n == 0 and nb == 0:
+                print("computations equal:",torch.allclose(res_f,res_sf))
 
         for n in range(nb,nb+n_batchlen):
             torch.cuda.synchronize()
