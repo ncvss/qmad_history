@@ -231,6 +231,9 @@ class wilson_clover_hop_mtsg:
         self.mass_parameter = mass_parameter
         self.csw = csw
 
+        op_device = U.device
+        # device of U must be the device of all other tensors
+
         grid = U.shape[1:5]
         strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
         npind = np.indices(grid, sparse=False)
@@ -247,7 +250,7 @@ class wilson_clover_hop_mtsg:
             # compute flattened index by dot product with strides
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(op_device)
 
         Hp = lambda mu, lst: lst + [(mu, 1)]
         Hm = lambda mu, lst: lst + [(mu, -1)]
@@ -280,7 +283,7 @@ class wilson_clover_hop_mtsg:
             for nu in range(mu):
                 field_strength.append((Qmunu[mu][nu] - Qmunu[nu][mu]) / 8)
         
-        self.field_strength = torch.stack(field_strength, dim=4)
+        self.field_strength = torch.stack(field_strength, dim=4).to(op_device)
         assert tuple(self.field_strength.shape[4:7]) == (6,3,3,)
     
     def __str__(self):
@@ -521,6 +524,10 @@ class wilson_clover_hop_mtsg_sigpre:
         self.csw = csw
         self.U = U
 
+        op_device = U.device
+        # device of U must be the device of all other tensors
+        dev_sigma = _sigma.to(op_device)
+
         grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]]
         strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
         npind = np.indices(grid, sparse=False)
@@ -537,7 +544,7 @@ class wilson_clover_hop_mtsg_sigpre:
             # compute flattened index by dot product with strides
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(op_device)
         
 
         Hp = lambda mu, lst: lst + [(mu, 1)]
@@ -573,7 +580,7 @@ class wilson_clover_hop_mtsg_sigpre:
         for mu in range(4):
             for nu in range(mu):
                 Fmunu = (Qmunu[mu][nu] - Qmunu[nu][mu]) / 8
-                Fsigma = torch.einsum('xyztgh,sr->xyztsgrh',Fmunu,_sigma[mu][nu])
+                Fsigma = torch.einsum('xyztgh,sr->xyztsgrh',Fmunu,dev_sigma[mu][nu])
                 # csw gets absorbed into the matrices
                 field_strength_sigma += 2*(-self.csw/4)*Fsigma
         
@@ -583,7 +590,7 @@ class wilson_clover_hop_mtsg_sigpre:
         # print(field_strength_sigma[0,0,2,2,0:6])
 
         self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,_triag_mask_1],
-                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=-1)
+                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=-1).to(op_device)
         assert tuple(self.field_strength_sigma.shape[4:6]) == (21,2,)
 
         # print(self.fs[0,0,2,2])
