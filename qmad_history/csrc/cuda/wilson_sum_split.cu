@@ -29,11 +29,11 @@ __global__ void dw_kernel_tsg (const c10::complex<double> * U, const c10::comple
         int s = (comp%12)/3;
         int g = comp%3;
 
-        result[comp] = (4.0 + mass) * v[comp];
+        c10::complex<double> incr = (4.0 + mass) * v[comp];
 
         for (int mu = 0; mu < 4; mu++){
             for (int gi = 0; gi < 3; gi++){
-                result[comp] += (
+                incr += (
                     std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                     * (
                         -v[vixo(hops[hix(t,mu,0)],gi,s)]
@@ -47,6 +47,8 @@ __global__ void dw_kernel_tsg (const c10::complex<double> * U, const c10::comple
                 ) * 0.5;
             }
         }
+
+        result[comp] = incr;
     }
 
 }
@@ -267,11 +269,11 @@ __global__ void dw_kernel_3d_tsg (const c10::complex<double> * U, const c10::com
         int s = threadIdx.y;
         int g = threadIdx.z;
 
-        result[vixo(t,g,s)] = (4.0 + mass) * v[vixo(t,g,s)];
+        c10::complex<double> incr = (4.0 + mass) * v[vixo(t,g,s)];
 
         for (int mu = 0; mu < 4; mu++){
             for (int gi = 0; gi < 3; gi++){
-                result[vixo(t,g,s)] += (
+                incr += (
                     std::conj(U[uixo(hops[hix(t,mu,0)],mu,gi,g,vol)])
                     * (
                         -v[vixo(hops[hix(t,mu,0)],gi,s)]
@@ -285,6 +287,8 @@ __global__ void dw_kernel_3d_tsg (const c10::complex<double> * U, const c10::com
                 ) * 0.5;
             }
         }
+
+        result[vixo(t,g,s)] = incr;
     }
 
 }

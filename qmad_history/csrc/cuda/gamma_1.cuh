@@ -29,4 +29,33 @@ static __constant__ c10::complex<double> gamf [4*4] =
 //         [ i,-i,-i, i],
 //         [ 1, 1, 1, 1] ]
 
+// lookup tables for vmunu = sigmamunu @ v
+// munu is a single index {0,1,2,3,4,5}, corresponding to {(1,0),(2,0),(2,1),(3,0),(3,1),(3,2)}
+// the ith spin component of vmunu is:
+// vmunu_{i} = sigf[munu][i] * v_{sigx[munu][i]}
+
+// sigx[munu][i] is the spin component of v that is proportional to spin component i of sigmamunu @ v
+static const int64_t sigx [6*4] =
+    {0,1,2,3,
+     1,0,3,2,
+     1,0,3,2,
+     1,0,3,2,
+     1,0,3,2,
+     0,1,2,3 };
+
+// sigf[munu][i] is the prefactor of spin component i of sigmamunu @ v
+static const c10::complex<double> sigf [6*4] =
+    {c10::complex<double>(0, 1), c10::complex<double>(0,-1), c10::complex<double>(0, 1), c10::complex<double>(0,-1),
+        1,  -1,   1,  -1,
+     c10::complex<double>(0, 1), c10::complex<double>(0, 1), c10::complex<double>(0, 1), c10::complex<double>(0, 1),
+     c10::complex<double>(0,-1), c10::complex<double>(0,-1), c10::complex<double>(0, 1), c10::complex<double>(0, 1),
+        1,  -1,  -1,   1,
+     c10::complex<double>(0,-1), c10::complex<double>(0, 1), c10::complex<double>(0, 1), c10::complex<double>(0,-1) };
+// sigf = [[ i,-i, i,-i],
+//         [ 1,-1, 1,-1],
+//         [ i, i, i, i],
+//         [-i,-i, i, i],
+//         [ 1,-1,-1, 1],
+//         [-i, i, i,-i] ]
+
 }

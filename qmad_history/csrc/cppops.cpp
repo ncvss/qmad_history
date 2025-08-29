@@ -100,6 +100,9 @@ TORCH_LIBRARY(qmad_history, m) {
     m.def("dw_hop_mtsg_cu_Mtmsg(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
     m.def("dw_hop_mtsg_cu_Mtmsgh(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
     m.def("dw_hop_mtsg_cu_3d_tsg(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
+
+    m.def("dwc_hop_mtsg_cu_tsg_fpre(Tensor U_ten, Tensor v_ten, Tensor F_ten, Tensor hops_ten, float mass, float csw) -> Tensor");
+    m.def("dwc_hop_mtsg_cu_tsg_sigpre(Tensor U_ten, Tensor v_ten, Tensor F_ten, Tensor hops_ten, float mass) -> Tensor");
 }
 
 // Registers backend implementations

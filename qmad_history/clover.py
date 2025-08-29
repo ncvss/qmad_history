@@ -306,6 +306,10 @@ class wilson_clover_hop_mtsg:
         return torch.ops.qmad_history.dwc_templ_mtsg_tmsgMhns(self.U, v, self.field_strength,
                                                               self.hop_inds, self.mass_parameter,
                                                               self.csw)
+    def cu_tsg(self, v):
+        return torch.ops.qmad_history.dwc_hop_mtsg_cu_tsg_fpre.default(self.U, v, self.field_strength,
+                                                              self.hop_inds, self.mass_parameter,
+                                                              self.csw)
     
     def all_calls(self):
         return [self.tmsgMhn] + ([self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else [])
@@ -611,6 +615,9 @@ class wilson_clover_hop_mtsg_sigpre:
                                                              self.hop_inds, self.mass_parameter)
     def Ubound_tmngsMhs (self, v):
         return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.phase_U, v, self.field_strength_sigma,
+                                                             self.hop_inds, self.mass_parameter)
+    def cu_tsg_tn (self, v):
+        return torch.ops.qmad_history.dwc_hop_mtsg_cu_tsg_sigpre.default(self.U, v, self.field_strength_sigma,
                                                              self.hop_inds, self.mass_parameter)
 
     def all_calls(self):
