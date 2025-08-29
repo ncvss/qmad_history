@@ -29,7 +29,10 @@ class _PathBufferTemp:
                     U = torch.roll(U, -1, mu + 1)
 
 
+
+
 # gamma and sigma matrices for intermediate computations
+
 _gamma = [torch.tensor([[0,0,0,1j]
                 ,[0,0,1j,0]
                 ,[0,-1j,0,0]
@@ -48,9 +51,9 @@ _gamma = [torch.tensor([[0,0,0,1j]
                 ,[0,1,0,0]], dtype=torch.cdouble)
     ]
 
-_sigma = [[(torch.matmul(_gamma[mu], _gamma[nu]) 
-            - torch.matmul(_gamma[nu], _gamma[mu])) / 2
-            for nu in range(4)] for mu in range(4)]
+_sigma = torch.stack([torch.stack([(torch.matmul(_gamma[mu], _gamma[nu]) 
+                        - torch.matmul(_gamma[nu], _gamma[mu])) / 2.0
+                        for nu in range(4)], dim=0) for mu in range(4)], dim=0)
 
 # masks to choose upper and lower triangle
 _triag_mask_1 = torch.tensor([[(sw < 6 and sh < 6 and sh <= sw) for sw in range(12)] for sh in range(12)],
