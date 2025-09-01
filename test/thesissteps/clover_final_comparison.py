@@ -35,7 +35,7 @@ rng = g.random("th")
 
 start_grid = [4,4,2,4]
 # mehr als 32x32x32x32 ist auf meinem PC nicht möglich, zu wenig Speicher führt zu Absturz
-n_vols = 15
+n_vols = 12
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
@@ -54,7 +54,6 @@ results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 for nb in range(0,n_measurements,n_batchlen):
     max_exceeded = {na:False for na in names}
-    max_exceeded["qcd_ml"] = True
     print("\ncurrent batch:",nb,flush=True)
     print("current grid layout: ")
     for L_incr in range(n_vols):
