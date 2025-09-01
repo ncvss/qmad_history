@@ -46,7 +46,6 @@ names = ["gpt","qcd_ml","qmad","qmad_gridl"]
 
 # set max time for measure
 max_time = 2.0e+9
-max_exceeded = {na:False for na in names}
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
@@ -54,6 +53,7 @@ results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 # it does not work without that, pytorch does some strange things
 
 for nb in range(0,n_measurements,n_batchlen):
+    max_exceeded = {na:False for na in names}
     print("\ncurrent batch:",nb,flush=True)
     print("current grid layout: ")
     for L_incr in range(n_vols):
