@@ -76,19 +76,21 @@ for nb in range(0,n_measurements,n_batchlen):
         dwc_g = g.qcd.fermion.wilson_clover(U_gpt, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
                                                   "isAnisotropic":False,"boundary_phases":[1.0,1.0,1.0,1.0],}, )
 
-        dwc_py = qcd_ml.qcd.dirac.dirac_wilson_clover(U_mtsg,mass,csw)
+        if not max_exceeded["qcd_ml"]:
+            dwc_py = qcd_ml.qcd.dirac.dirac_wilson_clover(U_mtsg,mass,csw)
         dwc_qmad = clover.wilson_clover_hop_mtsg_sigpre(U_mtsg,mass,csw)
         dwc_gridl = clover.wilson_clover_hop_mtsgt2_sigpre(U_mtsg,mass,csw)
 
         for n in range(n_warmup):
             res_g = dwc_g(v_gpt)
-            if not max_exceeded["qcd_ml"] or n == 0:
+            if not max_exceeded["qcd_ml"]:
                 res_py = dwc_py(v_mtsg)
             res_qmad = dwc_qmad.tmnsgMhs(v_mtsg)
             res_gridl = dwc_gridl.tmngsMht(v_mtsgt)
             if n == 0 and nb == 0:
+                res_gpt_back = torch.tensor(compat.lattice_to_array(res_g))
                 res_grid_back = torch.cat([res_gridl[:,:,:,:,:,:,0],res_gridl[:,:,:,:,:,:,1]], dim=3)
-                print("computations equal:",[torch.allclose(res_py,res_ch) for res_ch in [res_qmad,res_grid_back]])
+                print("computations equal:",[torch.allclose(res_gpt_back,res_ch) for res_ch in [res_qmad,res_grid_back]])
 
         for n in range(nb,nb+n_batchlen):
             start = time.perf_counter_ns()
