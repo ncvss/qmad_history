@@ -82,7 +82,8 @@ for nb in range(0,n_measurements,n_batchlen):
 
         for n in range(n_warmup):
             res_g = dwc_g(v_gpt)
-            res_py = dwc_py(v_mtsg)
+            if not max_exceeded["qcd_ml"] or n == 0:
+                res_py = dwc_py(v_mtsg)
             res_qmad = dwc_qmad.tmnsgMhs(v_mtsg)
             res_gridl = dwc_gridl.tmngsMht(v_mtsgt)
             if n == 0 and nb == 0:
