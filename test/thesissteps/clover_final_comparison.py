@@ -18,8 +18,8 @@ print("running on host",hostname,"with",num_threads,"threads")
 
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
-n_measurements = 200
-n_batch = 5
+n_measurements = 20
+n_batch = 1
 assert n_measurements%n_batch == 0
 n_batchlen = n_measurements//n_batch
 n_warmup = 20
@@ -54,6 +54,7 @@ results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 for nb in range(0,n_measurements,n_batchlen):
     max_exceeded = {na:False for na in names}
+    print("time exceeded",max_time,":",max_exceeded)
     print("\ncurrent batch:",nb,flush=True)
     print("current grid layout: ")
     for L_incr in range(n_vols):
