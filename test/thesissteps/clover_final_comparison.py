@@ -119,6 +119,7 @@ for nb in range(0,n_measurements,n_batchlen):
             results[vol]["qmad_gridl"][n] = stop - start
         
         for na in names:
+            print(na,":",results[vol][na][nb])
             if results[vol][na][nb] > max_time:
                 max_exceeded[na] = True
             
