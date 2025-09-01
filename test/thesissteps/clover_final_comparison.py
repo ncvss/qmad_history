@@ -35,7 +35,8 @@ rng = g.random("th")
 
 start_grid = [4,4,2,4]
 # mehr als 32x32x32x32 ist auf meinem PC nicht möglich, zu wenig Speicher führt zu Absturz
-n_vols = 15
+# auf hpd führt seltsamerweise 64x32x32x64 auch zum Absturz
+n_vols = 14
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
