@@ -18,11 +18,11 @@ print("running on host",hostname,"with",num_threads,"threads")
 
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
-n_measurements = 10
-n_batch = 1
+n_measurements = 200
+n_batch = 5
 assert n_measurements%n_batch == 0
 n_batchlen = n_measurements//n_batch
-n_warmup = 10
+n_warmup = 20
 
 mass = -0.5
 kappa = 1.0/2.0/(mass + 4.0)
@@ -35,13 +35,13 @@ rng = g.random("th")
 
 start_grid = [4,4,2,4]
 # mehr als 32x32x32x32 ist auf meinem PC nicht möglich, zu wenig Speicher führt zu Absturz
-n_vols = 12
+n_vols = 15
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
     all_grids.append(copy.copy(start_grid))
 
-vols = [4*4*4*4*2**ii for ii in range(n_vols)]
+vols = [4*4*4*4 *2**ii for ii in range(n_vols)]
 names = ["gpt","qcd_ml","qmad","qmad_gridl"]
 
 # set max time for measure
