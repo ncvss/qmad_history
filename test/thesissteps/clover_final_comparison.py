@@ -60,7 +60,7 @@ for nb in range(0,n_measurements,n_batchlen):
         cgrid = all_grids[L_incr]
         vol = cgrid[0]*cgrid[1]*cgrid[2]*cgrid[3]
         print(cgrid,end=" ",flush=True)
-        print("time exceeded",max_time,":",max_exceeded)
+        #print("time exceeded",max_time,":",max_exceeded)
 
         # initialise the fields for this volume
         U_gpt = g.qcd.gauge.random(g.grid(cgrid, g.double), rng)
@@ -118,7 +118,7 @@ for nb in range(0,n_measurements,n_batchlen):
             results[vol]["qmad_gridl"][n] = stop - start
         
         for na in names:
-            print(na,":",results[vol][na][nb])
+            #print(na,":",results[vol][na][nb])
             if results[vol][na][nb] > max_time:
                 max_exceeded[na] = True
             
