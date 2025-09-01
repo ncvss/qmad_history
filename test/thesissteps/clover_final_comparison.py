@@ -18,11 +18,11 @@ print("running on host",hostname,"with",num_threads,"threads")
 
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
-n_measurements = 20
+n_measurements = 10
 n_batch = 1
 assert n_measurements%n_batch == 0
 n_batchlen = n_measurements//n_batch
-n_warmup = 20
+n_warmup = 10
 
 mass = -0.5
 kappa = 1.0/2.0/(mass + 4.0)
@@ -119,7 +119,7 @@ for nb in range(0,n_measurements,n_batchlen):
             results[vol]["qmad_gridl"][n] = stop - start
         
         for na in names:
-            if results[vol][na][nb+n_batchlen-1] > max_time:
+            if results[vol][na][nb] > max_time:
                 max_exceeded[na] = True
             
 
