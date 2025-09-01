@@ -44,6 +44,10 @@ for i in range(n_vols):
 vols = [4*4*4*4*2**ii for ii in range(n_vols)]
 names = ["gpt","qcd_ml","qmad","qmad_gridl"]
 
+# set max time for measure
+max_time = 2.0e+9
+max_exceeded = {na:False for na in names}
+
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 # split data generation into batches that each iterate over all sites
@@ -74,7 +78,7 @@ for nb in range(0,n_measurements,n_batchlen):
 
         dwc_py = qcd_ml.qcd.dirac.dirac_wilson_clover(U_mtsg,mass,csw)
         dwc_qmad = clover.wilson_clover_hop_mtsg_sigpre(U_mtsg,mass,csw)
-        dwc_gridl = clover.wilson_clover_hop_mtsgt2_sigpre(U_mtsg,)
+        dwc_gridl = clover.wilson_clover_hop_mtsgt2_sigpre(U_mtsg,mass,csw)
 
         for n in range(n_warmup):
             res_g = dwc_g(v_gpt)
@@ -91,10 +95,13 @@ for nb in range(0,n_measurements,n_batchlen):
             stop = time.perf_counter_ns()
             results[vol]["gpt"][n] = stop - start
 
-            start = time.perf_counter_ns()
-            res_py = dwc_py(v_mtsg)
-            stop = time.perf_counter_ns()
-            results[vol]["qcd_ml"][n] = stop - start
+            if not max_exceeded["qcd_ml"]:
+                start = time.perf_counter_ns()
+                res_py = dwc_py(v_mtsg)
+                stop = time.perf_counter_ns()
+                results[vol]["qcd_ml"][n] = stop - start
+            else:
+                results[vol]["qcd_ml"][n] = 1.0e+10
 
             start = time.perf_counter_ns()
             res_qmad = dwc_qmad.tmnsgMhs(v_mtsg)
@@ -105,6 +112,11 @@ for nb in range(0,n_measurements,n_batchlen):
             res_gridl = dwc_gridl.tmngsMht(v_mtsgt)
             stop = time.perf_counter_ns()
             results[vol]["qmad_gridl"][n] = stop - start
+        
+        for na in names:
+            if results[vol][na][nb+n_batchlen-1] > max_time:
+                max_exceeded[na] = True
+            
 
 
 for vol,cgrid in zip(vols,all_grids):
