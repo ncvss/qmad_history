@@ -83,6 +83,9 @@ for nb in range(0,n_measurements,n_batchlen):
         dwc_qmad = clover.wilson_clover_hop_mtsg_sigpre(U_mtsg,mass,csw)
         dwc_gridl = clover.wilson_clover_hop_mtsgt2_sigpre(U_mtsg,mass,csw)
 
+        g.message("after initialisation:")
+        g.mem_report(False)
+
         for n in range(n_warmup):
             res_g = dwc_g(v_gpt)
             if not max_exceeded["qcd_ml"]:
@@ -93,6 +96,10 @@ for nb in range(0,n_measurements,n_batchlen):
                 res_gpt_back = torch.tensor(compat.lattice_to_array(res_g))
                 res_grid_back = torch.cat([res_gridl[:,:,:,:,:,:,0],res_gridl[:,:,:,:,:,:,1]], dim=3)
                 print("computations equal:",[torch.allclose(res_gpt_back,res_ch) for res_ch in [res_qmad,res_grid_back]])
+
+        # prints memory used by gpt
+        g.message("after warmup call:")
+        g.mem_report(False)
 
         for n in range(nb,nb+n_batchlen):
             start = time.perf_counter_ns()
