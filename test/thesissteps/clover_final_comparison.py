@@ -46,7 +46,7 @@ vols = [4*4*4*4 *2**ii for ii in range(n_vols)]
 names = ["gpt","qcd_ml","qmad","qmad_gridl"]
 
 # set max time for measure
-max_time = 2.0e+9
+max_time = 8.0e+9
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
