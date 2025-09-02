@@ -387,5 +387,24 @@ at::Tensor dwc_grid_mtsg_tmnsgMhs_backw (const at::Tensor& U_tensor, const at::T
 }
 
 }
+#else
+
+namespace qmad_history {
+
+at::Tensor dwc_grid_mtsg_backw (const at::Tensor& U_tensor, const at::Tensor& grad_tensor,
+                                  const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                  double mass){
+    TORCH_CHECK(0,"AVX not compiled");
+    return grad_tensor;
+}
+
+at::Tensor dwc_grid_mtsg_tmnsgMhs_backw (const at::Tensor& U_tensor, const at::Tensor& grad_tensor,
+                                  const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                  double mass){
+    TORCH_CHECK(0,"AVX not compiled");
+    return grad_tensor;
+}
+
+}
 
 #endif
