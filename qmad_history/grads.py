@@ -46,7 +46,7 @@ def _dwc_grid_mtsg_tmnsgMhs_backward(ctx, grad):
     grad_v = None
     # currently, we only implement the v gradient
     if ctx.needs_input_grad[1]:
-        grad_v = torch.ops.qmad_history.dwc_grid_mtsg_backw(U, grad, fs, h, mass.item())
+        grad_v = torch.ops.qmad_history.dwc_grid_mtsg_tmnsgMhs_backw(U, grad, fs, h, mass.item())
     return None, grad_v, None, None, None
 
 def _dwc_grid_mtsg_tmnsgMhs_setup_context(ctx, inputs, output):
@@ -66,8 +66,9 @@ def _dwc_grid_mtsg_tmnsgMhs_setup_context(ctx, inputs, output):
 # to save values to be used in the backward.
 torch.library.register_autograd("qmad_history::dwc_grid_mtsg_tmngsMhs",
                                 _dwc_grid_mtsg_backward, setup_context=_dwc_grid_mtsg_setup_context)
+
 torch.library.register_autograd("qmad_history::dwc_grid_mtsg_tmnsgMhs",
-                                _dwc_grid_mtsg_backward, setup_context=_dwc_grid_mtsg_setup_context)
+                                _dwc_grid_mtsg_tmnsgMhs_backward, setup_context=_dwc_grid_mtsg_tmnsgMhs_setup_context)
 
 torch.library.register_autograd("qmad_history::dw_templ_mtsg_tmgsMhs",
                                 _dw_templ_mtsg_backward, setup_context=_dw_templ_mtsg_setup_context)
