@@ -70,6 +70,10 @@ at::Tensor dwc_grid_mtsg_backw (const at::Tensor& U_tensor, const at::Tensor& gr
                                   const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                   double mass);
 
+at::Tensor dwc_grid_mtsg_tmnsgMhs_backw (const at::Tensor& U_tensor, const at::Tensor& grad_tensor,
+                                  const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                  double mass);
+
 
 /**
  * @brief Dirac Wilson operator using vectorisation with the Grid memory layout
