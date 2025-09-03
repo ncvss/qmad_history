@@ -21,7 +21,7 @@ print("running on host",hostname,"with",num_threads,"threads")
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
 n_measurements = 200
-n_batch = 5
+n_batch = 10
 assert n_measurements%n_batch == 0
 n_batchlen = n_measurements//n_batch
 n_warmup = 20
@@ -32,6 +32,7 @@ csw = 1.0
 
 print(n_measurements,"repetitions in",n_batch,"batches")
 print("mass =", mass)
+print("csw =",csw)
 
 rng = g.random("these")
 
