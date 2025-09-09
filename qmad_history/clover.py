@@ -599,12 +599,15 @@ class wilson_clover_hop_mtsg_sigpre:
         # print(self.fs[0,0,2,2])
 
         # implementation of the phases: multiply the gauge field at the boundary with the phase
-        phase_U = U.clone()
-        phase_U[0,-1] *= boundary_phases[0]
-        phase_U[1,:,-1] *= boundary_phases[1]
-        phase_U[2,:,:,-1] *= boundary_phases[2]
-        phase_U[3,:,:,:,-1] *= boundary_phases[3]
-        self.phase_U = phase_U
+        if all([phf == 1 for phf in boundary_phases]):
+            self.phase_U = U
+        else:
+            phase_U = U.clone()
+            phase_U[0,-1] *= boundary_phases[0]
+            phase_U[1,:,-1] *= boundary_phases[1]
+            phase_U[2,:,:,-1] *= boundary_phases[2]
+            phase_U[3,:,:,:,-1] *= boundary_phases[3]
+            self.phase_U = phase_U
 
     def __str__(self):
         return "dwc_sigpre_hop_mtsg"
