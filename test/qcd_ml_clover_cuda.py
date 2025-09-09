@@ -2,6 +2,7 @@
 
 import torch
 import qcd_ml
+from qmad_history import clover
 
 lat_dim = [16,16,16,16]
 cuda0 = torch.device("cuda:0")
@@ -19,6 +20,10 @@ Ucu = U.to(cuda0)
 vcu = v.to(cuda0)
 
 dwc = qcd_ml.qcd.dirac.dirac_wilson_clover(Ucu, mass, csw)
+dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
 
 res = dwc(vcu)
+res2 = dwc_sf.cu_tsg_tn(vcu)
+
+print("result equal:", torch.allclose(res,res2))
 
