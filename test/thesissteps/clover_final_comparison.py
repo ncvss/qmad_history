@@ -56,6 +56,7 @@ results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 for nb in range(0,n_measurements,n_batchlen):
     max_exceeded = {na:False for na in names}
+    #max_exceeded["qcd_ml"] = True
     print("\ncurrent batch:",nb,flush=True)
     print("current grid layout: ")
     for L_incr in range(n_vols):
