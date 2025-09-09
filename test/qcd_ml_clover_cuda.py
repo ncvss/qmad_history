@@ -16,18 +16,24 @@ print("mass:",mass)
 
 U = torch.randn([4]+lat_dim+[3,3], dtype=torch.cdouble)
 v = torch.randn(lat_dim+[4,3], dtype=torch.cdouble)
+U2 = torch.randn([4]+lat_dim+[3,3], dtype=torch.cdouble)
 
 Ucu = U.to(cuda0)
 vcu = v.to(cuda0)
+U2cu = U2.to(cuda0)
 
 dwc = qcd_ml.qcd.dirac.dirac_wilson_clover(Ucu, mass, csw)
 time.sleep(5)
 
-dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
-time.sleep(5)
+dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
+time.sleep(6)
+
+# dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
+# time.sleep(5)
 
 res = dwc(vcu)
-res2 = dwc_sf.cu_tsg_tn(vcu)
+res2 = dwc2(vcu)
+# res3 = dwc_sf.cu_tsg_tn(vcu)
 
-print("result equal:", torch.allclose(res,res2))
+print("result difference:", torch.sum(torch.abs(res-res2)))
 
