@@ -28,12 +28,12 @@ time.sleep(5)
 dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
 time.sleep(6)
 
-# dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
-# time.sleep(5)
+dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
+time.sleep(7)
 
 res = dwc(vcu)
 res2 = dwc2(vcu)
-# res3 = dwc_sf.cu_tsg_tn(vcu)
+res3 = dwc_sf.cu_tsg_tn(vcu)
 
-print("result difference:", torch.sum(torch.abs(res-res2)))
+print("result difference:", torch.sum(torch.abs(res-res2)), torch.sum(torch.abs(res-res3)))
 
