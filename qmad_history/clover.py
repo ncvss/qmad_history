@@ -532,8 +532,8 @@ class wilson_clover_hop_mtsg_sigpre:
         dev_sigma = _sigma.to(op_device)
 
         grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32, device=op_device)
-        indices = torch.tensor(np.indices(grid, sparse=False), dtype=torch.int32, device=op_device)
+        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int64, device=op_device)
+        indices = torch.tensor(np.indices(grid, sparse=False), dtype=torch.int64, device=op_device)
         indices = torch.permute(indices, (1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
 
         hop_inds = []
@@ -547,7 +547,7 @@ class wilson_clover_hop_mtsg_sigpre:
             # compute flattened index by dot product with strides
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(dtype=torch.int32)
         
 
         Hp = lambda mu, lst: lst + [(mu, 1)]
