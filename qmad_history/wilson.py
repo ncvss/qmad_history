@@ -2,6 +2,7 @@ import torch
 import numpy as np
 
 from .settings import capab
+from .util import get_hop_indices
 
 # import os
 
@@ -110,22 +111,7 @@ class wilson_hop_mtsg:
         # device of U must be the device of all other tensors
 
         grid = U.shape[1:5]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
-        npind = np.indices(grid, sparse=False)
-        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
-
-        hop_inds = []
-        for coord in range(4):
-            # index after a negative step in coord direction
-            minus_hop_ind = torch.clone(indices)
-            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
-            # index after a positive step in coord direction
-            plus_hop_ind = torch.clone(indices)
-            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
-            # compute flattened index by dot product with strides
-            hop_inds.append(torch.matmul(minus_hop_ind, strides))
-            hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(op_device)
+        self.hop_inds = get_hop_indices(grid).to(op_device)
 
         # for every grid point, the phase for a hop in all 8 directions (negative and positive)
         hop_phases = torch.ones(list(grid)+[8], dtype=torch.int8)
@@ -139,12 +125,15 @@ class wilson_hop_mtsg:
         self.hop_phases = hop_phases.to(op_device)
 
         # different implementation of the phases: multiply the gauge field at the boundary with the phase
-        phase_U = U.clone()
-        phase_U[0,-1] *= boundary_phases[0]
-        phase_U[1,:,-1] *= boundary_phases[1]
-        phase_U[2,:,:,-1] *= boundary_phases[2]
-        phase_U[3,:,:,:,-1] *= boundary_phases[3]
-        self.phase_U = phase_U
+        if all([phf == 1 for phf in boundary_phases]):
+            self.phase_U = U
+        else:
+            phase_U = U.clone()
+            phase_U[0,-1] *= boundary_phases[0]
+            phase_U[1,:,-1] *= boundary_phases[1]
+            phase_U[2,:,:,-1] *= boundary_phases[2]
+            phase_U[3,:,:,:,-1] *= boundary_phases[3]
+            self.phase_U = phase_U
         
 
     def __str__(self):
@@ -245,22 +234,7 @@ class wilson_hop_tmgs:
         self.mass_parameter = mass_parameter
 
         grid = U.shape[0:4]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
-        npind = np.indices(grid, sparse=False)
-        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
-
-        hop_inds = []
-        for coord in range(4):
-            # index after a negative step in coord direction
-            minus_hop_ind = torch.clone(indices)
-            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
-            # index after a positive step in coord direction
-            plus_hop_ind = torch.clone(indices)
-            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
-            # compute flattened index by dot product with strides
-            hop_inds.append(torch.matmul(minus_hop_ind, strides))
-            hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        self.hop_inds = get_hop_indices(grid)
 
     def __str__(self):
         return "dw_hop_tmgs"
@@ -307,22 +281,7 @@ class wilson_hop_mtsgt:
         self.U = torch.stack([Ueven, Uodd], dim=-1)
 
         grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]//2]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
-        npind = np.indices(grid, sparse=False)
-        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
-
-        hop_inds = []
-        for coord in range(4):
-            # index after a negative step in coord direction
-            minus_hop_ind = torch.clone(indices)
-            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
-            # index after a positive step in coord direction
-            plus_hop_ind = torch.clone(indices)
-            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
-            # compute flattened index by dot product with strides
-            hop_inds.append(torch.matmul(minus_hop_ind, strides))
-            hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        self.hop_inds = get_hop_indices(grid)
 
     def __str__(self):
         return "dw_hop_mtsgt"
@@ -367,22 +326,7 @@ class wilson_hop_mtsgt2:
         # self.U[:,:,:,-1] = Usimd[:,:,:,0]
 
         grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]//2]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
-        npind = np.indices(grid, sparse=False)
-        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
-
-        hop_inds = []
-        for coord in range(4):
-            # index after a negative step in coord direction
-            minus_hop_ind = torch.clone(indices)
-            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
-            # index after a positive step in coord direction
-            plus_hop_ind = torch.clone(indices)
-            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
-            # compute flattened index by dot product with strides
-            hop_inds.append(torch.matmul(minus_hop_ind, strides))
-            hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        self.hop_inds = get_hop_indices(grid)
 
     def __str__(self):
         return "dw_hop_mtsgt2"
@@ -413,22 +357,7 @@ class wilson_full:
 
         grid = U.shape[1:5]
         vol = grid[0]*grid[1]*grid[2]*grid[3]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
-        npind = np.indices(grid, sparse=False)
-        indices = torch.tensor(npind, dtype=torch.int32).permute((1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
-
-        hop_inds = []
-        for coord in range(4):
-            # index after a negative step in coord direction
-            minus_hop_ind = torch.clone(indices)
-            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+grid[coord], grid[coord])
-            # index after a positive step in coord direction
-            plus_hop_ind = torch.clone(indices)
-            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, grid[coord])
-            # compute flattened index by dot product with strides
-            hop_inds.append(torch.matmul(minus_hop_ind, strides))
-            hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        hop_inds = torch.stack(hop_inds, dim=1).contiguous()
+        hop_inds = get_hop_indices(grid)
         assert tuple(hop_inds.shape) == (vol,8,)
 
         self.dummy_dw = torch.randn([vol,4,3,49],dtype=torch.cdouble,device=op_device)
