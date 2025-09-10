@@ -5,7 +5,7 @@ import qcd_ml
 from qmad_history import clover
 import time
 
-lat_dim = [4,4,4,4]
+lat_dim = [16,16,16,16]
 cuda0 = torch.device("cuda:0")
 mass = -0.5
 csw = 1.0
