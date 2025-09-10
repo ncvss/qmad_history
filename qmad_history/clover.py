@@ -530,10 +530,13 @@ class wilson_clover_hop_mtsg_sigpre:
         op_device = U.device
         # device of U must be the device of all other tensors
         dev_sigma = _sigma.to(op_device)
+        dev_triag_mask_1 = _triag_mask_1.to(op_device)
+        dev_triag_mask_2 = _triag_mask_2.to(op_device)
 
         grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]]
-        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int64, device=op_device)
-        indices = torch.tensor(np.indices(grid, sparse=False), dtype=torch.int64, device=op_device)
+        # this has to be on CPU, integer arithmetic is not implemented on GPU
+        strides = torch.tensor([grid[1]*grid[2]*grid[3], grid[2]*grid[3], grid[3], 1], dtype=torch.int32)
+        indices = torch.tensor(np.indices(grid, sparse=False), dtype=torch.int32)
         indices = torch.permute(indices, (1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
 
         hop_inds = []
@@ -547,7 +550,7 @@ class wilson_clover_hop_mtsg_sigpre:
             # compute flattened index by dot product with strides
             hop_inds.append(torch.matmul(minus_hop_ind, strides))
             hop_inds.append(torch.matmul(plus_hop_ind, strides))
-        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(dtype=torch.int32)
+        self.hop_inds = torch.stack(hop_inds, dim=1).contiguous().to(op_device)
         
 
         Hp = lambda mu, lst: lst + [(mu, 1)]
@@ -592,8 +595,8 @@ class wilson_clover_hop_mtsg_sigpre:
         # this should be hermitian and have two 6x6 blocks (diagonal has numerical artifacts)
         # print(field_strength_sigma[0,0,2,2,0:6])
 
-        self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,_triag_mask_1],
-                                                 field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=-1)
+        self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,dev_triag_mask_1],
+                                                 field_strength_sigma[:,:,:,:,dev_triag_mask_2]],dim=-1)
         assert tuple(self.field_strength_sigma.shape[4:6]) == (21,2,)
 
         # print(self.fs[0,0,2,2])
