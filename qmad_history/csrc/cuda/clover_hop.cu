@@ -59,7 +59,7 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
 }
 
 
-at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& F_ten,
+at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& fs_tensors,
                                   const at::Tensor& hops_ten, double mass, double csw){
     
     TORCH_CHECK(v_ten.dim() == 6);
@@ -84,7 +84,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
     at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
     const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
     const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
-    const c10::complex<double>* F = F_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* F = fs_tensors.const_data_ptr<c10::complex<double>>();
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
@@ -218,7 +218,7 @@ __global__ void dwc_cl_kernel_sigpre (const c10::complex<double> * v, const c10:
 }
 
 
-at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& F_ten,
+at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& fs_tensors,
                                   const at::Tensor& hops_ten, double mass){
     
     TORCH_CHECK(v_ten.dim() == 6);
@@ -243,7 +243,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor
     at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
     const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
     const c10::complex<double>* v = v_ten.const_data_ptr<c10::complex<double>>();
-    const c10::complex<double>* F = F_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* F = fs_tensors.const_data_ptr<c10::complex<double>>();
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
