@@ -23,17 +23,20 @@ vcu = v.to(cuda0)
 U2cu = U2.to(cuda0)
 
 dwc = qcd_ml.qcd.dirac.dirac_wilson_clover(Ucu, mass, csw)
-time.sleep(5)
+time.sleep(20)
 
 dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
-time.sleep(6)
+time.sleep(21)
 
 dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
-time.sleep(7)
+time.sleep(22)
 
 res = dwc(vcu)
+time.sleep(23)
 res2 = dwc2(vcu)
+time.sleep(24)
 res3 = dwc_sf.cu_tsg_tn(vcu)
+time.sleep(25)
 
 print("result difference:", torch.sum(torch.abs(res-res2)), torch.sum(torch.abs(res-res3)))
 
