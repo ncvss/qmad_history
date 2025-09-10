@@ -245,11 +245,15 @@ class wilson_clover_hop_mtsg:
         return torch.ops.qmad_history.dwc_hop_mtsg_cu_tsg_fpre.default(self.U, v, self.field_strength,
                                                               self.hop_inds, self.mass_parameter,
                                                               self.csw)
+    def debug_cuda(self, v):
+        return torch.ops.qmad_history.dwc_debug_cuda_fpre(self.U, v, self.field_strength,
+                                                            self.hop_inds, self.mass_parameter,
+                                                            self.csw)
     
     def all_calls(self):
-        return [self.tmsgMhn] + ([self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else [])
+        return [self.tmsgMhn, self.debug_cuda] + ([self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else [])
     def all_call_names(self):
-        return ["tmsgMhn"] + (["avx_tmgsMhns", "avx_tmsgMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab["vectorise"] else [])
+        return ["tmsgMhn", "debug_cuda"] + (["avx_tmgsMhns", "avx_tmsgMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab["vectorise"] else [])
 
 
 

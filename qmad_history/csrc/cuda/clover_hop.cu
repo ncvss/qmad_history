@@ -27,7 +27,7 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
         int s = (comp%12)/3;
         int g = comp%3;
 
-        c10::complex<double> incr = (4.0 + mass) * v[comp];
+        c10::complex<double> incr = (4.0 + mass) * v[vixo(t,g,s)];
         for (int mu = 0; mu < 4; mu++){
             for (int gi = 0; gi < 3; gi++){
                 incr += (
@@ -53,7 +53,7 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
             }
         }
 
-        result[comp] = incr - csw*0.5*cl_incr;
+        result[vixo(t,g,s)] = incr - csw*0.5*cl_incr;
     }
 
 }
@@ -72,6 +72,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
     
     TORCH_CHECK(U_ten.is_contiguous());
     TORCH_CHECK(v_ten.is_contiguous());
+    TORCH_CHECK(fs_tensors.is_contiguous());
     TORCH_CHECK(hops_ten.is_contiguous());
 
     TORCH_INTERNAL_ASSERT(U_ten.device().type() == at::DeviceType::CUDA);

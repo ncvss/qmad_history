@@ -41,4 +41,9 @@ at::Tensor dwc_hop_mtsg_tmnsgMh_sigpre (const at::Tensor& U_ten, const at::Tenso
                                      const at::Tensor& fs_tensors,
                                      const at::Tensor& hops_ten, double mass);
 
+
+at::Tensor dwc_debug_cuda_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                     const at::Tensor& fs_tensors,
+                                     const at::Tensor& hops_ten, double mass, double csw);
+
 }
