@@ -520,7 +520,7 @@ class wilson_clover_hop_mtsg_sigpre:
         return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.phase_U, v, self.field_strength_sigma,
                                                              self.hop_inds, self.mass_parameter)
     def cu_tsg_tn (self, v):
-        return torch.ops.qmad_history.dwc_hop_mtsg_cu_tsg_sigpre.default(self.U, v, self.field_strength_sigma,
+        return torch.ops.qmad_history.dwc_hop_mtsg_cu_tsg_sigpre(self.U, v, self.field_strength_sigma,
                                                              self.hop_inds, self.mass_parameter)
 
     def all_calls(self):

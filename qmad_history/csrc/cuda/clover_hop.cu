@@ -94,7 +94,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
     int threadnum = 1024;
     int blocknum = (vvol+threadnum-1)/threadnum;
 
-    printf("threadnum vs lattice: %d %d\n", vol, threadnum*blocknum);
+    // printf("threadnum vs lattice: %d %d\n", vol, threadnum*blocknum);
 
     dwc_kernel_tsg_fpre<<<blocknum,threadnum>>>(U,v,F,hops,result,mass,csw,vol);
 
