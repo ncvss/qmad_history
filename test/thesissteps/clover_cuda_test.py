@@ -22,7 +22,7 @@ print(n_measurements,"repetitions in",n_batch,"batches")
 print("mass =", mass)
 print("csw =",csw)
 
-cuda0 = torch.device("cuda:0")
+cuda0 = torch.device("cuda")
 print("using device",cuda0)
 
 # this is on the gpu, so we need way larger lattices
