@@ -25,6 +25,8 @@ U2 = torch.empty([4]+lat_dim_2+[3,3], dtype=torch.cdouble)
 U2[:,:,:,:,:] = torch.eye(3, dtype=torch.cdouble)
 v2 = torch.zeros(lat_dim_2+[4,3], dtype=torch.cdouble)
 v2[0,1,0,0,1,2] = 1
+v2[0,1,0,0,3,0] = 1
+v2[0,1,0,0,0,1] = 1
 
 Ucu = U.to(cuda0)
 vcu = v.to(cuda0)
