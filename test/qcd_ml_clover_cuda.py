@@ -19,13 +19,12 @@ lat_dim_1 = list(U.shape[1:5])
 lat_dim_2 = [16,16,16,16]
 print("lattice:", lat_dim_1, "and", lat_dim_2)
 
-#U = torch.randn([4]+lat_dim_1+[3,3], dtype=torch.cdouble)
 v = torch.randn(lat_dim_1+[4,3], dtype=torch.cdouble)
 
 U2 = torch.empty([4]+lat_dim_2+[3,3], dtype=torch.cdouble)
 U2[:,:,:,:,:] = torch.eye(3, dtype=torch.cdouble)
 v2 = torch.zeros(lat_dim_2+[4,3], dtype=torch.cdouble)
-v[0,1,0,0,0,0] = 1
+v2[0,1,0,0,0,0] = 1
 
 # Ucu = U.to(cuda0)
 # vcu = v.to(cuda0)
