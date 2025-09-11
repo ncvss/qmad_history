@@ -60,6 +60,7 @@ for nb in range(0,n_measurements,n_batchlen):
         vcu = v_cpu.to(cuda0)
 
         dwc_f = clover.wilson_clover_hop_mtsg(Ucu, mass, csw)
+        torch.cuda.synchronize()
         dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
 
 
