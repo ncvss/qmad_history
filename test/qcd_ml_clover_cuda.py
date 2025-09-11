@@ -67,10 +67,11 @@ print(F[0,1,0,0])
 
 res2_py = dwc2(v2cu)
 torch.cuda.synchronize()
-res2_f = dwc2_f.cu_tsg(v2cu)
-torch.cuda.synchronize()
-res2_sf = dwc2_sf.cu_tsg_tn(v2cu)
-torch.cuda.synchronize()
+for _ in range(100):
+    res2_f = dwc2_f.cu_tsg(v2cu)
+    torch.cuda.synchronize()
+    res2_sf = dwc2_sf.cu_tsg_tn(v2cu)
+    torch.cuda.synchronize()
 
 # res_py_cpu = res_py.cpu()
 # res_sf_cpu = res_sf.cpu()
