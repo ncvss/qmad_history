@@ -14,23 +14,22 @@ csw = 1.0
 print("test if wilson clover works on gpu")
 print("mass:",mass)
 
-U = torch.tensor(np.load("./test/1500.config.npy"), dtype=torch.cdouble)
-lat_dim_1 = list(U.shape[1:5])
+U2 = torch.tensor(np.load("./test/1500.config.npy"), dtype=torch.cdouble)
+
+lat_dim_1 = list(U2.shape[1:5])
 lat_dim_2 = [16,16,16,16]
 print("lattice:", lat_dim_1, "and", lat_dim_2)
 
 v = torch.randn(lat_dim_1+[4,3], dtype=torch.cdouble)
 
-U2 = torch.empty([4]+lat_dim_2+[3,3], dtype=torch.cdouble)
-U2[:,:,:,:,:] = torch.eye(3, dtype=torch.cdouble)
-# v2 = torch.zeros(lat_dim_2+[4,3], dtype=torch.cdouble)
-# v2[0,1,0,0,1,2] = 1
-# v2[0,1,0,0,3,0] = 1
-# v2[0,1,0,0,0,1] = 1
-v2 = torch.randn(lat_dim_2+[4,3], dtype=torch.cdouble)
+# U2 = torch.empty([4]+lat_dim_2+[3,3], dtype=torch.cdouble)
+# U2[:,:,:,:,:] = torch.eye(3, dtype=torch.cdouble)
+v2 = torch.zeros(lat_dim_1+[4,3], dtype=torch.cdouble)
+v2[0,1,0,0,1,2] = 1
+# v2 = torch.randn(lat_dim_2+[4,3], dtype=torch.cdouble)
 
-Ucu = U.to(cuda0)
-vcu = v.to(cuda0)
+# Ucu = U.to(cuda0)
+# vcu = v.to(cuda0)
 U2cu = U2.to(cuda0)
 v2cu = v2.to(cuda0)
 
