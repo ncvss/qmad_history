@@ -1,6 +1,7 @@
 #include <ATen/Operators.h>
 #include <torch/all.h>
 #include <torch/library.h>
+#include <stdio.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -50,8 +51,12 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
             for (int munu = 0; munu < 6; munu++){
                 cl_incr += F[fix(t,munu,g,gi)]
                         * sigf[munu*4+s] * v[vixo(t,gi,sigx[munu*4+s])];
+                if (t==8*16){
+                    printf("%f ", cl_incr.real());
+                }
             }
         }
+        printf("\n");
 
         result[vixo(t,g,s)] = incr - csw*0.5*cl_incr;
     }
