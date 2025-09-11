@@ -242,7 +242,7 @@ class wilson_clover_hop_mtsg:
                                                               self.hop_inds, self.mass_parameter,
                                                               self.csw)
     def cu_tsg(self, v):
-        return torch.ops.qmad_history.dwc_hop_mtsg_cu_tsg_fpre.default(self.U, v, self.field_strength,
+        return torch.ops.qmad_history.dwc_hop_mtsg_cu_tsg_fpre(self.U, v, self.field_strength,
                                                               self.hop_inds, self.mass_parameter,
                                                               self.csw)
     def debug_cuda(self, v):
