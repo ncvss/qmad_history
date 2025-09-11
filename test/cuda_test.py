@@ -23,7 +23,8 @@ w_cu = qmad_history.wilson.wilson_hop_mtsg(Ucu, mass)
 
 res = w_cpu.tmsgMh(v)
 
-w_cu_versions = [w_cu.tmsgMh, w_cu.cuv2, w_cu.cuv3, w_cu.cuv4, w_cu.cuv5, w_cu.cuv6, w_cu.cuv7, w_cu.cuv8, w_cu.cuv9]
+w_cu_versions = [w_cu.tmsgMh, w_cu.cuv2, w_cu.cuv3, w_cu.cuv4, w_cu.cuv5, w_cu.cuv6, w_cu.cuv7, w_cu.cuv8, w_cu.cuv9,
+                 w_cu.cu_tsg, w_cu.cu_Mtmsg, w_cu.cu_Mtmsgh, w_cu.cu_3d_tsg]
 
 correctnesses = []
 
