@@ -38,7 +38,7 @@ torch.cuda.synchronize()
 dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
 torch.cuda.synchronize()
 
-dwc_f = clover.wilson_clover_hop_mtsg(U2cu, mass, csw)
+dwc_f = clover.wilson_clover_hop_mtsg(Ucu, mass, csw)
 torch.cuda.synchronize()
 
 
