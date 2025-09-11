@@ -13,6 +13,7 @@ csw = 1.0
 
 print("test if wilson clover works on gpu")
 print("mass:",mass)
+print("csw:",csw)
 
 U2 = torch.tensor(np.load("./test/1500.config.npy"), dtype=torch.cdouble)
 
@@ -53,6 +54,10 @@ torch.cuda.synchronize()
 dwc2_f = clover.wilson_clover_hop_mtsg(U2cu, mass, csw)
 torch.cuda.synchronize()
 
+F = dwc2_f.field_strength.cpu()
+print("field strength:")
+print(F[0,1,0,0])
+
 # res_py = dwc(vcu)
 # torch.cuda.synchronize()
 # res_sf = dwc_sf.cu_tsg_tn(vcu)
@@ -75,8 +80,8 @@ res2_sf_cpu = res2_sf.cpu()
 res2_f_cpu = res2_f.cpu()
 torch.cuda.synchronize()
 
-print("result order: Fmunu, sigmaF")
-print("unit gauge field:")
+print("result order: sigmaF, Fmunu")
+print("config 1500 field:")
 print("single fermion variable (0,1,0,0):")
 print(res2_py_cpu[0,1,0,0])
 print(res2_sf_cpu[0,1,0,0])
@@ -91,5 +96,5 @@ torch.cuda.synchronize()
 
 print("result differences:")
 # print("config 1500:", torch.sum(torch.abs(res_py_cpu-res_sf_cpu)), torch.sum(torch.abs(res_py_cpu-res_f_cpu)))
-print("unit gauge:", torch.sum(torch.abs(res2_py_cpu-res2_sf_cpu)), torch.sum(torch.abs(res2_py_cpu-res2_f_cpu)))
+print("config 1500:", torch.sum(torch.abs(res2_py_cpu-res2_sf_cpu)), torch.sum(torch.abs(res2_py_cpu-res2_f_cpu)))
 
