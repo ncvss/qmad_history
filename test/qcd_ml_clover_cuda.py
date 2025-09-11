@@ -6,23 +6,25 @@ from qmad_history import clover
 import time
 import numpy as np
 
-lat_dim = [16,16,16,16]
 cuda0 = torch.device("cuda")
 print("using device",cuda0)
 mass = -0.5
 csw = 1.0
 
 print("test if wilson clover works on gpu")
-print("lattice:", lat_dim)
 print("mass:",mass)
 
-U = np.load("./1500.config.npy")
-#U = torch.randn([4]+lat_dim+[3,3], dtype=torch.cdouble)
-v = torch.randn(lat_dim+[4,3], dtype=torch.cdouble)
+U = torch.tensor(np.load("./test/1500.config.npy"), dtype=torch.cdouble)
+lat_dim_1 = list(U.shape[1:5])
+lat_dim_2 = [16,16,16,16]
+print("lattice:", lat_dim_1, "and", lat_dim_2)
 
-U2 = torch.empty([4]+lat_dim+[3,3], dtype=torch.cdouble)
+#U = torch.randn([4]+lat_dim_1+[3,3], dtype=torch.cdouble)
+v = torch.randn(lat_dim_1+[4,3], dtype=torch.cdouble)
+
+U2 = torch.empty([4]+lat_dim_2+[3,3], dtype=torch.cdouble)
 U2[:,:,:,:,:] = torch.eye(3, dtype=torch.cdouble)
-v2 = torch.zeros(lat_dim+[4,3], dtype=torch.cdouble)
+v2 = torch.zeros(lat_dim_2+[4,3], dtype=torch.cdouble)
 v[0,1,0,0,0,0] = 1
 
 Ucu = U.to(cuda0)
