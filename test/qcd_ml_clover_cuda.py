@@ -36,16 +36,17 @@ torch.cuda.synchronize()
 # dwc = qcd_ml.qcd.dirac.dirac_wilson_clover(Ucu, mass, csw)
 # torch.cuda.synchronize()
 
-# dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
-# torch.cuda.synchronize()
-
 # dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
 # torch.cuda.synchronize()
 
-dwc2_sf = clover.wilson_clover_hop_mtsg_sigpre(U2cu, mass, csw)
+# dwc_f = clover.wilson_clover_hop_mtsg(U2cu, mass, csw)
+# torch.cuda.synchronize()
+
+
+dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
 torch.cuda.synchronize()
 
-dwc_f = clover.wilson_clover_hop_mtsg(Ucu, mass, csw)
+dwc2_sf = clover.wilson_clover_hop_mtsg_sigpre(U2cu, mass, csw)
 torch.cuda.synchronize()
 
 dwc2_f = clover.wilson_clover_hop_mtsg(U2cu, mass, csw)
