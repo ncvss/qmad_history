@@ -51,12 +51,8 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
             for (int munu = 0; munu < 6; munu++){
                 cl_incr += F[fix(t,munu,g,gi)]
                         * sigf[munu*4+s] * v[vixo(t,gi,sigx[munu*4+s])];
-                if (t==8*16){
-                    printf("%f ", cl_incr.real());
-                }
             }
         }
-        printf("\n");
 
         result[vixo(t,g,s)] = incr - csw*0.5*cl_incr;
     }
@@ -97,6 +93,8 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
     // allocate one thread for each vector component, in 1024-thread blocks
     int threadnum = 1024;
     int blocknum = (vvol+threadnum-1)/threadnum;
+
+    printf("threadnum vs lattice: %d %d\n", vol, threadnum*blocknum);
 
     dwc_kernel_tsg_fpre<<<blocknum,threadnum>>>(U,v,F,hops,result,mass,csw,vol);
 
