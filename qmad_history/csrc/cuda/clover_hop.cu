@@ -18,7 +18,7 @@ namespace qmad_history {
 // kernel computes one spin-colour component
 // using the F_munu precomputation
 
-__global__ int dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::complex<double> * v, const c10::complex<double> * F,
+__global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::complex<double> * v, const c10::complex<double> * F,
                               const int32_t * hops, c10::complex<double> * result, double mass, double csw, int vol){
 
     int comp = blockIdx.x * blockDim.x + threadIdx.x;
@@ -56,10 +56,8 @@ __global__ int dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::c
 
         result[vixo(t,g,s)] =  - csw*0.5*cl_incr;
 
-        return 1;
     }
 
-    return 0;
 }
 
 
@@ -103,9 +101,8 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
 
     printf("before kernel: dwc_hop_mtsg_cu_tsg_fpre\n");
 
-    int k_check = dwc_kernel_tsg_fpre<<<blocknum,threadnum>>>(U,v,F,hops,result,mass,csw,vol);
+    dwc_kernel_tsg_fpre<<<blocknum,threadnum>>>(U,v,F,hops,result,mass,csw,vol);
 
-    printf("kernel check: %d\n", k_check);
 
     return result_ten;
 }
@@ -117,7 +114,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
 // the sigma F precompute clover cannot be split into components, so it needs its own kernel
 // clover can however be split into the two blocks
 
-__global__ int dwc_w_kernel_tsg (const c10::complex<double> * U, const c10::complex<double> * v,
+__global__ void dwc_w_kernel_tsg (const c10::complex<double> * U, const c10::complex<double> * v,
                               const int32_t * hops, c10::complex<double> * result, double mass, int vol){
 
     int comp = blockIdx.x * blockDim.x + threadIdx.x;
@@ -148,14 +145,12 @@ __global__ int dwc_w_kernel_tsg (const c10::complex<double> * U, const c10::comp
 
         result[comp] = incr;
 
-        return 1;
     }
 
-    return 0;
 }
 
 
-__global__ int dwc_cl_kernel_sigpre (const c10::complex<double> * v, const c10::complex<double> * sF,
+__global__ void dwc_cl_kernel_sigpre (const c10::complex<double> * v, const c10::complex<double> * sF,
                                       c10::complex<double> * result, int vol){
     int comp = blockIdx.x * blockDim.x + threadIdx.x;
     int t = comp/2;
@@ -231,10 +226,8 @@ __global__ int dwc_cl_kernel_sigpre (const c10::complex<double> * v, const c10::
         result[vixo(t,1,sbl*2+1)] += r11;
         result[vixo(t,2,sbl*2+1)] += r21;
 
-        return 1;
     }
 
-    return 0;
 }
 
 
@@ -277,10 +270,8 @@ at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor
 
     printf("before kernel: dwc_hop_mtsg_cu_tsg_sigpre\n");
 
-    int w_check = dwc_w_kernel_tsg<<<blocknum,threadnum>>>(U,v,hops,result,mass,vol);
-    int cl_check = dwc_cl_kernel_sigpre<<<cl_blocknum,threadnum>>>(v,F,result,vol);
-
-    printf("kernel checks: %d, %d\n", w_check, cl_check);
+    dwc_w_kernel_tsg<<<blocknum,threadnum>>>(U,v,hops,result,mass,vol);
+    dwc_cl_kernel_sigpre<<<cl_blocknum,threadnum>>>(v,F,result,vol);
 
     return result_ten;
 }
