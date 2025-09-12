@@ -17,15 +17,15 @@ print("csw:",csw)
 
 U2 = torch.tensor(np.load("./test/1500.config.npy"), dtype=torch.cdouble)
 
-lat_dim_1 = list(U2.shape[1:5])
-lat_dim_2 = [16,16,16,16]
+lat_dim_2 = list(U2.shape[1:5])
+lat_dim_1 = [16,16,16,16]
 print("lattice:", lat_dim_1, "and", lat_dim_2)
 
-v = torch.randn(lat_dim_1+[4,3], dtype=torch.cdouble)
+# v = torch.randn(lat_dim_1+[4,3], dtype=torch.cdouble)
 
 # U2 = torch.empty([4]+lat_dim_2+[3,3], dtype=torch.cdouble)
 # U2[:,:,:,:,:] = torch.eye(3, dtype=torch.cdouble)
-v2 = torch.zeros(lat_dim_1+[4,3], dtype=torch.cdouble)
+v2 = torch.zeros(lat_dim_2+[4,3], dtype=torch.cdouble)
 v2[0,1,0,0,1,2] = 1
 # v2 = torch.randn(lat_dim_2+[4,3], dtype=torch.cdouble)
 
@@ -67,7 +67,7 @@ print(F[0,1,0,0])
 
 res2_py = dwc2(v2cu)
 torch.cuda.synchronize()
-for _ in range(20):
+for _ in range(5):
     res2_f = dwc2_f.cu_tsg(v2cu)
     torch.cuda.synchronize()
     res2_sf = dwc2_sf.cu_tsg_tn(v2cu)
