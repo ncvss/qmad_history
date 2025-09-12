@@ -76,6 +76,8 @@ __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const 
 at::Tensor dw_hop_mtsg_tmsgMh_cu (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                   const at::Tensor& hops_ten, double mass){
     
+    //printf("dw_hop_mtsg_tmsgMh_cu\n");
+
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
     TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
@@ -154,6 +156,8 @@ __global__ void gaugeterms_mtsg_kernel (const c10::complex<double> * U, const c1
 at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                   const at::Tensor& hops_ten, double mass){
     
+    //printf("dw_hop_mtsg_cuv2\n");
+
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
     TORCH_CHECK(U_ten.size(2) == v_ten.size(1));

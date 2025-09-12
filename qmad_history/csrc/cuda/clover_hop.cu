@@ -62,6 +62,8 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
 
 at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& fs_tensors,
                                   const at::Tensor& hops_ten, double mass, double csw){
+
+    printf("call: dwc_hop_mtsg_cu_tsg_fpre\n");
     
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
@@ -225,6 +227,8 @@ __global__ void dwc_cl_kernel_sigpre (const c10::complex<double> * v, const c10:
 at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& fs_tensors,
                                   const at::Tensor& hops_ten, double mass){
     
+    printf("call: dwc_hop_mtsg_cu_tsg_sigpre\n");
+
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
     TORCH_CHECK(U_ten.size(2) == v_ten.size(1));

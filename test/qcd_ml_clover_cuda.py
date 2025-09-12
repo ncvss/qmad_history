@@ -67,7 +67,7 @@ print(F[0,1,0,0])
 
 res2_py = dwc2(v2cu)
 torch.cuda.synchronize()
-for _ in range(100):
+for _ in range(20):
     res2_f = dwc2_f.cu_tsg(v2cu)
     torch.cuda.synchronize()
     res2_sf = dwc2_sf.cu_tsg_tn(v2cu)
