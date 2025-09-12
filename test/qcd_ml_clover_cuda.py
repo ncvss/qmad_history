@@ -8,8 +8,8 @@ import numpy as np
 
 cuda0 = torch.device("cuda")
 print("using device",cuda0)
-mass = -0.5
-csw = 1.0
+mass = -0.55
+csw = 1.5
 
 print("test if wilson clover works on gpu")
 print("mass:",mass)
