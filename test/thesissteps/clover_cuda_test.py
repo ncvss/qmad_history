@@ -29,7 +29,7 @@ print("using device",cuda0)
 # but also, these lattices are currently too large
 start_grid = [8,8,4,8]
 start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
-n_vols = 11
+n_vols = 10
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
