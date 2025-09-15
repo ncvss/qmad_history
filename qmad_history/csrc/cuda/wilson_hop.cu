@@ -110,9 +110,12 @@ at::Tensor dw_hop_mtsg_tmsgMh_cu (const at::Tensor& U_ten, const at::Tensor& v_t
     // int blocknum = (vol+1023)/1024;
     // if (blocknum > 40) blocknum = 40;
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_tmsgMh_cu, dw_hop_mtsg_tmsgMh_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_tmsgMh_cu, dw_hop_mtsg_tmsgMh_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
     return result_ten;
@@ -197,9 +200,12 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv2, mass_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv2, mass_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,0);
@@ -207,9 +213,12 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,2);
     gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,3);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv2, gaugeterms_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv2, gaugeterms_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
 
@@ -287,9 +296,12 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv3, mass_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv3, mass_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,0,0);
@@ -308,9 +320,12 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,1);
     gaugeterms_mtsg_gi2_kernel<<<blocknum,thread_partition>>>(U,v,hops,result,vol,3,2);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv3, gaugeterms_mtsg_gi2_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv3, gaugeterms_mtsg_gi2_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
 
@@ -397,9 +412,12 @@ at::Tensor dw_hop_mtsg_cuv4 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv4, mass_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv4, mass_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     gaugeterms_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,0);
@@ -407,9 +425,12 @@ at::Tensor dw_hop_mtsg_cuv4 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     gaugeterms_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,2);
     gaugeterms_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,3);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv4, gaugeterms_gi_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv4, gaugeterms_gi_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
     return result_ten;
@@ -488,9 +509,12 @@ at::Tensor dw_hop_mtsg_cuv5 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv5, mass_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv5, mass_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     gaugeterms_gi3d_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,0);
@@ -498,9 +522,12 @@ at::Tensor dw_hop_mtsg_cuv5 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     gaugeterms_gi3d_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,2);
     gaugeterms_gi3d_mtsg_kernel<<<blocknum,thread_partition>>>(U,v,hops,result_d,vol,3);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv5, gaugeterms_gi3d_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv5, gaugeterms_gi3d_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
     return result_ten;
@@ -576,16 +603,22 @@ at::Tensor dw_hop_mtsg_cuv6 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv6, mass_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv6, mass_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     gaugeterms_gimu_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv6, gaugeterms_gimu_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv6, gaugeterms_gimu_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
     return result_ten;
@@ -666,16 +699,22 @@ at::Tensor dw_hop_mtsg_cuv7 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv7, mass_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv7, mass_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     gaugeterms_gimu_tloop_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv7, gaugeterms_gimu_tloop_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv7, gaugeterms_gimu_tloop_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
     return result_ten;
@@ -758,16 +797,22 @@ at::Tensor dw_hop_mtsg_cuv8 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv8, mass_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv8, mass_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     gaugeterms_gimu_tloop2_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv8, gaugeterms_gimu_tloop2_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv8, gaugeterms_gimu_tloop2_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
     return result_ten;
@@ -870,9 +915,12 @@ at::Tensor dw_hop_mtsg_cuv9 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // mass term
     mass_mtsg_kernel2<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv9, mass_mtsg_kernel2 error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv9, mass_mtsg_kernel2 error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     // gauge transport terms
     minushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,0);
@@ -883,15 +931,21 @@ at::Tensor dw_hop_mtsg_cuv9 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     plushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,2);
     minushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,3);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv9, minushop_gi_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv9, minushop_gi_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     plushop_gi_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result_d,vol,3);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dw_hop_mtsg_cuv9, plushop_gi_mtsg_kernel error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dw_hop_mtsg_cuv9, plushop_gi_mtsg_kernel error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
     return result_ten;

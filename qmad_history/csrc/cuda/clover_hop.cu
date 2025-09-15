@@ -102,9 +102,12 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
 
     dwc_kernel_tsg_fpre<<<blocknum,threadnum>>>(U,v,F,hops,result,mass,csw,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dwc_hop_mtsg_cu_tsg_fpre, dwc_kernel_tsg_fpre error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dwc_hop_mtsg_cu_tsg_fpre, dwc_kernel_tsg_fpre error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
 
 
@@ -274,16 +277,23 @@ at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor
 
     dwc_w_kernel_tsg<<<blocknum,threadnum>>>(U,v,hops,result,mass,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dwc_hop_mtsg_cu_tsg_sigpre, dwc_w_kernel_tsg error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    cudaError_t locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dwc_hop_mtsg_cu_tsg_sigpre, dwc_w_kernel_tsg error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
     dwc_cl_kernel_sigpre<<<cl_blocknum,threadnum>>>(v,F,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
-    printf("dwc_hop_mtsg_cu_tsg_sigpre, dwc_cl_kernel_sigpre error: ");
-    printf(cudaGetErrorString(cudaPeekAtLastError()));
-    printf("\n");
+    locerr = cudaPeekAtLastError();
+    if (locerr != cudaSuccess){
+        printf("dwc_hop_mtsg_cu_tsg_sigpre, dwc_cl_kernel_sigpre error: ");
+        printf(cudaGetErrorString(locerr));
+        printf("\n");
+    }
 #endif
+
     return result_ten;
 }
 
