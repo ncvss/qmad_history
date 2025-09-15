@@ -4,7 +4,7 @@
 import torch
 import qmad_history.wilson
 
-lat_dim = [8,8,8,16]
+lat_dim = [32,32,32,32]
 cuda0 = torch.device("cuda:0")
 mass = -0.5
 
