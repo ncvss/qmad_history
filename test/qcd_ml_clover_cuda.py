@@ -16,7 +16,7 @@ print("mass:",mass)
 print("csw:",csw)
 
 
-lat_dim_1 = [32,32,32,32]
+lat_dim_1 = [64,32,32,64]
 print("lattice 1:", lat_dim_1)
 
 U = torch.empty([4]+lat_dim_1+[3,3], dtype=torch.cdouble)
@@ -57,7 +57,11 @@ torch.cuda.synchronize()
 # print("field strength:")
 # print(F[0,1,0,0])
 
+time1 = time.perf_counter_ns()
 res_py = dwc(vcu)
+torch.cuda.synchronize()
+time2 = time.perf_counter_ns()
+print("python time (lattice 1):",time2-time1)
 torch.cuda.synchronize()
 res_sf = dwc_sf.cu_tsg_tn(vcu)
 torch.cuda.synchronize()
