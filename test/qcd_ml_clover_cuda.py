@@ -46,8 +46,8 @@ v2cu = v2.to(cuda0)
 # torch.cuda.synchronize()
 
 
-#dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
-#torch.cuda.synchronize()
+dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
+torch.cuda.synchronize()
 dwc2_sf = clover.wilson_clover_hop_mtsg_sigpre(U2cu, mass, csw)
 torch.cuda.synchronize()
 dwc2_f = clover.wilson_clover_hop_mtsg(U2cu, mass, csw)
@@ -64,7 +64,7 @@ torch.cuda.synchronize()
 # res_f = dwc_f.cu_tsg(vcu)
 # torch.cuda.synchronize()
 
-#res2_py = dwc2(v2cu)
+res2_py = dwc2(v2cu)
 torch.cuda.synchronize()
 for _ in range(3):
     res2_f = dwc2_f.cu_tsg(v2cu)
@@ -75,7 +75,7 @@ for _ in range(3):
 # res_py_cpu = res_py.cpu()
 # res_sf_cpu = res_sf.cpu()
 # res_f_cpu = res_f.cpu()
-#res2_py_cpu = res2_py.cpu()
+res2_py_cpu = res2_py.cpu()
 res2_sf_cpu = res2_sf.cpu()
 res2_f_cpu = res2_f.cpu()
 torch.cuda.synchronize()
@@ -83,20 +83,20 @@ torch.cuda.synchronize()
 print("result order: sigmaF, Fmunu")
 print("config 1500 field:")
 print("single fermion variable (0,1,0,0):")
-#print(res2_py_cpu[0,1,0,0])
+print(res2_py_cpu[0,1,0,0])
 print(res2_sf_cpu[0,1,0,0])
 print(res2_f_cpu[0,1,0,0])
 torch.cuda.synchronize()
 
 print("single fermion variable (0,1,1,0):")
-#print(res2_py_cpu[0,1,1,0])
+print(res2_py_cpu[0,1,1,0])
 print(res2_sf_cpu[0,1,1,0])
 print(res2_f_cpu[0,1,1,0])
 torch.cuda.synchronize()
 
-#print("result differences:")
+print("result differences:")
 # print("config 1500:", torch.sum(torch.abs(res_py_cpu-res_sf_cpu)), torch.sum(torch.abs(res_py_cpu-res_f_cpu)))
-#print("config 1500:", torch.sum(torch.abs(res2_py_cpu-res2_sf_cpu)), torch.sum(torch.abs(res2_py_cpu-res2_f_cpu)))
+print("config 1500:", torch.sum(torch.abs(res2_py_cpu-res2_sf_cpu)), torch.sum(torch.abs(res2_py_cpu-res2_f_cpu)))
 
 # result for only Fmunu:
 # single fermion variable (0,1,0,0):

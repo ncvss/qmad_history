@@ -54,7 +54,7 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
             }
         }
 
-        result[vixo(t,g,s)] =  - csw*0.5*cl_incr;
+        result[vixo(t,g,s)] = incr - csw*0.5*cl_incr;
 
     }
 
