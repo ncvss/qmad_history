@@ -1,6 +1,7 @@
 #include <ATen/Operators.h>
 #include <torch/all.h>
 #include <torch/library.h>
+#include <stdio.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -10,10 +11,6 @@
 #include "indexfunc_2.cuh"
 #include "gamma_1.cuh"
 
-
-#ifdef ERROR_HANDLING_OUTPUT
-#include <stdio.h>
-#endif
 
 // in this file: versions of the dirac wilson where the sum is split via atomicadd
 // there is only one kernel, the term it computes differs only by the indices
