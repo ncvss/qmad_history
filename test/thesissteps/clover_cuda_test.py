@@ -9,7 +9,7 @@ from qmad_history import clover
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
 n_measurements = 200
-n_batch = 10
+n_batch = 5
 assert n_measurements%n_batch == 0
 n_batchlen = n_measurements//n_batch
 n_warmup = 20
