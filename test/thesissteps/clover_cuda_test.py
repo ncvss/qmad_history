@@ -9,7 +9,7 @@ from qmad_history import clover
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
 n_measurements = 200
-n_batch = 5
+n_batch = 10
 assert n_measurements%n_batch == 0
 n_batchlen = n_measurements//n_batch
 n_warmup = 20
@@ -29,7 +29,7 @@ print("using device",cuda0)
 # but also, these lattices are currently too large
 start_grid = [8,8,4,8]
 start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
-n_vols = 10
+n_vols = 11
 all_grids = []
 for i in range(n_vols):
     start_grid[(i+2)%4] *= 2
