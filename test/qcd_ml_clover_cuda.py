@@ -16,7 +16,7 @@ print("mass:",mass)
 print("csw:",csw)
 
 
-lat_dim_1 = [16,16,16,16]
+lat_dim_1 = [32,32,32,32]
 print("lattice 1:", lat_dim_1)
 
 U = torch.empty([4]+lat_dim_1+[3,3], dtype=torch.cdouble)
