@@ -16,7 +16,7 @@ print("mass:",mass)
 print("csw:",csw)
 
 
-lat_dim_1 = [32,32,32,64]
+lat_dim_1 = [64,64,32,64]
 print("lattice 1:", lat_dim_1)
 
 U = torch.empty([4]+lat_dim_1+[3,3], dtype=torch.cdouble)
@@ -39,14 +39,14 @@ U2cu = U2.to(cuda0)
 v2cu = v2.to(cuda0)
 
 torch.cuda.synchronize()
-dwc = qcd_ml.qcd.dirac.dirac_wilson_clover(Ucu, mass, csw)
+#dwc = qcd_ml.qcd.dirac.dirac_wilson_clover(Ucu, mass, csw)
 torch.cuda.synchronize()
 dwc_sf = clover.wilson_clover_hop_mtsg_sigpre(Ucu, mass, csw)
 torch.cuda.synchronize()
 dwc_f = clover.wilson_clover_hop_mtsg(Ucu, mass, csw)
 torch.cuda.synchronize()
 
-dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
+#dwc2 = qcd_ml.qcd.dirac.dirac_wilson_clover(U2cu, mass, csw)
 torch.cuda.synchronize()
 dwc2_sf = clover.wilson_clover_hop_mtsg_sigpre(U2cu, mass, csw)
 torch.cuda.synchronize()
@@ -58,7 +58,7 @@ torch.cuda.synchronize()
 # print(F[0,1,0,0])
 
 time1 = time.perf_counter_ns()
-res_py = dwc(vcu)
+#res_py = dwc(vcu)
 torch.cuda.synchronize()
 time2 = time.perf_counter_ns()
 print("python time (lattice 1):",time2-time1)
@@ -68,7 +68,7 @@ torch.cuda.synchronize()
 res_f = dwc_f.cu_tsg(vcu)
 torch.cuda.synchronize()
 
-res2_py = dwc2(v2cu)
+#res2_py = dwc2(v2cu)
 torch.cuda.synchronize()
 for _ in range(1):
     res2_f = dwc2_f.cu_tsg(v2cu)
@@ -76,10 +76,10 @@ for _ in range(1):
     res2_sf = dwc2_sf.cu_tsg_tn(v2cu)
     torch.cuda.synchronize()
 
-res_py_cpu = res_py.cpu()
+#res_py_cpu = res_py.cpu()
 res_sf_cpu = res_sf.cpu()
 res_f_cpu = res_f.cpu()
-res2_py_cpu = res2_py.cpu()
+#res2_py_cpu = res2_py.cpu()
 res2_sf_cpu = res2_sf.cpu()
 res2_f_cpu = res2_f.cpu()
 torch.cuda.synchronize()
@@ -98,9 +98,9 @@ torch.cuda.synchronize()
 # print(res2_f_cpu[0,1,1,0])
 # torch.cuda.synchronize()
 
-print("result differences:")
-print("unit gauge:", torch.sum(torch.abs(res_py_cpu-res_sf_cpu)), torch.sum(torch.abs(res_py_cpu-res_f_cpu)))
-print("config 1500:", torch.sum(torch.abs(res2_py_cpu-res2_sf_cpu)), torch.sum(torch.abs(res2_py_cpu-res2_f_cpu)))
+#print("result differences:")
+#print("unit gauge:", torch.sum(torch.abs(res_py_cpu-res_sf_cpu)), torch.sum(torch.abs(res_py_cpu-res_f_cpu)))
+#print("config 1500:", torch.sum(torch.abs(res2_py_cpu-res2_sf_cpu)), torch.sum(torch.abs(res2_py_cpu-res2_f_cpu)))
 
 # result for only Fmunu:
 # single fermion variable (0,1,0,0):
