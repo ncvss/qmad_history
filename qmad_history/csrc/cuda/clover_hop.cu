@@ -1,7 +1,6 @@
 #include <ATen/Operators.h>
 #include <torch/all.h>
 #include <torch/library.h>
-#include <stdio.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -10,6 +9,11 @@
 // .cuh ist die Endung für CUDA-Header, sie sind aber das gleiche wie .h
 #include "indexfunc_2.cuh"
 #include "gamma_1.cuh"
+
+
+#ifdef ERROR_HANDLING_OUTPUT
+#include <stdio.h>
+#endif
 
 // in this file: versions of the dirac wilson clover
 
@@ -64,7 +68,7 @@ __global__ void dwc_kernel_tsg_fpre (const c10::complex<double> * U, const c10::
 at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& fs_tensors,
                                   const at::Tensor& hops_ten, double mass, double csw){
 
-    printf("call: dwc_hop_mtsg_cu_tsg_fpre\n");
+    // printf("call: dwc_hop_mtsg_cu_tsg_fpre\n");
     
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
@@ -99,12 +103,12 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
 
     // printf("threadnum vs lattice: %d %d\n", vol, threadnum*blocknum);
 
-    printf("before kernel: dwc_hop_mtsg_cu_tsg_fpre\n");
-
     dwc_kernel_tsg_fpre<<<blocknum,threadnum>>>(U,v,F,hops,result,mass,csw,vol);
-    printf("error: ");
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dwc_hop_mtsg_cu_tsg_fpre, dwc_kernel_tsg_fpre error: ");
     printf(cudaGetErrorString(cudaPeekAtLastError()));
     printf("\n");
+#endif
 
 
     return result_ten;
@@ -237,7 +241,7 @@ __global__ void dwc_cl_kernel_sigpre (const c10::complex<double> * v, const c10:
 at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor& v_ten, const at::Tensor& fs_tensors,
                                   const at::Tensor& hops_ten, double mass){
     
-    printf("call: dwc_hop_mtsg_cu_tsg_sigpre\n");
+    // printf("call: dwc_hop_mtsg_cu_tsg_sigpre\n");
 
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
@@ -271,17 +275,18 @@ at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor
     // for clover, only 2 threads per site, one for each 6x6 block
     int cl_blocknum = (vol*2+threadnum-1)/threadnum;
 
-    printf("before kernel: dwc_hop_mtsg_cu_tsg_sigpre\n");
-
     dwc_w_kernel_tsg<<<blocknum,threadnum>>>(U,v,hops,result,mass,vol);
-    printf("wilson kernel error: ");
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dwc_hop_mtsg_cu_tsg_sigpre, dwc_w_kernel_tsg error: ");
     printf(cudaGetErrorString(cudaPeekAtLastError()));
     printf("\n");
+#endif
     dwc_cl_kernel_sigpre<<<cl_blocknum,threadnum>>>(v,F,result,vol);
-    printf("clover kernel error: ");
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dwc_hop_mtsg_cu_tsg_sigpre, dwc_cl_kernel_sigpre error: ");
     printf(cudaGetErrorString(cudaPeekAtLastError()));
     printf("\n");
-
+#endif
     return result_ten;
 }
 

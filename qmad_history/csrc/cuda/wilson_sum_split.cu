@@ -10,6 +10,11 @@
 #include "indexfunc_2.cuh"
 #include "gamma_1.cuh"
 
+
+#ifdef ERROR_HANDLING_OUTPUT
+#include <stdio.h>
+#endif
+
 // in this file: versions of the dirac wilson where the sum is split via atomicadd
 // there is only one kernel, the term it computes differs only by the indices
 // the original file wilson_hop.cu stays for test purposes
@@ -87,6 +92,11 @@ at::Tensor dw_hop_mtsg_cu_tsg (const at::Tensor& U_ten, const at::Tensor& v_ten,
     int blocknum = (vvol+threadnum-1)/threadnum;
 
     dw_kernel_tsg<<<blocknum,threadnum>>>(U,v,hops,result,mass,vol);
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dw_hop_mtsg_cu_tsg, dw_kernel_tsg error: ");
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
+#endif
 
     return result_ten;
 }
@@ -173,8 +183,18 @@ at::Tensor dw_hop_mtsg_cu_Mtmsg (const at::Tensor& U_ten, const at::Tensor& v_te
 
     // mass term
     dw_mass_kernel_tsg<<<mass_blocknum,threadnum>>>(v,result,mass,vol);
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dw_hop_mtsg_cu_Mtmsg, dw_mass_kernel_tsg error: ");
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
+#endif
     // neighbour hop terms
     dw_neighbour_kernel_tmsg<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dw_hop_mtsg_cu_Mtmsg, dw_neighbour_kernel_tmsg error: ");
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
+#endif
 
     return result_ten;
 }
@@ -251,8 +271,18 @@ at::Tensor dw_hop_mtsg_cu_Mtmsgh (const at::Tensor& U_ten, const at::Tensor& v_t
 
     // mass term
     dw_mass_kernel_tsg<<<mass_blocknum,threadnum>>>(v,result,mass,vol);
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dw_hop_mtsg_cu_Mtmsgh, dw_mass_kernel_tsg error: ");
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
+#endif
     // neighbour hop terms
     dw_neighbour_kernel_tmsgh<<<blocknum,threadnum>>>(U,v,hops,result_d,vol);
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dw_hop_mtsg_cu_Mtmsgh, dw_neighbour_kernel_tmsgh error: ");
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
+#endif
 
     return result_ten;
 }
@@ -328,6 +358,11 @@ at::Tensor dw_hop_mtsg_cu_3d_tsg (const at::Tensor& U_ten, const at::Tensor& v_t
     int blocknum = (vvol+threadnum-1)/threadnum;
 
     dw_kernel_3d_tsg<<<blocknum,thread_partition>>>(U,v,hops,result,mass,vol);
+#ifdef ERROR_HANDLING_OUTPUT
+    printf("dw_hop_mtsg_cu_3d_tsg, dw_kernel_3d_tsg error: ");
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
+#endif
 
     return result_ten;
 }

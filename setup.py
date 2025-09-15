@@ -26,6 +26,7 @@ def get_extensions():
 
     parallelise = True
     vectorise = True
+    cuda_error_handling = True
 
     extra_compile_args = {
         "cxx": [
@@ -59,7 +60,8 @@ def get_extensions():
             extra_compile_args=extra_compile_args,
             py_limited_api=py_limited_api,
             define_macros = ([("VECTORISATION_ACTIVATED", None)] if vectorise else [])
-                            + ([("PARALLELISATION_ACTIVATED", None)] if parallelise else []),
+                            + ([("PARALLELISATION_ACTIVATED", None)] if parallelise else [])
+                            + ([("ERROR_HANDLING_OUTPUT", None)] if cuda_error_handling else []),
         )
     ]
 
