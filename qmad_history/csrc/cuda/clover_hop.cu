@@ -102,7 +102,9 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
     printf("before kernel: dwc_hop_mtsg_cu_tsg_fpre\n");
 
     dwc_kernel_tsg_fpre<<<blocknum,threadnum>>>(U,v,F,hops,result,mass,csw,vol);
-    //checkCudaErrors(cudaGetLastError());
+    printf("error: ")
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
 
 
     return result_ten;
@@ -272,9 +274,13 @@ at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor
     printf("before kernel: dwc_hop_mtsg_cu_tsg_sigpre\n");
 
     dwc_w_kernel_tsg<<<blocknum,threadnum>>>(U,v,hops,result,mass,vol);
-    //checkCudaErrors(cudaGetLastError());
+    printf("wilson kernel error: ")
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
     dwc_cl_kernel_sigpre<<<cl_blocknum,threadnum>>>(v,F,result,vol);
-    //checkCudaErrors(cudaGetLastError());
+    printf("clover kernel error: ")
+    printf(cudaGetErrorString(cudaPeekAtLastError()));
+    printf("\n");
 
     return result_ten;
 }
