@@ -85,7 +85,7 @@ at::Tensor dw_hop_mtsg_cu_tsg (const at::Tensor& U_ten, const at::Tensor& v_ten,
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
     // allocate one thread for each vector component, in 1024-thread blocks
-    int threadnum = 1024;
+    int threadnum = 512;
     int blocknum = (vvol+threadnum-1)/threadnum;
 
     dw_kernel_tsg<<<blocknum,threadnum>>>(U,v,hops,result,mass,vol);
@@ -177,7 +177,7 @@ at::Tensor dw_hop_mtsg_cu_Mtmsg (const at::Tensor& U_ten, const at::Tensor& v_te
     double * result_d = (double*) result;
 
     // allocate one thread for each vector component times mu, in 1024-thread blocks
-    int threadnum = 1024;
+    int threadnum = 512;
     int mass_blocknum = (vvol+threadnum-1)/threadnum;
     int blocknum = (vvol*4+threadnum-1)/threadnum;
 
@@ -271,7 +271,7 @@ at::Tensor dw_hop_mtsg_cu_Mtmsgh (const at::Tensor& U_ten, const at::Tensor& v_t
     double * result_d = (double*) result;
 
     // allocate one thread for each vector component times mu and gi, in 1024-thread blocks
-    int threadnum = 1024;
+    int threadnum = 512;
     int mass_blocknum = (vvol+threadnum-1)/threadnum;
     int blocknum = (vvol*4*3+threadnum-1)/threadnum;
 
@@ -363,10 +363,10 @@ at::Tensor dw_hop_mtsg_cu_3d_tsg (const at::Tensor& U_ten, const at::Tensor& v_t
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    // allocate one thread for each vector component, in blocks with 1020 thread
-    // blocks are 3d, with 1 dimension each corresponding to 
-    int threadnum = 3*4*85;
-    dim3 thread_partition (85,4,3);
+    // allocate one thread for each vector component, in blocks with 504 threads
+    // blocks are 3d, with 1 dimension each corresponding to site, spin and colour
+    int threadnum = 3*4*42;
+    dim3 thread_partition (42,4,3);
     int blocknum = (vvol+threadnum-1)/threadnum;
 
     dw_kernel_3d_tsg<<<blocknum,thread_partition>>>(U,v,hops,result,mass,vol);

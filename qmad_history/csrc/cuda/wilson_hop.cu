@@ -104,8 +104,10 @@ at::Tensor dw_hop_mtsg_tmsgMh_cu (const at::Tensor& U_ten, const at::Tensor& v_t
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    // allocate one thread for each site, in 1024-thread blocks
-    dw_hop_mtsg_tmsgMh_kernel<<<(vol+1023)/1024,1024>>>(U,v,hops,mass,result,vol);
+    int threadnum = 512;
+    int blocknum = (vol+threadnum-1)/threadnum;
+    // allocate one thread for each site, in 512-thread blocks
+    dw_hop_mtsg_tmsgMh_kernel<<<blocknum,threadnum>>>(U,v,hops,mass,result,vol);
     // alternatively: do not allocate more than 40 blocks (number of streaming multiprocessors)
     // int blocknum = (vol+1023)/1024;
     // if (blocknum > 40) blocknum = 40;
@@ -198,7 +200,7 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     int blocknum = (vvol+threadnum-1)/threadnum;
 
     // mass term
-    mass_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(v,mass,result,vol);
+    mass_mtsg_kernel<<<blocknum,threadnum>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
     cudaError_t locerr = cudaPeekAtLastError();
     if (locerr != cudaSuccess){
@@ -208,10 +210,10 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     }
 #endif
     // gauge transport terms
-    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,0);
-    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,1);
-    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,2);
-    gaugeterms_mtsg_kernel<<<(vvol+1023)/1024,1024>>>(U,v,hops,result,vol,3);
+    gaugeterms_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result,vol,0);
+    gaugeterms_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result,vol,1);
+    gaugeterms_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result,vol,2);
+    gaugeterms_mtsg_kernel<<<blocknum,threadnum>>>(U,v,hops,result,vol,3);
 #ifdef ERROR_HANDLING_OUTPUT
     locerr = cudaPeekAtLastError();
     if (locerr != cudaSuccess){
@@ -291,10 +293,10 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     int threadnum = 1024;
     int thread_partition = threadnum;
     // int blocknum = (vol*36+threadnum-1)/threadnum;
-    int blocknum = (vol*12+1023)/1024;
+    int blocknum = (vol*12+threadnum-1)/threadnum;
 
     // mass term
-    mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
+    mass_mtsg_kernel<<<blocknum,threadnum>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
     cudaError_t locerr = cudaPeekAtLastError();
     if (locerr != cudaSuccess){
@@ -405,12 +407,13 @@ at::Tensor dw_hop_mtsg_cuv4 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     double * result_d = (double*) result;
 
     // allocate one thread for each vector component
-    int threadnum = 1024;
+    int threadnum = 512;
     // int blocknum = (vol*36+threadnum-1)/threadnum;
-    int blocknum = (vol*36+1023)/1024;
+    int blocknum = (vol*36+threadnum-1)/threadnum;
+    int mass_blocknum = (vol*12+threadnum-1)/threadnum;
 
     // mass term
-    mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
+    mass_mtsg_kernel<<<mass_blocknum,threadnum>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
     cudaError_t locerr = cudaPeekAtLastError();
     if (locerr != cudaSuccess){
@@ -597,11 +600,12 @@ at::Tensor dw_hop_mtsg_cuv6 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     double * result_d = (double*) result;
 
     // allocate one thread for each vector component
-    int threadnum = 1024;
-    int blocknum = (vol*4*4*3*3+1023)/1024;
+    int threadnum = 512;
+    int blocknum = (vol*4*4*3*3+threadnum)/threadnum;
+    int mass_blocknum = (vol*12+threadnum-1)/threadnum;
 
     // mass term
-    mass_mtsg_kernel<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
+    mass_mtsg_kernel<<<mass_blocknum,threadnum>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
     cudaError_t locerr = cudaPeekAtLastError();
     if (locerr != cudaSuccess){
@@ -908,12 +912,13 @@ at::Tensor dw_hop_mtsg_cuv9 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     double * result_d = (double*) result;
 
     // allocate one thread for each vector component
-    int threadnum = 1024;
+    int threadnum = 512;
     // int blocknum = (vol*36+threadnum-1)/threadnum;
-    int blocknum = (vol*36+1023)/1024;
+    int blocknum = (vol*36+threadnum-1)/threadnum;
+    int mass_blocknum = (vol*12+threadnum-1)/threadnum;
 
     // mass term
-    mass_mtsg_kernel2<<<(vol*12+1023)/1024,1024>>>(v,mass,result,vol);
+    mass_mtsg_kernel2<<<mass_blocknum,threadnum>>>(v,mass,result,vol);
 #ifdef ERROR_HANDLING_OUTPUT
     cudaError_t locerr = cudaPeekAtLastError();
     if (locerr != cudaSuccess){
