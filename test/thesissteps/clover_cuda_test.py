@@ -3,8 +3,9 @@ import numpy as np
 import time
 import copy
 
-from qmad_history import clover
+from qmad_history import clover, settings
 
+print("cuda_error_handling:", settings.capab["cuda_error_handling"])
 
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
