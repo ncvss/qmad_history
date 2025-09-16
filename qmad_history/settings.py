@@ -31,4 +31,4 @@
 #                 returnvalue = bool(wo[1])
 #     return returnvalue
 
-capab = {"parallelise": True, "vectorise": True, "cuda_error_handling": False}
+capab = {"parallelise": True, "vectorise": True, "cuda_error_handling": True}
