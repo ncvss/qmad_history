@@ -95,7 +95,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_fpre (const at::Tensor& U_ten, const at::Tensor& 
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
     // allocate one thread for each vector component, in 1024-thread blocks
-    int threadnum = 512+256;
+    int threadnum = 512;
     int blocknum = (vvol+threadnum-1)/threadnum;
 
     // printf("threadnum vs lattice: %d %d\n", vol, threadnum*blocknum);
@@ -270,7 +270,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
     // allocate one thread for each vector component, in 1024-thread blocks
-    int threadnum = 512+256;
+    int threadnum = 512;
     int blocknum = (vvol+threadnum-1)/threadnum;
     // for clover, only 2 threads per site, one for each 6x6 block
     int cl_blocknum = (vol*2+threadnum-1)/threadnum;
