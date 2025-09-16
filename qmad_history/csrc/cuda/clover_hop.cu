@@ -260,7 +260,7 @@ at::Tensor dwc_hop_mtsg_cu_tsg_sigpre (const at::Tensor& U_ten, const at::Tensor
     TORCH_INTERNAL_ASSERT(hops_ten.device().type() == at::DeviceType::CUDA);
 
     int vol = hops_ten.size(0);
-    int vvol = vol*4*3;
+    int vvol = vol*12;
 
     at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
     const c10::complex<double>* U = U_ten.const_data_ptr<c10::complex<double>>();
