@@ -511,4 +511,19 @@ at::Tensor dwc_grid_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
 }
 
 }
+
+#else
+
+namespace qmad_history {
+
+at::Tensor dwc_grid_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                    const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                    double mass){
+    
+    TORCH_CHECK(0,"AVX not compiled");
+    return torch::zeros({1}, v_tensor.options());
+}
+
+}
+
 #endif

@@ -31,4 +31,17 @@
 #                 returnvalue = bool(wo[1])
 #     return returnvalue
 
-capab = {"parallelise": True, "vectorise": True, "cuda_error_handling": True}
+# capab = {"parallelise": True, "vectorise": True, "cuda_error_handling": True}
+
+
+import torch
+
+def capab (input_str = None):
+    dummy = torch.ones(1)
+    capab_vector = torch.ops.qmad_history.capability_function(dummy)
+    capab_dict = {"vectorise": bool(capab_vector[0]), "parallelise": bool(capab_vector[1]), "cuda_error_handling": bool(capab_vector[2])}
+    if input_str in capab_dict.keys():
+        return capab_dict[input_str]
+    else:
+        return capab_dict
+

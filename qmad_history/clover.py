@@ -251,9 +251,9 @@ class wilson_clover_hop_mtsg:
                                                             self.csw)
     
     def all_calls(self):
-        return [self.tmsgMhn, self.debug_cuda] + ([self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab["vectorise"] else [])
+        return [self.tmsgMhn, self.debug_cuda] + ([self.avx_tmgsMhns, self.avx_tmsgMhns, self.templ_tmgsMhns, self.templ_tmsgMhns] if capab("vectorise") else [])
     def all_call_names(self):
-        return ["tmsgMhn", "debug_cuda"] + (["avx_tmgsMhns", "avx_tmsgMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab["vectorise"] else [])
+        return ["tmsgMhn", "debug_cuda"] + (["avx_tmgsMhns", "avx_tmsgMhns", "templ_tmgsMhns", "templ_tmsgMhns"] if capab("vectorise") else [])
 
 
 
@@ -316,9 +316,9 @@ class wilson_clover_hop_tmgs:
                                                             self.csw)
     
     def all_calls(self):
-        return [self.avx_tmgsMhns] if capab["vectorise"] else []
+        return [self.avx_tmgsMhns] if capab("vectorise") else []
     def all_call_names(self):
-        return ["avx_tmgsMhns"] if capab["vectorise"] else []
+        return ["avx_tmgsMhns"] if capab("vectorise") else []
 
 
 class wilson_clover_hop_mtsgt_sigpre:
@@ -411,9 +411,9 @@ class wilson_clover_hop_mtsgt_sigpre:
         #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
     def all_calls(self):
-        return [] + ([self.tmngsMht] if capab["vectorise"] else [])
+        return [] + ([self.tmngsMht] if capab("vectorise") else [])
     def all_call_names(self):
-        return [] + (["tmngsMht"] if capab["vectorise"] else [])
+        return [] + (["tmngsMht"] if capab("vectorise") else [])
 
 
 class wilson_clover_hop_mtsg_sigpre:
@@ -524,9 +524,9 @@ class wilson_clover_hop_mtsg_sigpre:
                                                              self.hop_inds, self.mass_parameter)
 
     def all_calls(self):
-        return [self.tmnsgMh] + ([self.avx_tmnsgMhs, self.tmngsMhs, self.tmnsgMhs, self.Ubound_tmngsMhs] if capab["vectorise"] else [])
+        return [self.tmnsgMh] + ([self.avx_tmnsgMhs, self.tmngsMhs, self.tmnsgMhs, self.Ubound_tmngsMhs] if capab("vectorise") else [])
     def all_call_names(self):
-        return ["tmnsgMh"] + (["avx_tmnsgMhs", "tmngsMhs", "tmnsgMhs", "Ubound_tmngsMhs"] if capab["vectorise"] else [])
+        return ["tmnsgMh"] + (["avx_tmnsgMhs", "tmngsMhs", "tmnsgMhs", "Ubound_tmngsMhs"] if capab("vectorise") else [])
 
 
 class wilson_clover_hop_mtsgt2_sigpre:
@@ -613,7 +613,7 @@ class wilson_clover_hop_mtsgt2_sigpre:
         #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
     def all_calls(self):
-        return [] + ([self.tmngsMht] if capab["vectorise"] else [])
+        return [] + ([self.tmngsMht] if capab("vectorise") else [])
     def all_call_names(self):
-        return [] + (["tmngsMht"] if capab["vectorise"] else [])
+        return [] + (["tmngsMht"] if capab("vectorise") else [])
 

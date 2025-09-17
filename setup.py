@@ -26,7 +26,7 @@ def get_extensions():
 
     parallelise = True
     vectorise = True
-    cuda_error_handling = True
+    cuda_error_handling = False
 
     extra_compile_args = {
         "cxx": [

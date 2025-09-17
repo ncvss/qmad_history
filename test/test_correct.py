@@ -169,68 +169,71 @@ for cc in check_correct:
         print(cc)
 
 
-# test correctness of boundary conditions
-print()
-boundconds = [[1,1,1,-1],[-1,1,-1,1]]
-for bound in boundconds:
-    print("check with boundary conditions", bound)
+# the following only works with avx
+if settings.capab("vectorise"):
 
-    dw_g_b = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":0.0,"csw_t":0.0,"xi_0":1,"nu":1,
-                                                "isAnisotropic":False,"boundary_phases":bound,}, )
-    resgb = dw_g_b(v_g)
-    resgb_torch = torch.tensor(compat.lattice_to_array(resgb))
+    # test correctness of boundary conditions
+    print()
+    boundconds = [[1,1,1,-1],[-1,1,-1,1]]
+    for bound in boundconds:
+        print("check with boundary conditions", bound)
 
-    dw_h_b = wilson.wilson_hop_mtsg(U, mass, bound)
-    resbqm = dw_h_b.templbound_tmsgMhs(v)
-    resUb = dw_h_b.templUbound_tmsgMhs(v)
+        dw_g_b = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":0.0,"csw_t":0.0,"xi_0":1,"nu":1,
+                                                    "isAnisotropic":False,"boundary_phases":bound,}, )
+        resgb = dw_g_b(v_g)
+        resgb_torch = torch.tensor(compat.lattice_to_array(resgb))
 
-    print(str(dw_h_b)+".templbound_tmsgMhs:", torch.allclose(resgb_torch,resbqm))
-    print(str(dw_h_b)+".templUbound_tmsgMhs:", torch.allclose(resgb_torch,resUb))
+        dw_h_b = wilson.wilson_hop_mtsg(U, mass, bound)
+        resbqm = dw_h_b.templbound_tmsgMhs(v)
+        resUb = dw_h_b.templUbound_tmsgMhs(v)
 
-    dwc_g_b = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
-                                                "isAnisotropic":False,"boundary_phases":bound,}, )
-    resgbc = dwc_g_b(v_g)
-    resgbc_torch = torch.tensor(compat.lattice_to_array(resgbc))
+        print(str(dw_h_b)+".templbound_tmsgMhs:", torch.allclose(resgb_torch,resbqm))
+        print(str(dw_h_b)+".templUbound_tmsgMhs:", torch.allclose(resgb_torch,resUb))
 
-    dwc_b = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw, bound)
-    rescUb = dwc_b.Ubound_tmngsMhs(v)
-    print(str(dwc_b)+".Ubound_tmngsMhs:", torch.allclose(rescUb,resgbc_torch))
+        dwc_g_b = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
+                                                    "isAnisotropic":False,"boundary_phases":bound,}, )
+        resgbc = dwc_g_b(v_g)
+        resgbc_torch = torch.tensor(compat.lattice_to_array(resgbc))
 
-
-
-# test for correctness of gradients
-print("\ngradient check:")
-
-vgr = torch.randn(lat_dim+[4,3], dtype=torch.cdouble, requires_grad=True)
-vgr2 = vgr.clone().detach().requires_grad_(True)
-
-dwgr_qml = qcd_ml.qcd.dirac.dirac_wilson(U, mass)
-res_qml = dwgr_qml(vgr)
-loss_qml = (res_qml * res_qml.conj()).real.sum()
-loss_qml.backward()
-
-dwgr_qmad = wilson.wilson_hop_mtsg(U, mass)
-res_qmad = dwgr_qmad.templ_tmgsMhs(vgr2)
-loss_qmad = (res_qmad * res_qmad.conj()).real.sum()
-loss_qmad.backward()
-
-print(str(dwgr_qmad))
-print("templ_tmgsMhs:", torch.allclose(vgr.grad, vgr2.grad))
+        dwc_b = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw, bound)
+        rescUb = dwc_b.Ubound_tmngsMhs(v)
+        print(str(dwc_b)+".Ubound_tmngsMhs:", torch.allclose(rescUb,resgbc_torch))
 
 
-vcgr = torch.randn(lat_dim+[4,3], dtype=torch.cdouble, requires_grad=True)
-vcgr2 = vcgr.clone().detach().requires_grad_(True)
 
-dwcgr_qml = qcd_ml.qcd.dirac.dirac_wilson_clover(U, mass, csw)
-res_qml = dwcgr_qml(vcgr)
-loss_qml = (res_qml * res_qml.conj()).real.sum()
-loss_qml.backward()
+    # test for correctness of gradients
+    print("\ngradient check:")
 
-dwcgr_qmad = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
-res_qmad = dwcgr_qmad.tmngsMhs(vcgr2)
-loss_qmad = (res_qmad * res_qmad.conj()).real.sum()
-loss_qmad.backward()
+    vgr = torch.randn(lat_dim+[4,3], dtype=torch.cdouble, requires_grad=True)
+    vgr2 = vgr.clone().detach().requires_grad_(True)
 
-print(str(dwcgr_qmad))
-print("tmngsMhs:", torch.allclose(vcgr.grad, vcgr2.grad))
+    dwgr_qml = qcd_ml.qcd.dirac.dirac_wilson(U, mass)
+    res_qml = dwgr_qml(vgr)
+    loss_qml = (res_qml * res_qml.conj()).real.sum()
+    loss_qml.backward()
+
+    dwgr_qmad = wilson.wilson_hop_mtsg(U, mass)
+    res_qmad = dwgr_qmad.templ_tmgsMhs(vgr2)
+    loss_qmad = (res_qmad * res_qmad.conj()).real.sum()
+    loss_qmad.backward()
+
+    print(str(dwgr_qmad))
+    print("templ_tmgsMhs:", torch.allclose(vgr.grad, vgr2.grad))
+
+
+    vcgr = torch.randn(lat_dim+[4,3], dtype=torch.cdouble, requires_grad=True)
+    vcgr2 = vcgr.clone().detach().requires_grad_(True)
+
+    dwcgr_qml = qcd_ml.qcd.dirac.dirac_wilson_clover(U, mass, csw)
+    res_qml = dwcgr_qml(vcgr)
+    loss_qml = (res_qml * res_qml.conj()).real.sum()
+    loss_qml.backward()
+
+    dwcgr_qmad = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
+    res_qmad = dwcgr_qmad.tmngsMhs(vcgr2)
+    loss_qmad = (res_qmad * res_qmad.conj()).real.sum()
+    loss_qmad.backward()
+
+    print(str(dwcgr_qmad))
+    print("tmngsMhs:", torch.allclose(vcgr.grad, vcgr2.grad))
 

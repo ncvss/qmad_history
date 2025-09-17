@@ -202,7 +202,7 @@ at::Tensor dw_templbound_mtsg_tmsgMhs (const at::Tensor& U_tensor, const at::Ten
 namespace qmad_history {
 
 at::Tensor dw_templbound_mtsg_tmsgMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
-                                  const at::Tensor& hops_tensor, double mass){
+                                  const at::Tensor& hops_tensor, const at::Tensor& bound_tensor, double mass){
     
     TORCH_CHECK(0,"AVX not compiled");
     return torch::zeros({1}, v_tensor.options());

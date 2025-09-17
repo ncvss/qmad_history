@@ -11,6 +11,8 @@
 
 #include "dirac_9.hpp"
 
+#include "capabilities.hpp"
+
 
 namespace qmad_history{
 
@@ -107,6 +109,8 @@ TORCH_LIBRARY(qmad_history, m) {
 
     m.def("dwc_hop_mtsg_cu_tsg_fpre(Tensor U_ten, Tensor v_ten, Tensor F_ten, Tensor hops_ten, float mass, float csw) -> Tensor");
     m.def("dwc_hop_mtsg_cu_tsg_sigpre(Tensor U_ten, Tensor v_ten, Tensor F_ten, Tensor hops_ten, float mass) -> Tensor");
+
+    m.def("capability_function(Tensor dummy) -> int[]");
 }
 
 // Registers backend implementations
@@ -178,6 +182,8 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
     m.impl("dwc_grid_mtsg_tmnsgMhs_backw", &dwc_grid_mtsg_tmnsgMhs_backw);
 
     m.impl("dwc_debug_cuda_fpre", &dwc_debug_cuda_fpre);
+
+    m.impl("capability_function", &capability_function);
 }
 
 }

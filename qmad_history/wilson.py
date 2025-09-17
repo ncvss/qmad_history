@@ -47,11 +47,9 @@ class wilson_direct:
         return torch.ops.qmad_history.dw_tempdir_mtsg_tmgsMhs(self.U, v, self.mass_parameter)
     
     def all_calls(self):
-        return [self.xtsgMhm, self.xtMmghs, self.xtMmdghs, self.block_dbxtsghm, self.block_bxtsghm,
-                self.tempdir_tmgsMhs]
+        return [self.xtsgMhm, self.xtMmghs, self.xtMmdghs, self.block_dbxtsghm, self.block_bxtsghm] + ([self.tempdir_tmgsMhs] if capab("vectorise") else [])
     def all_call_names(self):
-        return ["xtsgMhm", "xtMmghs", "xtMmdghs", "block_dbxtsghm", "block_bxtsghm",
-                "tempdir_tmgsMhs"]
+        return ["xtsgMhm", "xtMmghs", "xtMmdghs", "block_dbxtsghm", "block_bxtsghm"] + (["tempdir_tmgsMhs"] if capab("vectorise") else [])
 
 
 
@@ -211,12 +209,12 @@ class wilson_hop_mtsg:
     
     def all_calls(self):
         return [self.tMmgsh, self.tMgshm, self.tmgsMh, self.tmsgMh] + (
-            ([self.avx_tmgsMhs, self.avx_tmsgMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs, self.templUbound_tmsgMhs] if capab["vectorise"] else [])
+            ([self.avx_tmgsMhs, self.avx_tmsgMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs, self.templUbound_tmsgMhs] if capab("vectorise") else [])
             + ([self.cuv2,] if torch.cuda.is_available() else [])
             )
     def all_call_names(self):
         return ["tMmgsh", "tMgshm", "tmgsMh", "tmsgMh"] + (
-            (["avx_tmgsMhs", "avx_tmsgMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs", "templUbound_tmsgMhs"] if capab["vectorise"] else [])
+            (["avx_tmgsMhs", "avx_tmsgMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs", "templUbound_tmsgMhs"] if capab("vectorise") else [])
             + (["cuv2",] if torch.cuda.is_available() else [])
             )
 
@@ -256,9 +254,9 @@ class wilson_hop_tmgs:
                                                           self.mass_parameter)
     
     def all_calls(self):
-        return [self.tMmghs, self.tMmgsh, self.tMmgshu, self.tmgsMh] + ([self.avx_tmgsMhs] if capab["vectorise"] else [])
+        return [self.tMmghs, self.tMmgsh, self.tMmgshu, self.tmgsMh] + ([self.avx_tmgsMhs] if capab("vectorise") else [])
     def all_call_names(self):
-        return ["tMmghs", "tMmgsh", "tMmgshu", "tmgsMh"] + (["avx_tmgsMhs"] if capab["vectorise"] else [])
+        return ["tMmghs", "tMmgsh", "tMmgshu", "tmgsMh"] + (["avx_tmgsMhs"] if capab("vectorise") else [])
 
 
 class wilson_hop_mtsgt:
@@ -291,9 +289,9 @@ class wilson_hop_mtsgt:
                                                              self.mass_parameter)
     
     def all_calls(self):
-        return [] + ([self.templ_tmgsMht] if capab["vectorise"] else [])
+        return [] + ([self.templ_tmgsMht] if capab("vectorise") else [])
     def all_call_names(self):
-        return [] + (["templ_tmgsMht"] if capab["vectorise"] else [])
+        return [] + (["templ_tmgsMht"] if capab("vectorise") else [])
 
 
 class wilson_hop_mtsgt2:
@@ -336,9 +334,9 @@ class wilson_hop_mtsgt2:
                                                              self.mass_parameter)
     
     def all_calls(self):
-        return [] + ([self.grid_tmgsMht] if capab["vectorise"] else [])
+        return [] + ([self.grid_tmgsMht] if capab("vectorise") else [])
     def all_call_names(self):
-        return [] + (["grid_tmgsMht"] if capab["vectorise"] else [])
+        return [] + (["grid_tmgsMht"] if capab("vectorise") else [])
 
 
 class wilson_full:

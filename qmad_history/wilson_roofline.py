@@ -61,6 +61,6 @@ class wilson_hop_mtsg_roofline:
                                                                  self.mass_parameter)
     
     def all_calls(self):
-        return [self.templ_tmgsMhs] if capab["vectorise"] else []
+        return [self.templ_tmgsMhs] if capab("vectorise") else []
     def all_call_names(self):
-        return ["templ_tmgsMhs"] if capab["vectorise"] else []
+        return ["templ_tmgsMhs"] if capab("vectorise") else []
