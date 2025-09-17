@@ -3,7 +3,7 @@ import numpy as np
 import time
 import copy
 
-from qmad_history import wilson
+from qmad_history import wilson, settings
 
 
 # split measurement into n_batch batches
@@ -17,6 +17,8 @@ n_warmup = 20
 mass = -0.5
 kappa = 1.0/2.0/(mass + 4.0)
 csw = 1.0
+
+print("cuda_error_handling:", settings.capab("cuda_error_handling"))
 
 print(n_measurements,"repetitions in",n_batch,"batches")
 print("mass =", mass)

@@ -196,7 +196,7 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
     // allocate one thread for each vector component, in 1024-thread blocks
-    int threadnum = 1024;
+    int threadnum = 512;
     int blocknum = (vvol+threadnum-1)/threadnum;
 
     // mass term
@@ -290,7 +290,7 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // the x thread index are different sites (28 sites, 28*36=1008 is the maximum prod that is <1024)
     // dim3 thread_partition = (28,36);
     // const int threadnum = 36*28;
-    int threadnum = 1024;
+    int threadnum = 512;
     int thread_partition = threadnum;
     // int blocknum = (vol*36+threadnum-1)/threadnum;
     int blocknum = (vol*12+threadnum-1)/threadnum;
