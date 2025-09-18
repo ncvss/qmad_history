@@ -90,6 +90,9 @@ TORCH_LIBRARY(qmad_history, m) {
 
     m.def("dwc_debug_cuda_fpre(Tensor U_ten, Tensor v_ten, Tensor fs_tensors, Tensor hops_ten, float mass, float csw) -> Tensor");
 
+    m.def("dwc_hop_mtsg_tmsgMh_dir(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass, float csw) -> Tensor");
+    m.def("dwc_hop_mtsg_tmsgMh_dir_rearr(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass, float csw) -> Tensor");
+
 
     m.def("dw_hop_mtsg_cuv2(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
     m.def("dw_hop_mtsg_cuv3(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
@@ -109,6 +112,8 @@ TORCH_LIBRARY(qmad_history, m) {
 
     m.def("dwc_hop_mtsg_cu_tsg_fpre(Tensor U_ten, Tensor v_ten, Tensor F_ten, Tensor hops_ten, float mass, float csw) -> Tensor");
     m.def("dwc_hop_mtsg_cu_tsg_sigpre(Tensor U_ten, Tensor v_ten, Tensor F_ten, Tensor hops_ten, float mass) -> Tensor");
+
+
 
     m.def("capability_function(Tensor dummy) -> int[]");
 }
@@ -182,6 +187,11 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
     m.impl("dwc_grid_mtsg_tmnsgMhs_backw", &dwc_grid_mtsg_tmnsgMhs_backw);
 
     m.impl("dwc_debug_cuda_fpre", &dwc_debug_cuda_fpre);
+
+    m.impl("dwc_hop_mtsg_tmsgMh_dir", &dwc_hop_mtsg_tmsgMh_dir);
+    m.impl("dwc_hop_mtsg_tmsgMh_dir_rearr", &dwc_hop_mtsg_tmsgMh_dir_rearr);
+
+
 
     m.impl("capability_function", &capability_function);
 }

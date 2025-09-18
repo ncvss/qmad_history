@@ -96,3 +96,39 @@ def get_hop_indices(grid):
     hop_inds = torch.stack(hop_inds, dim=1).contiguous()
     return hop_inds
 
+
+def get_clover_path_matrices(U: torch.Tensor):
+    """
+    For a given gauge configuration, returns a list Qmunu[mu][nu] that contains the sum of the gauge matrices
+    when transporting along four plaquette paths that form a clover shape
+    oriented in directions mu,nu (except for mu == nu).
+    """
+
+    assert tuple(U.shape[5:7]) == (3,3,)
+    assert U.shape[0] == 4
+
+    Hp = lambda mu, lst: lst + [(mu, 1)]
+    Hm = lambda mu, lst: lst + [(mu, -1)]
+    
+    plaquette_paths = [[[
+            Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
+            , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
+            , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
+            , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
+            ] for nu in range(4)] for mu in range(4)]
+
+    # Every path from the clover terms has equal starting and ending points.
+    # This means the transport keeps the position of the vector field unchanged
+    # and only multiplies it with a matrix independent of the vector field.
+    # That matrix can thus be precomputed.
+    Qmunu = [[(torch.zeros_like(U[0]) if nu != mu else 0) for nu in range(4)] for mu in range(4)]
+    for mu in range(4):
+        for nu in range(4):
+            # the terms for mu = nu cancel out in the final expression, so we do not compute them
+            if mu != nu:
+                for ii in range(4):
+                    clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
+                    Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+    
+    return Qmunu
+

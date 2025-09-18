@@ -31,8 +31,7 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
     TORCH_CHECK(v.size(4) == 4);
     TORCH_CHECK(v.size(5) == 3);
 
-    // if the data is not contiguous, we cannot calculate the pointer to
-    // its place in memory
+    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 

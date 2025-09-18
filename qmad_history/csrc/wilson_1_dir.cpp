@@ -33,8 +33,7 @@ at::Tensor dw_dir_mxtsg_xtsgMhm (const at::Tensor& U, const at::Tensor& v, doubl
     TORCH_CHECK(U.dtype() == at::kComplexDouble);
     TORCH_CHECK(v.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to
-    // its place in memory
+    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 

@@ -13,7 +13,7 @@ num_threads = torch.get_num_threads()
 print("running on host", socket.gethostname())
 print(f'Machine has {num_threads} threads')
 
-print(settings.capab)
+print(settings.capab())
 
 n_measurements = 500
 n_warmup = 20

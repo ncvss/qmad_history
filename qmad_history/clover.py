@@ -1,13 +1,13 @@
 import torch
 
 from .settings import capab
-from .util import get_hop_indices, _PathBufferTemp, _sigma, _triag_mask_1, _triag_mask_2
+from .util import get_hop_indices, get_clover_path_matrices, _PathBufferTemp, _sigma, _triag_mask_1, _triag_mask_2
 
 
 
 class wilson_clover_direct_false:
     """
-    Dirac Wilson Clover operator with gauge config U, without precomputations,
+    Wilson clover Dirac operator with gauge config U, without precomputations,
     memory layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
     The result is wrong because the computation is incomplete, it is here for performance.
     """
@@ -31,10 +31,44 @@ class wilson_clover_direct_false:
         return ["xtMmghijkls"]
 
 
+class wilson_clover_hop:
+    """
+    Wilson clover Dirac operator that creates a lookup table for the hops, and makes no precomputation.
+    The axes are U[mu,x,y,z,t,g,gi], v[x,y,z,t,s,gi].
+    """
+    def __init__(self, U, mass_parameter, csw):
+
+        assert tuple(U.shape[5:7]) == (3,3,)
+        assert U.shape[0] == 4
+        self.U = U
+
+        self.mass_parameter = mass_parameter
+        self.csw = csw
+
+        grid = U.shape[1:5]
+        self.hop_inds = get_hop_indices(grid)
+    
+    def __str__(self):
+        return "dwc_hop_mtsg"
+    
+    def tmsgMh_dir(self, v):
+        return torch.ops.qmad_history.dwc_hop_mtsg_tmsgMh_dir(self.U, v, self.hop_inds,
+                                                              self.mass_parameter, self.csw)
+    def tmsgMh_dir_rearr(self, v):
+        return torch.ops.qmad_history.dwc_hop_mtsg_tmsgMh_dir_rearr(self.U, v, self.hop_inds,
+                                                                    self.mass_parameter, self.csw)
+    
+    def all_calls(self):
+        return [self.tmsgMh_dir, self.tmsgMh_dir_rearr]
+    def all_call_names(self):
+        return ["tmsgMh_dir", "tmsgMh_dir_rearr"]
+
+
+
 class wilson_clover_fpre:
     """
-    Dirac Wilson Clover operator with gauge config U, precomputes field strength matrices,
-    memory layout U[mu,x,y,z,t,g,h], v[x,y,z,t,s,h] and F[munu][x,y,z,t,g,h]
+    Wilson clover Dirac operator with gauge config U that precomputes field strength matrices,
+    with memory layout U[mu,x,y,z,t,g,h], v[x,y,z,t,s,h] and F[munu][x,y,z,t,g,h].
     """
     def __init__(self, U, mass_parameter, csw):
         assert tuple(U.shape[5:7]) == (3,3,)
@@ -43,30 +77,7 @@ class wilson_clover_fpre:
         self.mass_parameter = mass_parameter
         self.csw = csw
 
-        Hp = lambda mu, lst: lst + [(mu, 1)]
-        Hm = lambda mu, lst: lst + [(mu, -1)]
-        
-        plaquette_paths = [[[
-                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
-                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
-                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
-                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
-                ] for nu in range(4)] for mu in range(4)]
-
-        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
-
-        # Every path from the clover terms has equal starting and ending points.
-        # This means the transport keeps the position of the vector field unchanged
-        # and only multiplies it with a matrix independent of the vector field.
-        # That matrix can thus be precomputed.
-        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
-        for mu in range(4):
-            for nu in range(4):
-                # the terms for mu = nu cancel out in the final expression, so we do not compute them
-                if mu != nu:
-                    for ii in range(4):
-                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
-                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+        Qmunu = get_clover_path_matrices(U)
         
         # only a flat list, as it needs to be accessed by C++
         self.field_strength = []
@@ -102,7 +113,8 @@ class wilson_clover_fpre:
 
 class wilson_clover_sigpre:
     """
-    Dirac Wilson Clover operator with gauge config U, layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson clover Dirac operator with gauge config U, layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    
     field_strength * sigma * v is precomputed by computing the tensor product of
     field_strength * sigma.
     """
@@ -114,30 +126,7 @@ class wilson_clover_sigpre:
         self.mass_parameter = mass_parameter
         self.csw = csw
 
-        Hp = lambda mu, lst: lst + [(mu, 1)]
-        Hm = lambda mu, lst: lst + [(mu, -1)]
-        
-        plaquette_paths = [[[
-                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
-                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
-                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
-                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
-                ] for nu in range(4)] for mu in range(4)]
-
-        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
-
-        # Every path from the clover terms has equal starting and ending points.
-        # This means the transport keeps the position of the vector field unchanged
-        # and only multiplies it with a matrix independent of the vector field.
-        # That matrix can thus be precomputed.
-        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
-        for mu in range(4):
-            for nu in range(4):
-                # the terms for mu = nu cancel out in the final expression, so we do not compute them
-                if mu != nu:
-                    for ii in range(4):
-                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
-                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+        Qmunu = get_clover_path_matrices(U)
 
         dim = list(U.shape[1:5])
         self.dim = dim
@@ -167,7 +156,7 @@ class wilson_clover_sigpre:
 
 class wilson_clover_hop_mtsg:
     """
-    Dirac Wilson Clover operator that creates a lookup table for the hops and uses AVX instructions.
+    Wilson clover Dirac operator that creates a lookup table for the hops and uses AVX instructions.
     The axes are U[mu,x,y,z,t,g,gi], v[x,y,z,t,s,gi] and F[x,y,z,t,munu,g,gi].
     """
     def __init__(self, U, mass_parameter, csw):
@@ -183,31 +172,8 @@ class wilson_clover_hop_mtsg:
 
         grid = U.shape[1:5]
         self.hop_inds = get_hop_indices(grid).to(op_device)
-
-        Hp = lambda mu, lst: lst + [(mu, 1)]
-        Hm = lambda mu, lst: lst + [(mu, -1)]
         
-        plaquette_paths = [[[
-                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
-                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
-                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
-                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
-                ] for nu in range(4)] for mu in range(4)]
-
-        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
-
-        # Every path from the clover terms has equal starting and ending points.
-        # This means the transport keeps the position of the vector field unchanged
-        # and only multiplies it with a matrix independent of the vector field.
-        # That matrix can thus be precomputed.
-        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
-        for mu in range(4):
-            for nu in range(4):
-                # the terms for mu = nu cancel out in the final expression, so we do not compute them
-                if mu != nu:
-                    for ii in range(4):
-                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
-                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+        Qmunu = get_clover_path_matrices(U)
         
         field_strength = []
         # the field strength is antisymmetric, so we only need to compute nu < mu
@@ -219,7 +185,7 @@ class wilson_clover_hop_mtsg:
         assert tuple(self.field_strength.shape[4:7]) == (6,3,3,)
     
     def __str__(self):
-        return "dwc_hop_mtsg"
+        return "dwc_hop_mtsg_fpre"
     
     def tmsgMhn(self, v):
         return torch.ops.qmad_history.dwc_hop_mtsg_tmsgMhn_fpre(self.U, v, self.field_strength,
@@ -259,7 +225,7 @@ class wilson_clover_hop_mtsg:
 
 class wilson_clover_hop_tmgs:
     """
-    Dirac Wilson Clover operator that creates a lookup table for the hops and uses AVX instructions.
+    Wilson clover Dirac operator that creates a lookup table for the hops and uses AVX instructions.
     The axes are U[x,y,z,t,mu,g,gi], v[x,y,z,t,gi,s] and F[x,y,z,t,munu,g,gi].
     For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
     """
@@ -273,30 +239,7 @@ class wilson_clover_hop_tmgs:
         grid = U.shape[1:5]
         self.hop_inds = get_hop_indices(grid)
 
-        Hp = lambda mu, lst: lst + [(mu, 1)]
-        Hm = lambda mu, lst: lst + [(mu, -1)]
-        
-        plaquette_paths = [[[
-                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
-                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
-                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
-                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
-                ] for nu in range(4)] for mu in range(4)]
-
-        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
-
-        # Every path from the clover terms has equal starting and ending points.
-        # This means the transport keeps the position of the vector field unchanged
-        # and only multiplies it with a matrix independent of the vector field.
-        # That matrix can thus be precomputed.
-        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
-        for mu in range(4):
-            for nu in range(4):
-                # the terms for mu = nu cancel out in the final expression, so we do not compute them
-                if mu != nu:
-                    for ii in range(4):
-                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
-                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+        Qmunu = get_clover_path_matrices(U)
         
         field_strength = []
         # the field strength is antisymmetric, so we only need to compute nu < mu
@@ -323,7 +266,7 @@ class wilson_clover_hop_tmgs:
 
 class wilson_clover_hop_mtsgt_sigpre:
     """
-    Dirac Wilson Clover operator with gauge config U, layout U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
+    Wilson clover Dirac operator with gauge config U, layout U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
     field_strength * sigma * v is precomputed by computing the tensor product of field_strength * sigma,
     and only the upper triangle of two 6x6 blocks is passed for the field strength.
     The hops are precomputed.
@@ -346,30 +289,7 @@ class wilson_clover_hop_mtsgt_sigpre:
         self.hop_inds = get_hop_indices(grid)
         
 
-        Hp = lambda mu, lst: lst + [(mu, 1)]
-        Hm = lambda mu, lst: lst + [(mu, -1)]
-        
-        plaquette_paths = [[[
-                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
-                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
-                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
-                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
-                ] for nu in range(4)] for mu in range(4)]
-
-        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
-
-        # Every path from the clover terms has equal starting and ending points.
-        # This means the transport keeps the position of the vector field unchanged
-        # and only multiplies it with a matrix independent of the vector field.
-        # That matrix can thus be precomputed.
-        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
-        for mu in range(4):
-            for nu in range(4):
-                # the terms for mu = nu cancel out in the final expression, so we do not compute them
-                if mu != nu:
-                    for ii in range(4):
-                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
-                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+        Qmunu = get_clover_path_matrices(U)
 
         dim = list(U.shape[1:5])
         self.dim = dim
@@ -418,7 +338,7 @@ class wilson_clover_hop_mtsgt_sigpre:
 
 class wilson_clover_hop_mtsg_sigpre:
     """
-    Dirac Wilson Clover operator with gauge config U, layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson clover Dirac operator with gauge config U, layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
     field_strength * sigma * v is precomputed by computing the tensor product of field_strength * sigma,
     and only the upper triangle of two 6x6 blocks is passed for the field strength.
     The hops are precomputed.
@@ -440,30 +360,7 @@ class wilson_clover_hop_mtsg_sigpre:
         self.hop_inds = get_hop_indices(grid).to(op_device)
         
 
-        Hp = lambda mu, lst: lst + [(mu, 1)]
-        Hm = lambda mu, lst: lst + [(mu, -1)]
-        
-        plaquette_paths = [[[
-                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
-                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
-                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
-                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
-                ] for nu in range(4)] for mu in range(4)]
-
-        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
-
-        # Every path from the clover terms has equal starting and ending points.
-        # This means the transport keeps the position of the vector field unchanged
-        # and only multiplies it with a matrix independent of the vector field.
-        # That matrix can thus be precomputed.
-        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
-        for mu in range(4):
-            for nu in range(4):
-                # the terms for mu = nu cancel out in the final expression, so we do not compute them
-                if mu != nu:
-                    for ii in range(4):
-                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
-                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+        Qmunu = get_clover_path_matrices(U)
 
         dim = list(U.shape[1:5])
         self.dim = dim
@@ -556,30 +453,8 @@ class wilson_clover_hop_mtsgt2_sigpre:
         grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]//2]
         self.hop_inds = get_hop_indices(grid)
 
-        Hp = lambda mu, lst: lst + [(mu, 1)]
-        Hm = lambda mu, lst: lst + [(mu, -1)]
-        
-        plaquette_paths = [[[
-                Hm(mu, Hm(nu, Hp(mu, Hp(nu, []))))
-                , Hm(nu, Hp(mu, Hp(nu, Hm(mu, []))))
-                , Hp(nu, Hm(mu, Hm(nu, Hp(mu, []))))
-                , Hp(mu, Hp(nu, Hm(mu, Hm(nu, []))))
-                ] for nu in range(4)] for mu in range(4)]
 
-        #plaquette_path_buffers = [[[_PathBufferTemp(U, pi) for pi in pnu] for pnu in pmu] for pmu in plaquette_paths]
-
-        # Every path from the clover terms has equal starting and ending points.
-        # This means the transport keeps the position of the vector field unchanged
-        # and only multiplies it with a matrix independent of the vector field.
-        # That matrix can thus be precomputed.
-        Qmunu = [[torch.zeros_like(U[0]) for nu in range(4)] for mu in range(4)]
-        for mu in range(4):
-            for nu in range(4):
-                # the terms for mu = nu cancel out in the final expression, so we do not compute them
-                if mu != nu:
-                    for ii in range(4):
-                        clover_leaf_buffer = _PathBufferTemp(U, plaquette_paths[mu][nu][ii])
-                        Qmunu[mu][nu] += clover_leaf_buffer.accumulated_U
+        Qmunu = get_clover_path_matrices(U)
 
         dim = list(U.shape[1:5])
         self.dim = dim

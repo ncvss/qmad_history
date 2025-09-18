@@ -14,8 +14,27 @@ at::Tensor dw_hop_mtsg_tmgsMh (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                const at::Tensor& hops_ten, double mass);
 
 at::Tensor dw_hop_mtsg_tmsgMh_cpu (const at::Tensor& U_ten, const at::Tensor& v_ten,
-                               const at::Tensor& hops_ten, double mass);
+                                   const at::Tensor& hops_ten, double mass);
 
+
+at::Tensor dwc_hop_mtsg_tmsgMh_dir (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                    const at::Tensor& hops_ten, double mass, double csw);
+    
+at::Tensor dwc_hop_mtsg_tmsgMh_dir_rearr (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                          const at::Tensor& hops_ten, double mass, double csw);
+
+at::Tensor dwc_hop_mtsg_tmsgMhn_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                      const at::Tensor& fs_tensors,
+                                      const at::Tensor& hops_ten, double mass, double csw);
+
+at::Tensor dwc_hop_mtsg_tmnsgMh_sigpre (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                        const at::Tensor& fs_tensors,
+                                        const at::Tensor& hops_ten, double mass);
+
+
+at::Tensor dwc_debug_cuda_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten,
+                                const at::Tensor& fs_tensors,
+                                const at::Tensor& hops_ten, double mass, double csw);
 
 
 // memory U[t,mu,g,h] and v[t,h,s]
@@ -32,18 +51,5 @@ at::Tensor dw_hop_tmgs_tMmgshu (const at::Tensor& U_ten, const at::Tensor& v_ten
 at::Tensor dw_hop_tmgs_tmgsMh (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                const at::Tensor& hops_ten, double mass);
 
-
-at::Tensor dwc_hop_mtsg_tmsgMhn_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten,
-                                     const at::Tensor& fs_tensors,
-                                     const at::Tensor& hops_ten, double mass, double csw);
-
-at::Tensor dwc_hop_mtsg_tmnsgMh_sigpre (const at::Tensor& U_ten, const at::Tensor& v_ten,
-                                     const at::Tensor& fs_tensors,
-                                     const at::Tensor& hops_ten, double mass);
-
-
-at::Tensor dwc_debug_cuda_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten,
-                                     const at::Tensor& fs_tensors,
-                                     const at::Tensor& hops_ten, double mass, double csw);
 
 }

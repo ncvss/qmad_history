@@ -8,7 +8,7 @@ import qcd_ml
 
 from qmad_history import compat, wilson, clover, settings, wilson_roofline
 
-print(settings.capab)
+print(settings.capab())
 
 print()
 num_threads = torch.get_num_threads()
@@ -118,6 +118,7 @@ check_correct.append("\nwilson clover")
 dwcv_py = dwc_py(v)
 
 dwc_d = clover.wilson_clover_direct_false(U, mass, csw)
+dwc_hd = clover.wilson_clover_hop(U, mass, csw)
 dwc_f = clover.wilson_clover_fpre(U, mass, csw)
 dwc_ho = clover.wilson_clover_hop_mtsg(U, mass, csw)
 dwc_hn = clover.wilson_clover_hop_tmgs(U, mass, csw)
@@ -129,7 +130,7 @@ dwc_gridcl = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
 
 dwc_grid2 = clover.wilson_clover_hop_mtsgt2_sigpre(U, mass, csw)
 
-for dw in [dwc_d, dwc_f, dwc_ho, dwc_gridcl]:
+for dw in [dwc_d, dwc_hd, dwc_f, dwc_ho, dwc_gridcl]:
     check_correct.append(str(dw))
     for order, c in zip(dw.all_call_names(),dw.all_calls()):
         check_correct.append((order,torch.allclose(c(v),dwcv_py)))
