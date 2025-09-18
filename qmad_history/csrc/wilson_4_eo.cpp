@@ -12,6 +12,7 @@
 #endif
 
 #include "static/indexfunc_1.hpp"
+#include "static/indexfunc_2.hpp"
 #include "static/gamma_1.hpp"
 
 namespace qmad_history {
@@ -316,6 +317,143 @@ at::Tensor dw_eo_pmtsg_pxtMmghs (const at::Tensor& Ue, const at::Tensor& Uo,
 
 
     return result;
+}
+
+
+at::Tensor dw_eo_hop_pmtsg_pMtmsgh (const at::Tensor& Ue_ten, const at::Tensor& Uo_ten,
+                                    const at::Tensor& ve_ten, const at::Tensor& vo_ten,
+                                    const at::Tensor& hopse_ten, const at::Tensor& hopso_ten,
+                                    double mass){
+
+
+    // check for correct size of vector fields
+    int64_t eogridsize [6] = {Ue_ten.size(1), Ue_ten.size(2), Ue_ten.size(3), Ue_ten.size(4), 4, 3};
+
+    TORCH_CHECK(ve_ten.dim() == 6);
+    TORCH_CHECK(eogridsize[0] == ve_ten.size(0));
+    TORCH_CHECK(eogridsize[1] == ve_ten.size(1));
+    TORCH_CHECK(eogridsize[2] == ve_ten.size(2));
+    TORCH_CHECK(eogridsize[3] == ve_ten.size(3));
+    TORCH_CHECK(ve_ten.size(4) == 4);
+    TORCH_CHECK(ve_ten.size(5) == 3);
+
+    TORCH_CHECK(vo_ten.dim() == 6);
+    TORCH_CHECK(eogridsize[0] == vo_ten.size(0));
+    TORCH_CHECK(eogridsize[1] == vo_ten.size(1));
+    TORCH_CHECK(eogridsize[2] == vo_ten.size(2));
+    TORCH_CHECK(eogridsize[3] == vo_ten.size(3));
+    TORCH_CHECK(vo_ten.size(4) == 4);
+    TORCH_CHECK(vo_ten.size(5) == 3);
+
+    TORCH_CHECK(Ue_ten.dtype() == at::kComplexDouble);
+    TORCH_CHECK(ve_ten.dtype() == at::kComplexDouble);
+    TORCH_CHECK(Uo_ten.dtype() == at::kComplexDouble);
+    TORCH_CHECK(vo_ten.dtype() == at::kComplexDouble);
+
+    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
+    TORCH_CHECK(Ue_ten.is_contiguous());
+    TORCH_CHECK(ve_ten.is_contiguous());
+    TORCH_CHECK(Uo_ten.is_contiguous());
+    TORCH_CHECK(vo_ten.is_contiguous());
+
+    TORCH_INTERNAL_ASSERT(Ue_ten.device().type() == at::DeviceType::CPU);
+    TORCH_INTERNAL_ASSERT(ve_ten.device().type() == at::DeviceType::CPU);
+    TORCH_INTERNAL_ASSERT(hopse_ten.device().type() == at::DeviceType::CPU);
+    TORCH_INTERNAL_ASSERT(Uo_ten.device().type() == at::DeviceType::CPU);
+    TORCH_INTERNAL_ASSERT(vo_ten.device().type() == at::DeviceType::CPU);
+    TORCH_INTERNAL_ASSERT(hopso_ten.device().type() == at::DeviceType::CPU);
+
+    int eovol = hopse_ten.size(0);
+    // this is the non even-odd vector field size
+    eogridsize[4] *= 2;
+
+    at::Tensor result_ten = torch::empty(eogridsize, ve_ten.options());
+    const c10::complex<double>* Ue = Ue_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* ve = ve_ten.const_data_ptr<c10::complex<double>>();
+    const int32_t* hops_e = hopse_ten.const_data_ptr<int32_t>();
+    const c10::complex<double>* Uo = Uo_ten.const_data_ptr<c10::complex<double>>();
+    const c10::complex<double>* vo = vo_ten.const_data_ptr<c10::complex<double>>();
+    const int32_t* hops_o = hopso_ten.const_data_ptr<int32_t>();
+    c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
+
+
+    // even lattice part
+
+#pragma omp parallel for
+    for (int t = 0; t < eovol; t++){
+        
+        // mass term independent
+        for (int s = 0; s < 4; s++){
+            for (int g = 0; g < 3; g++){
+                result[vixo(t,g,s)] = (4.0 + mass) * ve[vixo(t,g,s)];
+            }
+        }
+    }
+
+#pragma omp parallel for
+    for (int t = 0; t < eovol; t++){
+        for (int mu = 0; mu < 4; mu++){
+            for (int s = 0; s < 4; s++){
+                for (int g = 0; g < 3; g++){
+                    for (int gi = 0; gi < 3; gi++){
+                        
+                        result[vixo(t,g,s)] += (
+                            std::conj(Uo[uixo(hops_e[hix(t,mu,0)],mu,gi,g,eovol)])
+                            * (
+                                -vo[vixo(hops_e[hix(t,mu,0)],gi,s)]
+                                -gamf[mu][s] * vo[vixo(hops_e[hix(t,mu,0)],gi,gamx[mu][s])]
+                            )
+                            + Ue[uixo(t,mu,g,gi,eovol)]
+                            * (
+                                -vo[vixo(hops_e[hix(t,mu,1)],gi,s)]
+                                +gamf[mu][s] * vo[vixo(hops_e[hix(t,mu,1)],gi,gamx[mu][s])]
+                            )
+                        ) * 0.5;
+                    }
+                }
+            }
+        }
+    }
+
+    // odd lattice part
+#pragma omp parallel for
+    for (int t = 0; t < eovol; t++){
+        
+        // mass term independent
+        for (int s = 0; s < 4; s++){
+            for (int g = 0; g < 3; g++){
+                result[vixo(t+eovol,g,s)] = (4.0 + mass) * vo[vixo(t,g,s)];
+            }
+        }
+    }
+
+#pragma omp parallel for
+    for (int t = 0; t < eovol; t++){
+        
+        for (int mu = 0; mu < 4; mu++){
+            for (int s = 0; s < 4; s++){
+                for (int g = 0; g < 3; g++){
+                    for (int gi = 0; gi < 3; gi++){
+                        
+                        result[vixo(t+eovol,g,s)] += (
+                            std::conj(Ue[uixo(hops_o[hix(t,mu,0)],mu,gi,g,eovol)])
+                            * (
+                                -ve[vixo(hops_o[hix(t,mu,0)],gi,s)]
+                                -gamf[mu][s] * ve[vixo(hops_o[hix(t,mu,0)],gi,gamx[mu][s])]
+                            )
+                            + Uo[uixo(t,mu,g,gi,eovol)]
+                            * (
+                                -ve[vixo(hops_o[hix(t,mu,1)],gi,s)]
+                                +gamf[mu][s] * ve[vixo(hops_o[hix(t,mu,1)],gi,gamx[mu][s])]
+                            )
+                        ) * 0.5;
+                    }
+                }
+            }
+        }
+    }
+
+    return result_ten;
 }
 
 }
