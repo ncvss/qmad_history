@@ -46,6 +46,7 @@ dwc_py = qcd_ml.qcd.dirac.dirac_wilson_clover(U, mass, csw)
 
 dw_d = wilson.wilson_direct(U, mass)
 dw_eo = wilson.wilson_eo(U, mass)
+dw_heo = wilson.wilson_hop_eo(U, mass)
 dw_ho = wilson.wilson_hop_mtsg(U, mass)
 dw_hn = wilson.wilson_hop_tmgs(U, mass)
 
@@ -85,13 +86,14 @@ check_correct.append(str(dw_hn))
 for order, c in zip(dw_hn.all_call_names(),dw_hn.all_calls()):
     check_correct.append((order,torch.allclose(c(vn).transpose(4,5),dwv_py)))
 
-check_correct.append(str(dw_eo))
-for order, c in zip(dw_eo.all_call_names(),dw_eo.all_calls()):
-    dwv_eo = c([ve,vo])
-    dwv_eo_back = torch.zeros_like(dwv_py)
-    dwv_eo_back[dw_eo.emask] = dwv_eo[0]
-    dwv_eo_back[dw_eo.omask] = dwv_eo[1]
-    check_correct.append((order,torch.allclose(dwv_py,dwv_eo_back)))
+for dw in [dw_eo, dw_heo]:
+    check_correct.append(str(dw))
+    for order, c in zip(dw.all_call_names(),dw.all_calls()):
+        dwv_eo = c([ve,vo])
+        dwv_eo_back = torch.zeros_like(dwv_py)
+        dwv_eo_back[dw_eo.emask] = dwv_eo[0]
+        dwv_eo_back[dw_eo.omask] = dwv_eo[1]
+        check_correct.append((order,torch.allclose(dwv_py,dwv_eo_back)))
 
 check_correct.append(str(dw_roof))
 for order, c in zip(dw_roof.all_call_names(),dw_roof.all_calls()):

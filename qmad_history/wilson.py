@@ -133,6 +133,9 @@ class wilson_hop_mtsg:
             phase_U[3,:,:,:,-1] *= boundary_phases[3]
             self.phase_U = phase_U
         
+        self.axes_even = all([ax%2 == 0 for ax in grid])
+        """Denotes if all space-time axes have even length, for blocked operator."""
+        
 
     def __str__(self):
         return "dw_hop_mtsg"
@@ -149,6 +152,9 @@ class wilson_hop_mtsg:
     def tmsgMh(self, v):
         return torch.ops.qmad_history.dw_hop_mtsg_tmsgMh.default(self.U, v, self.hop_inds,
                                                          self.mass_parameter)
+    def block_btmsgMh(self, v):
+        return torch.ops.qmad_history.dw_hop_block_mtsg_btmsgMh(self.U, v, self.hop_inds,
+                                                                self.mass_parameter)
     def avx_tmgsMhs(self, v):
         return torch.ops.qmad_history.dw_avx_mtsg_tmgsMhs(self.U, v, self.hop_inds,
                                                           self.mass_parameter)
@@ -209,14 +215,117 @@ class wilson_hop_mtsg:
     
     def all_calls(self):
         return [self.tMmgsh, self.tMgshm, self.tmgsMh, self.tmsgMh] + (
-            ([self.avx_tmgsMhs, self.avx_tmsgMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs, self.templUbound_tmsgMhs] if capab("vectorise") else [])
+            ([self.block_btmsgMh] if self.axes_even else [])
+            + ([self.avx_tmgsMhs, self.avx_tmsgMhs, self.templ_tmgsMhs, self.tempipe_tmgsMhs, self.templ_tmsgMhs, self.templbound_tmsgMhs, self.templUbound_tmsgMhs] if capab("vectorise") else [])
             + ([self.cuv2,] if torch.cuda.is_available() else [])
             )
     def all_call_names(self):
         return ["tMmgsh", "tMgshm", "tmgsMh", "tmsgMh"] + (
-            (["avx_tmgsMhs", "avx_tmsgMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs", "templUbound_tmsgMhs"] if capab("vectorise") else [])
+            (["block_btmsgMh"] if self.axes_even else [])
+            + (["avx_tmgsMhs", "avx_tmsgMhs", "templ_tmgsMhs", "tempipe_tmgsMhs", "templ_tmsgMhs", "templbound_tmsgMhs", "templUbound_tmsgMhs"] if capab("vectorise") else [])
             + (["cuv2",] if torch.cuda.is_available() else [])
             )
+
+
+class wilson_hop_eo:
+    """
+    Dirac Wilson operator with gauge config U on even-odd checkerboard that precomputes the hop addresses.
+    The input U still has the axes U[mu,x,y,z,t,g,h].
+    The call takes one even and one odd U and v each, which have the t axis split in half.
+    The input v is a list of even and odd v.
+    """
+    def __init__(self, U, mass_parameter):
+        # the dimensions have to have even sizes for the algorithm to work
+        dims = list(U.shape)[1:5]
+        for d in dims:
+            if d%2 != 0:
+                raise Exception("Grid has to have even number of points in each dimension")
+        assert tuple(U.shape[5:7]) == (3,3,)
+        assert U.shape[0] == 4
+        
+        # choose the even and odd sites in the gauge fields
+        emask = torch.tensor([[[[(x+y+z+t)%2 == 0 for t in range(dims[3])] for z in range(dims[2])]
+                            for y in range(dims[1])] for x in range(dims[0])], dtype=torch.bool)
+        omask = torch.logical_not(emask)
+
+        eodim = dims[:]
+        eodim[-1] //= 2
+        self.eodim = eodim
+        """Dimensions of the even and odd lattices."""
+        eovol = eodim[0]*eodim[1]*eodim[2]*eodim[3]
+        self.emask = emask
+        """Boolean tensor to select all even sites, with the t axis being halved compared to the base grid."""
+        self.omask = omask
+        """Boolean tensor to select all odd sites, with the t axis being halved compared to the base grid."""
+        self.Ue = U[:,emask]
+        self.Uo = U[:,omask]
+        assert self.Ue.shape == (4,eovol,3,3) and self.Uo.shape == (4,eovol,3,3)
+        self.mass_parameter = mass_parameter
+
+        # create hops for sites on even and odd grid; their neighbours are on the opposite grid
+        # this has to be on CPU, integer arithmetic is not implemented on GPU
+        strides = torch.tensor([eodim[1]*eodim[2]*eodim[3], eodim[2]*eodim[3], eodim[3], 1], dtype=torch.int32)
+        indices = torch.tensor(np.indices(eodim, sparse=False), dtype=torch.int32)
+        indices = torch.permute(indices, (1,2,3,4,0,)).flatten(start_dim=0, end_dim=3)
+
+        # +1 step in t direction: if x+y+z and current grid have same parity, it has the same address
+        # -1 step in t direction: if x+y+z and current grid have opposite parity, it has the same address
+        # the other steps are the same
+        # we compute a tensor that contains the correct t step for each site and parity
+        eostep = torch.empty([2,eovol], dtype=torch.int32)
+        xyz_select = torch.tensor([1,1,1,0], dtype=torch.int32)
+        eostep[0] = torch.remainder(torch.matmul(indices, xyz_select), 2)
+        eostep[1] = torch.remainder(torch.matmul(indices, xyz_select)+1, 2)
+        assert torch.all(torch.logical_or(eostep == 0, eostep == 1))
+
+        hop_inds = [[],[]]
+        for evod in range(2):
+            # xyz hops are the same
+            for coord in range(3):
+                # index after a negative step in coord direction
+                minus_hop_ind = torch.clone(indices)
+                minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]-1+eodim[coord], eodim[coord])
+                # index after a positive step in coord direction
+                plus_hop_ind = torch.clone(indices)
+                plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+1, eodim[coord])
+                # compute flattened index by dot product with strides
+                hop_inds[evod].append(torch.matmul(minus_hop_ind, strides))
+                hop_inds[evod].append(torch.matmul(plus_hop_ind, strides))
+
+            # t hops
+            coord = 3
+            minus_hop_ind = torch.clone(indices)
+            minus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+eostep[evod]-1+eodim[coord], eodim[coord])
+            plus_hop_ind = torch.clone(indices)
+            plus_hop_ind[:,coord] = torch.remainder(indices[:,coord]+eostep[evod], eodim[coord])
+            # compute flattened index by dot product with strides
+            hop_inds[evod].append(torch.matmul(minus_hop_ind, strides))
+            hop_inds[evod].append(torch.matmul(plus_hop_ind, strides))
+        
+        self.hop_inds_e = torch.stack(hop_inds[0], dim=1).contiguous()
+        self.hop_inds_o = torch.stack(hop_inds[1], dim=1).contiguous()
+        assert torch.all(self.hop_inds_e < eovol) and torch.all(self.hop_inds_e >= 0)
+        assert torch.all(self.hop_inds_o < eovol) and torch.all(self.hop_inds_o >= 0)
+        assert self.hop_inds_e.shape == (eovol, 8) and self.hop_inds_o.shape == (eovol, 8)
+
+        
+    
+    def __str__(self):
+        return "dw_hop_eo_pmtsg"
+    
+    def ptMmsgh(self, v):
+        return torch.ops.qmad_history.dw_eo_hop_pmtsg_ptMmsgh(self.Ue, self.Uo, v[0], v[1],
+                                                              self.hop_inds_e, self.hop_inds_o,
+                                                              self.mass_parameter)
+    def pMtmsgh(self, v):
+        return torch.ops.qmad_history.dw_eo_hop_pmtsg_pMtmsgh(self.Ue, self.Uo, v[0], v[1],
+                                                              self.hop_inds_e, self.hop_inds_o,
+                                                              self.mass_parameter)
+    
+    def all_calls(self):
+        return [self.pMtmsgh, self.ptMmsgh]
+    def all_call_names(self):
+        return ["pMtmsgh", "ptMmsgh"]
 
 
 class wilson_hop_tmgs:
