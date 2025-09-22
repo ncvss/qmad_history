@@ -311,10 +311,11 @@ at::Tensor dw_hop_block_mtsg_btmsgMh (const at::Tensor& U_ten, const at::Tensor&
     TORCH_CHECK(v_ten.size(5) == 3);
 
     // space-time axes have to have even length for blocking to work
-    TORCH_CHECK(dims[0]%2 == 0, "Axis needs to have even length for blocking");
-    TORCH_CHECK(dims[1]%2 == 0, "Axis needs to have even length for blocking");
-    TORCH_CHECK(dims[2]%2 == 0, "Axis needs to have even length for blocking");
-    TORCH_CHECK(dims[3]%2 == 0, "Axis needs to have even length for blocking");
+    TORCH_CHECK(dims[0]%2 + dims[1]%2 + dims[2]%2 + dims[3]%2 == 0,
+                "Axes need to have even length for blocking");
+    // TORCH_CHECK(dims[1]%2 == 0, "Axis needs to have even length for blocking");
+    // TORCH_CHECK(dims[2]%2 == 0, "Axis needs to have even length for blocking");
+    // TORCH_CHECK(dims[3]%2 == 0, "Axis needs to have even length for blocking");
     
     TORCH_CHECK(U_ten.is_contiguous());
     TORCH_CHECK(v_ten.is_contiguous());

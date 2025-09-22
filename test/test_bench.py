@@ -15,9 +15,13 @@ print(f'Machine has {num_threads} threads')
 
 print(settings.capab())
 
-n_measurements = 500
+n_measurements = 300
 n_warmup = 20
-print("n_measurements =",n_measurements)
+# less iterations for the one operator that we know is very slow
+n_measurements_slow = 80
+print("n_measurements =", n_measurements)
+print("n_measurements_slow =", n_measurements_slow)
+print("n_warmup =", n_warmup)
 
 lat_dim = [16,8,8,16]
 print("lattice_dimensions =",lat_dim)
@@ -48,6 +52,7 @@ dw_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":0.0,"csw_t":0.0,"
 
 dw_d = wilson.wilson_direct(U, mass)
 dw_eo = wilson.wilson_eo(U, mass)
+dw_heo = wilson.wilson_hop_eo(U, mass)
 dw_ho = wilson.wilson_hop_mtsg(U, mass, boundary_phases=[1,1,1,-1])
 dw_hn = wilson.wilson_hop_tmgs(U, mass)
 
@@ -72,10 +77,10 @@ funcs = [dw_g]
 opsetup_name = ["gpt"]
 
 vs = {"gpt": v_g, str(dw_d): v, str(dw_ho): v, str(dw_hn): vn,
-      str(dw_eo): veo, str(dw_roof): v, str(dw_grid): v_grid,
+      str(dw_eo): veo, str(dw_heo): veo, str(dw_roof): v, str(dw_grid): v_grid,
       str(dw_grid2): v_grid2, "dw_hop_mtsg_grad": vgrad}
 
-for dw in [dw_d, dw_eo, dw_ho, dw_hn, dw_roof, dw_grid, dw_grid2]:
+for dw in [dw_d, dw_eo, dw_heo, dw_ho, dw_hn, dw_roof, dw_grid, dw_grid2]:
     algo_name += [str(dw)+"."+x for x in dw.all_call_names()]
     opsetup_name += [str(dw)] * len(dw.all_call_names())
     funcs += dw.all_calls()
@@ -111,6 +116,7 @@ dwc_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,
                                             "isAnisotropic":False,"boundary_phases":[1.0,1.0,1.0,1.0],}, )
 
 dwc_d = clover.wilson_clover_direct_false(U, mass, csw)
+dwc_dh = clover.wilson_clover_hop(U, mass, csw)
 dwc_f = clover.wilson_clover_fpre(U, mass, csw)
 dwc_ho = clover.wilson_clover_hop_mtsg(U, mass, csw)
 dwc_hn = clover.wilson_clover_hop_tmgs(U, mass, csw)
@@ -126,11 +132,11 @@ algo_name_c = ["gpt"]
 funcsc = [dwc_g]
 opsetup_name_c = ["gpt"]
 
-vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_ho): v, str(dwc_hn): vn,
+vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_dh): v, str(dwc_ho): v, str(dwc_hn): vn,
        str(dwc_s): v, str(dwc_f): v, str(dwc_grid): v_grid, str(dwc_gridcl): v,
        str(dwc_grid2): v_grid2, "dwc_sigpre_hop_mtsg_grad": vgrad}
 
-for dw in [dwc_d, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl, dwc_grid2]:
+for dw in [dwc_d, dwc_dh, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl, dwc_grid2]:
     algo_name_c += [str(dw)+"."+x for x in dw.all_call_names()]
     opsetup_name_c += [str(dw)] * len(dw.all_call_names())
     funcsc += dw.all_calls()
@@ -143,7 +149,7 @@ funcsc.append(dwc_gridcl.tmngsMhs)
 # print(len(funcsc))
 # for ff in funcsc:
 #     print(ff)
-resultsc = {x:np.zeros(n_measurements) for x in algo_name_c}
+resultsc = {x:np.full(n_measurements, 1.0e12) for x in algo_name_c}
 
 for i in range(n_warmup):
     for j in range(len(algo_name_c)):
@@ -151,14 +157,17 @@ for i in range(n_warmup):
 
 for i in range(n_measurements):
     for j in range(len(algo_name_c)):
-        start = time.perf_counter_ns()
-        vresc = funcsc[j](vsc[opsetup_name_c[j]])
-        stop = time.perf_counter_ns()
-        resultsc[algo_name_c[j]][i] = stop - start
+        # reduced number of iterations for the very slow operator
+        if not (algo_name_c[j] == "dwc_hop_mtsg.tmsgMh_dir" and i >= n_measurements_slow):
+            start = time.perf_counter_ns()
+            vresc = funcsc[j](vsc[opsetup_name_c[j]])
+            stop = time.perf_counter_ns()
+            resultsc[algo_name_c[j]][i] = stop - start
 
 resultsc_sorted = dict()
 for x in resultsc:
-    resultsc_sorted[x] = np.sort(resultsc[x])[:(n_measurements//5)]
+    n_measured_here = n_measurements_slow if x == "dwc_hop_mtsg.tmsgMh_dir" else n_measurements
+    resultsc_sorted[x] = np.sort(resultsc[x])[:(n_measured_here//5)]
 
 print(f"\n{'Dirac Wilson Clover':35}: {'time in us':>15} {'std in us':>15}")
 
