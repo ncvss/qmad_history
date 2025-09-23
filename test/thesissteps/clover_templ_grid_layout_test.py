@@ -43,7 +43,7 @@ for i in range(n_vols):
     all_grids.append(copy.copy(start_grid))
 
 vols = [4*4*4*4*2**ii for ii in range(n_vols)]
-names = ["spin_vect","grid_vect"]
+names = ["spin_vect","grid_vect","grid_trafo"]
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
@@ -76,10 +76,11 @@ for nb in range(0,n_measurements,n_batchlen):
         for n in range(n_warmup):
             res_spin = dwc_spin.tmnsgMhs(v_mtsg)
             res_grid = dwc_grid.tmngsMht(v_mtsgt)
+            res_trafo = dwc_grid.trafo_tmngsMht(v_mtsg)
             if n == 0 and nb == 0:
                 res_ref = dwc_ref(v_mtsg)
                 res_grid_back = torch.cat([res_grid[:,:,:,:,:,:,0],res_grid[:,:,:,:,:,:,1]], dim=3)
-                print("computations equal:",[torch.allclose(res_ref,res_c) for res_c in [res_spin,res_grid_back]])
+                print("computations equal:",[torch.allclose(res_ref,res_c) for res_c in [res_spin,res_grid_back,res_trafo]])
 
         for n in range(nb,nb+n_batchlen):
             start = time.perf_counter_ns()
@@ -91,6 +92,11 @@ for nb in range(0,n_measurements,n_batchlen):
             res_grid = dwc_grid.tmngsMht(v_mtsgt)
             stop = time.perf_counter_ns()
             results[vol]["grid_vect"][n] = stop - start
+
+            start = time.perf_counter_ns()
+            res_grid = dwc_grid.trafo_tmngsMht(v_mtsg)
+            stop = time.perf_counter_ns()
+            results[vol]["grid_trafo"][n] = stop - start
 
 
 

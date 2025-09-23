@@ -98,6 +98,8 @@ TORCH_LIBRARY(qmad_history, m) {
 
     m.def("dw_hop_block_mtsg_btmsgMh(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
 
+    m.def("dwc_gridtrafo_mtsgt2_tmngsMht(Tensor U_tensor, Tensor v_tensor, Tensor fs_tensor, Tensor hops_tensor, float mass) -> Tensor");
+
 
     m.def("dw_hop_mtsg_cuv2(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
     m.def("dw_hop_mtsg_cuv3(Tensor U_ten, Tensor v_ten, Tensor hops_ten, float mass) -> Tensor");
@@ -201,6 +203,7 @@ TORCH_LIBRARY_IMPL(qmad_history, CPU, m) {
 
     m.impl("dw_hop_block_mtsg_btmsgMh", &dw_hop_block_mtsg_btmsgMh);
 
+    m.impl("dwc_gridtrafo_mtsgt2_tmngsMht", &dwc_gridtrafo_mtsgt2_tmngsMht);
 
 
     m.impl("capability_function", &capability_function);

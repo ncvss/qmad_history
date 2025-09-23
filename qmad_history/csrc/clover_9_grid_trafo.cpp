@@ -1,0 +1,592 @@
+// This Dirac Wilson clover operator uses the normal tsg memory layout for v
+// but transforms to the Grid memory layout before application, then back after application
+// the fastest index goes over sites that are furthest from each other in t direction
+// it is as long as the SIMD width (2 sites for AVX)
+// the clover term is also in the grid layout:
+// the relevant elements of the tensor product sigma x field strength matrix
+// this means we pass the upper triangles of two 6x6 matrices
+// F[x,y,z,t1,triangle index,flattened upper triangle,t2]
+// the upper triangle is flattened with the following indices:
+//  0 | 1 | 2 | 3 | 4 | 5
+//  1 | 6 | 7 | 8 | 9 |10
+//  2 | 7 |11 |12 |13 |14
+//  3 | 8 |12 |15 |16 |17
+//  4 | 9 |13 |16 |18 |19
+//  5 |10 |14 |17 |19 |20
+// (the lower triangles are the same numbers, but conjugated)
+
+
+#include <torch/extension.h>
+
+#ifdef VECTORISATION_ACTIVATED
+
+#include <omp.h>
+#include <immintrin.h>
+#include <iostream>
+
+#include "static/indexfunc_grid.hpp"
+#include "static/indexfunc_2.hpp"
+#include "complmath_avx.hpp"
+#include "load_avx_grid.hpp"
+
+
+namespace qmad_history{
+
+
+// gamx[mu][i] is the spin component of v that is proportional to spin component i of gammamu @ v
+static const int gamx [4][4] =
+    {{3, 2, 1, 0},
+     {3, 2, 1, 0},
+     {2, 3, 0, 1},
+     {2, 3, 0, 1} };
+
+
+// gamf = [[ i, i,-i,-i],
+//         [-1, 1, 1,-1],
+//         [ i,-i,-i, i],
+//         [ 1, 1, 1, 1] ]
+
+// multiplication of t2 register with gamf as a template function
+template <int M, int S> inline __m256d gamma_mul_g (__m256d a){
+    if constexpr (M == 0){
+        if constexpr (S == 0 || S == 1){
+            return compl_reg_times_i(a);
+        } else {
+            return compl_reg_times_minus_i(a);
+        }
+    } else {
+        if constexpr (M == 1){
+            if constexpr (S == 0 || S == 3){
+                return _mm256_sub_pd(_mm256_setzero_pd(), a);
+            } else {
+                return a;
+            }
+        } else {
+            if constexpr (M == 2) {
+                if constexpr (S == 0 || S == 3){
+                    return compl_reg_times_i(a);
+                } else {
+                    return compl_reg_times_minus_i(a);
+                }
+            } else {
+                return a;
+            }
+        }
+    }
+}
+
+
+// transform fermion field from tsg to grid layout
+// this has an output array, because the input fermion field should not be modified
+// we treat the complex field as an array of doubles
+inline double* tsg_to_grid (const double* v_in, int vol, int Lt){
+    int vvol = vol*24;
+    double* v_tr = new double [vvol];
+    // half the number of components in one t-direction slice
+    int halft = Lt*12;
+
+#pragma omp parallel for
+    for (int xyz = 0; xyz < vvol; xyz += Lt*24){
+        // iterate over all spin-colour components with the same x,y,z
+        for (int tsg = 0; tsg < halft; tsg+=2){
+            v_tr[xyz+tsg*2] = v_in[xyz+tsg];
+            v_tr[xyz+tsg*2+1] = v_in[xyz+tsg+1];
+            v_tr[xyz+tsg*2+2] = v_in[xyz+halft+tsg];
+            v_tr[xyz+tsg*2+3] = v_in[xyz+halft+tsg+1];
+        }
+    }
+
+    return v_tr;
+}
+
+
+// transform fermion field from grid to tsg layout
+// this modifies the result in-place to get the result in tsg layout
+// we want to use the least amount of memory
+inline void grid_to_tsg (double* result, int vol, int Lt){
+    int vvol = vol*24;
+    // half the number of components in one t-direction slice
+    int halft = Lt*12;
+
+#pragma omp parallel for
+    for (int xyz = 0; xyz < vvol; xyz += Lt*24){
+        // first: save every second component so that we can overwrite them
+        // this corresponds to the second half of the t-axis
+        double* seconds = new double [halft];
+        for (int tsg = 0; tsg < halft; tsg+=2){
+            seconds[tsg] = result[xyz+tsg*2+2];
+            seconds[tsg+1] = result[xyz+tsg*2+3];
+        }
+        // iterate over all spin-colour components with the same x,y,z
+        // first half of the t-axis
+        for (int tsg = 0; tsg < halft; tsg+=2){
+            result[xyz+tsg] = result[xyz+tsg*2];
+            result[xyz+tsg+1] = result[xyz+tsg*2+1];
+        }
+        // second half of t-axis
+        for (int tsg = 0; tsg < halft; tsg+=2){
+            result[xyz+halft+tsg] = seconds[tsg];
+            result[xyz+halft+tsg+1] = seconds[tsg+1];
+        }
+        delete [] seconds;
+    }
+}
+
+
+// pass a template parameter if we are at a t boundary
+// tbou=0 is the lower and tbou=1 the higher boundary, anything else is inside
+
+template <int mu, int g, int s, int tbou>
+inline void dwc_gridtrafo_mtsgt2_tmgsMht_loop (const double * U, const double * v,
+                                 const int * hops, __m256d massf_reg,
+                                 double * result, int t, int vol){
+
+    // register for the -1/2 prefactor
+    __m256d m0p5_reg = _mm256_set1_pd(-0.5);
+
+    // register with the change in result[t1,s,g]
+    __m256d incr;
+
+    if constexpr (mu == 0){
+        // mass term is the first term in the result
+        incr = load_site(v+vixg(t,g,s));
+        incr = _mm256_mul_pd(incr,massf_reg);
+    } else {
+        // load result of previous computations to add to
+        incr = load_site(result+vixg(t,g,s));
+    }
+
+
+    for (int gi = 0; gi < 3; gi++){
+
+        // v hop in negative mu * gammma
+        __m256d v_Hmum_gam = load_hop_tbound<mu,0,tbou>(v+vixg(hops[hixd(t,mu,0)],gi,gamx[mu][s]));
+        // multiply the gamma prefactor for
+        v_Hmum_gam = gamma_mul_g<mu,s>(v_Hmum_gam);
+        
+        // v hop in negative mu
+        __m256d v_Hmum = load_hop_tbound<mu,0,tbou>(v+vixg(hops[hixd(t,mu,0)],gi,s));
+
+        // add those together
+        v_Hmum = _mm256_add_pd(v_Hmum, v_Hmum_gam);
+
+        // Umu hop in negative mu, transposed
+        __m256d U_Hmum = load_hop_tbound<mu,0,tbou>(U+uixg(hops[hixd(t,mu,0)],mu,gi,g,vol));
+
+        // conjugate U and multiply onto v sum
+        v_Hmum = compl_vectorreg_conj_pointwise_mul(v_Hmum, U_Hmum);
+
+
+        // v hop in positive mu * gamma
+        __m256d v_Hmup_gam = load_hop_tbound<mu,1,tbou>(v+vixg(hops[hixd(t,mu,1)],gi,gamx[mu][s]));
+        // multiply gamma prefactor
+        v_Hmup_gam = gamma_mul_g<mu,s>(v_Hmup_gam);
+        
+        // v hop in positive mu
+        __m256d v_Hmup = load_hop_tbound<mu,1,tbou>(v+vixg(hops[hixd(t,mu,1)],gi,s));
+
+        // subtract those 2
+        v_Hmup = _mm256_sub_pd(v_Hmup, v_Hmup_gam);
+
+        // Umu at this point
+        __m256d U_Hmup = load_site(U+uixg(t,mu,g,gi,vol));
+
+        // multiply U onto v sum
+        v_Hmup = compl_vectorreg_pointwise_mul(v_Hmup, U_Hmup);
+
+        // add both U*v terms
+        v_Hmum = _mm256_add_pd(v_Hmum,v_Hmup);
+
+        // *(-0.5) and add to incr
+        incr = _mm256_fmadd_pd(v_Hmum,m0p5_reg,incr);
+
+    }
+    // store incr in result
+    store_site(result+vixg(t,g,s),incr);
+    
+}
+
+
+inline void dwc_gridtrafo_mtsgt2_clover (const double * v, const double * F,
+                                   double * result, int t){
+    
+    // upper and lower triangle
+    for (int sbl = 0; sbl < 2; sbl++){
+        int sbase = sbl*2;
+
+        // 6 registers, each with the wilson term result for one s,g combination
+        __m256d r00 = load_site(result+vixg(t,0,sbase+0));
+        __m256d r01 = load_site(result+vixg(t,1,sbase+0));
+        __m256d r02 = load_site(result+vixg(t,2,sbase+0));
+        __m256d r10 = load_site(result+vixg(t,0,sbase+1));
+        __m256d r11 = load_site(result+vixg(t,1,sbase+1));
+        __m256d r12 = load_site(result+vixg(t,2,sbase+1));
+        
+        __m256d vreg;
+        // v component s=0,g=0
+        vreg = load_site(v+vixg(t,0,sbase+0));
+        // multiply onto the field strength entry and add to result
+        // the lower triangle elements are complex conjugated
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,0))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,1))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,2))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,3))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,4))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,5))));
+
+        // v component s=0,g=1
+        vreg = load_site(v+vixg(t,1,sbase+0));
+        // multiply onto the field strength entry and add to result
+        // the lower triangle elements are complex conjugated
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,1))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,6))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,7))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,8))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,9))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,10))));
+
+        // v component s=0,g=2
+        vreg = load_site(v+vixg(t,2,sbase+0));
+        // multiply onto the field strength entry and add to result
+        // the lower triangle elements are complex conjugated
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,2))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,7))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,11))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,12))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,13))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,14))));
+
+        // v component s=1,g=0
+        vreg = load_site(v+vixg(t,0,sbase+1));
+        // multiply onto the field strength entry and add to result
+        // the lower triangle elements are complex conjugated
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,3))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,8))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,12))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,15))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,16))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,17))));
+
+        // v component s=1,g=1
+        vreg = load_site(v+vixg(t,1,sbase+1));
+        // multiply onto the field strength entry and add to result
+        // the lower triangle elements are complex conjugated
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,4))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,9))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,13))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,16))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,18))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_conj_pointwise_mul(vreg, load_site(F+fixg(t,sbl,19))));
+
+        // v component s=1,g=2
+        vreg = load_site(v+vixg(t,2,sbase+1));
+        // multiply onto the field strength entry and add to result
+        // the lower triangle elements are complex conjugated
+        r00 = _mm256_add_pd(r00, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,5))));
+        r01 = _mm256_add_pd(r01, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,10))));
+        r02 = _mm256_add_pd(r02, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,14))));
+        r10 = _mm256_add_pd(r10, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,17))));
+        r11 = _mm256_add_pd(r11, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,19))));
+        r12 = _mm256_add_pd(r12, compl_vectorreg_pointwise_mul(vreg, load_site(F+fixg(t,sbl,20))));
+
+        // store into result tensor
+        store_site(result+vixg(t,0,sbase+0), r00);
+        store_site(result+vixg(t,1,sbase+0), r01);
+        store_site(result+vixg(t,2,sbase+0), r02);
+        store_site(result+vixg(t,0,sbase+1), r10);
+        store_site(result+vixg(t,1,sbase+1), r11);
+        store_site(result+vixg(t,2,sbase+1), r12);
+    }
+    
+
+}
+
+
+at::Tensor dwc_gridtrafo_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                    const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                    double mass){
+
+    // memory layout is U[mu,x,y,z,t1,g,gi,t2] and v[x,y,z,t,s,gi]
+    // t2 are the 2 neighboring sites that are in one register
+    // we have to first transform v
+
+    TORCH_CHECK(v_tensor.dim() == 6);
+    TORCH_CHECK(U_tensor.size(1) == v_tensor.size(0));
+    TORCH_CHECK(U_tensor.size(2) == v_tensor.size(1));
+    TORCH_CHECK(U_tensor.size(3) == v_tensor.size(2));
+    TORCH_CHECK(U_tensor.size(4)*2 == v_tensor.size(3));
+    TORCH_CHECK(v_tensor.size(4) == 4);
+    TORCH_CHECK(v_tensor.size(5) == 3);
+
+    TORCH_CHECK(U_tensor.dtype() == at::kComplexDouble);
+    TORCH_CHECK(v_tensor.dtype() == at::kComplexDouble);
+
+    TORCH_CHECK(U_tensor.is_contiguous());
+    TORCH_CHECK(v_tensor.is_contiguous());
+    TORCH_CHECK(fs_tensors.is_contiguous());
+
+    int vol = U_tensor.size(1) * U_tensor.size(2) * U_tensor.size(3) * U_tensor.size(4) * 2;
+    int tlen = U_tensor.size(4);
+
+    at::Tensor result_tensor = torch::empty(v_tensor.sizes(), v_tensor.options());
+
+    // we create a pointer to the complex tensor, then typecast it to double*
+    // this allows us to access the complex numbers as doubles in riri format
+    const double* U = (double*)U_tensor.const_data_ptr<c10::complex<double>>();
+    const double* v_in = (double*)v_tensor.const_data_ptr<c10::complex<double>>();
+    const double* F = (double*)fs_tensors.const_data_ptr<c10::complex<double>>();
+    const int* hops = hops_tensor.const_data_ptr<int>();
+    double* result = (double*)result_tensor.mutable_data_ptr<c10::complex<double>>();
+
+    const double * v = tsg_to_grid(v_in, vol, tlen*2);
+
+    // register for the mass prefactor
+    __m256d massf_reg = _mm256_set1_pd(4.0 + mass);
+
+    // register for the field strength term prefactor -1/2*csw
+    //__m256d csw_reg = _mm256_set1_pd(-0.5*csw);
+
+    // vectorization over 2 sites in time
+    // thus the space-time loop goes only over half the volume
+    // first we loop over the spatial points
+
+#pragma omp parallel for
+    for (int xyz = 0; xyz < vol/2; xyz+=tlen){
+
+        // now the loop over the time axis
+        // we treat first and last site separately
+
+        // lower boundary of time axis
+        int t1 = xyz;
+        // loop over mu=0,1,2,3 g=0,1,2 and s=0,1,2,3 manually with template
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,0,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,1,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,2,0>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,3,0>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_clover(v,F,result,t1);
+
+
+        // inner part of time axis
+        for (t1 = xyz+1; t1 < xyz+tlen-1; t1++){
+            // loop over mu=0,1,2,3 g=0,1,2 and s=0,1,2,3 manually with template
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,0,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,1,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,2,2>(U,v,hops,massf_reg,result,t1,vol);
+            dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,3,2>(U,v,hops,massf_reg,result,t1,vol);
+
+            dwc_gridtrafo_mtsgt2_clover(v,F,result,t1);
+        }
+
+        // upper boundary of time axis
+        // this is signaled by template parameter tbou=1
+        t1 = xyz+tlen-1;
+        // loop over mu=0,1,2,3 g=0,1,2 and s=0,1,2,3 manually with template
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,0,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,1,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<0,2,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,0,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,1,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<1,2,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,0,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,1,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<2,2,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,0,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,1,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,0,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,1,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,2,1>(U,v,hops,massf_reg,result,t1,vol);
+        dwc_gridtrafo_mtsgt2_tmgsMht_loop<3,2,3,1>(U,v,hops,massf_reg,result,t1,vol);
+
+        dwc_gridtrafo_mtsgt2_clover(v,F,result,t1);
+    }
+
+    grid_to_tsg(result, vol, tlen*2);
+
+
+    return result_tensor;
+}
+
+}
+
+#else
+
+namespace qmad_history {
+
+at::Tensor dwc_gridtrafo_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
+                                    const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
+                                    double mass){
+    
+    TORCH_CHECK(0,"AVX not compiled");
+    return torch::zeros({1}, v_tensor.options());
+}
+
+}
+
+#endif

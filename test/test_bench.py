@@ -17,8 +17,9 @@ print(settings.capab())
 
 n_measurements = 300
 n_warmup = 20
-# less iterations for the one operator that we know is very slow
+# fewer iterations for the one operator that we know is very slow
 n_measurements_slow = 80
+slow_ops = ["dwc_hop_mtsg.tmsgMh_dir"]
 print("n_measurements =", n_measurements)
 print("n_measurements_slow =", n_measurements_slow)
 print("n_warmup =", n_warmup)
@@ -106,10 +107,10 @@ results_sorted = dict()
 for x in results:
     results_sorted[x] = np.sort(results[x])[:(n_measurements//5)]
 
-print(f"\n{'Dirac Wilson':35}: {'time in us':>15} {'std in us':>15}")
+print(f"\n{'Dirac Wilson':45}: {'time in us':>15} {'std in us':>15}")
 
 for x,y in results_sorted.items():
-    print(f"{x:35}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
+    print(f"{x:45}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
         
 
 dwc_g = g.qcd.fermion.wilson_clover(U_g, {"kappa":kappa,"csw_r":csw,"csw_t":csw,"xi_0":1,"nu":1,
@@ -127,6 +128,7 @@ dwc_grid = clover.wilson_clover_hop_mtsgt_sigpre(U, mass, csw)
 dwc_gridcl = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
 
 dwc_grid2 = clover.wilson_clover_hop_mtsgt2_sigpre(U, mass, csw)
+dwc_grid2_tr = clover.wilson_clover_hop_mtsgt2_sigpre(U, mass, csw, True)
 
 algo_name_c = ["gpt"]
 funcsc = [dwc_g]
@@ -134,9 +136,9 @@ opsetup_name_c = ["gpt"]
 
 vsc = {"gpt": v_g, str(dwc_d): v, str(dwc_dh): v, str(dwc_ho): v, str(dwc_hn): vn,
        str(dwc_s): v, str(dwc_f): v, str(dwc_grid): v_grid, str(dwc_gridcl): v,
-       str(dwc_grid2): v_grid2, "dwc_sigpre_hop_mtsg_grad": vgrad}
+       str(dwc_grid2): v_grid2, str(dwc_grid2_tr): v, "dwc_sigpre_hop_mtsg_grad": vgrad}
 
-for dw in [dwc_d, dwc_dh, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl, dwc_grid2]:
+for dw in [dwc_d, dwc_dh, dwc_f, dwc_ho, dwc_hn, dwc_s, dwc_grid, dwc_gridcl, dwc_grid2, dwc_grid2_tr]:
     algo_name_c += [str(dw)+"."+x for x in dw.all_call_names()]
     opsetup_name_c += [str(dw)] * len(dw.all_call_names())
     funcsc += dw.all_calls()
@@ -158,7 +160,7 @@ for i in range(n_warmup):
 for i in range(n_measurements):
     for j in range(len(algo_name_c)):
         # reduced number of iterations for the very slow operator
-        if not (algo_name_c[j] == "dwc_hop_mtsg.tmsgMh_dir" and i >= n_measurements_slow):
+        if not (i >= n_measurements_slow and algo_name_c[j] in slow_ops):
             start = time.perf_counter_ns()
             vresc = funcsc[j](vsc[opsetup_name_c[j]])
             stop = time.perf_counter_ns()
@@ -166,11 +168,11 @@ for i in range(n_measurements):
 
 resultsc_sorted = dict()
 for x in resultsc:
-    n_measured_here = n_measurements_slow if x == "dwc_hop_mtsg.tmsgMh_dir" else n_measurements
+    n_measured_here = n_measurements_slow if x in slow_ops else n_measurements
     resultsc_sorted[x] = np.sort(resultsc[x])[:(n_measured_here//5)]
 
-print(f"\n{'Dirac Wilson Clover':35}: {'time in us':>15} {'std in us':>15}")
+print(f"\n{'Dirac Wilson Clover':45}: {'time in us':>15} {'std in us':>15}")
 
 for x,y in resultsc_sorted.items():
-    print(f"{x:35}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
+    print(f"{x:45}: {np.mean(y)/1000:>15.3f} {np.std(y)/1000:>15.3f}")
 

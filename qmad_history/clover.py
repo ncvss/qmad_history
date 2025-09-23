@@ -435,8 +435,12 @@ class wilson_clover_hop_mtsgt2_sigpre:
     For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
     field_strength * sigma * v is precomputed by computing the tensor product of field_strength * sigma,
     and only the upper triangle of two 6x6 blocks is passed for the field strength.
+
+    There is another call that takes v[x,y,z,t,s,h] as input and transforms automatically.
+    all_calls outputs the calls that take such a v if v_trafo==True.
+    Otherwise, it outputs the calls that take the v from Grid.
     """
-    def __init__(self, U, mass_parameter, csw):
+    def __init__(self, U, mass_parameter, csw, v_trafo=False):
         assert tuple(U.shape[5:7]) == (3,3,)
         assert U.shape[0] == 4
         # t axis needs to be divisible by register length
@@ -444,6 +448,7 @@ class wilson_clover_hop_mtsgt2_sigpre:
         assert tlen%2 == 0
         self.mass_parameter = mass_parameter
         self.csw = csw
+        self.v_trafo = v_trafo
 
         # transform U to have t sites from each half as last index
         Ufirst = U[:,:,:,:,0:tlen//2]
@@ -480,15 +485,19 @@ class wilson_clover_hop_mtsgt2_sigpre:
         assert tuple(self.field_strength_sigma.shape[4:7]) == (2,21,2,)
     
     def __str__(self):
-        return "dwc_sigpre_hop_mtsgt2"
+        return "dwc_sigpre_hop_mtsgt2" + ("_trafo" if self.v_trafo else "")
         
     def tmngsMht (self, v):
         return torch.ops.qmad_history.dwc_grid_mtsgt2_tmngsMht(self.U, v, self.field_strength_sigma,
                                                                self.hop_inds, self.mass_parameter)
         #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
+    def trafo_tmngsMht (self, v):
+        return torch.ops.qmad_history.dwc_gridtrafo_mtsgt2_tmngsMht(self.U, v, self.field_strength_sigma,
+                                                               self.hop_inds, self.mass_parameter)
+
     def all_calls(self):
-        return [] + ([self.tmngsMht] if capab("vectorise") else [])
+        return [] + (([self.trafo_tmngsMht] if self.v_trafo else [self.tmngsMht]) if capab("vectorise") else [])
     def all_call_names(self):
-        return [] + (["tmngsMht"] if capab("vectorise") else [])
+        return [] + ((["trafo_tmngsMht"] if self.v_trafo else ["tmngsMht"]) if capab("vectorise") else [])
 

@@ -131,8 +131,9 @@ dwc_grid = clover.wilson_clover_hop_mtsgt_sigpre(U, mass, csw)
 dwc_gridcl = clover.wilson_clover_hop_mtsg_sigpre(U, mass, csw)
 
 dwc_grid2 = clover.wilson_clover_hop_mtsgt2_sigpre(U, mass, csw)
+dwc_grid2_tr = clover.wilson_clover_hop_mtsgt2_sigpre(U, mass, csw, True)
 
-for dw in [dwc_d, dwc_hd, dwc_f, dwc_ho, dwc_gridcl]:
+for dw in [dwc_d, dwc_hd, dwc_f, dwc_ho, dwc_gridcl, dwc_grid2_tr]:
     check_correct.append(str(dw))
     for order, c in zip(dw.all_call_names(),dw.all_calls()):
         check_correct.append((order,torch.allclose(c(v),dwcv_py)))
