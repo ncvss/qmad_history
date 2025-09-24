@@ -9,12 +9,12 @@ num_threads = torch.get_num_threads()
 print("running on host", socket.gethostname())
 print(f'Machine has {num_threads} threads')
 
-n_measurements = 300
+n_measurements = 200
 n_warmup = 20
 print("n_measurements =", n_measurements)
 print("n_warmup =", n_warmup)
 
-lat_dim = [16,8,8,16]
+lat_dim = [64,32,32,64]
 print("lattice_dimensions =",lat_dim)
 
 v = torch.randn(lat_dim+[4,3], dtype=torch.cdouble)
@@ -45,7 +45,7 @@ for i in range(n_measurements):
 results_sorted = np.sort(results)[:(n_measurements//5)]
 results2_sorted = np.sort(results2)[:(n_measurements//5)]
 
-print(f"\n{'measurements':35}: {'time':>15} {'std':>15}")
+print(f"\n{'measurements':35}: {'time in us':>15} {'std in us':>15}")
 
 print(f"{"transform to grid layout":35}: {np.mean(results_sorted)/1000:>15.3f} {np.std(results_sorted)/1000:>15.3f}")
 print(f"{"transform back":35}: {np.mean(results2_sorted)/1000:>15.3f} {np.std(results2_sorted)/1000:>15.3f}")
