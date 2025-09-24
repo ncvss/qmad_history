@@ -567,6 +567,8 @@ at::Tensor dwc_gridtrafo_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::
         dwc_gridtrafo_mtsgt2_clover(v,F,result,t1);
     }
 
+    delete [] v;
+
     grid_to_tsg(result, vol, tlen*2);
 
 
