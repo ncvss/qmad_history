@@ -47,5 +47,5 @@ results2_sorted = np.sort(results2)[:(n_measurements//5)]
 
 print(f"\n{'measurements':35}: {'time in us':>15} {'std in us':>15}")
 
-print(f"{"transform to grid layout":35}: {np.mean(results_sorted)/1000:>15.3f} {np.std(results_sorted)/1000:>15.3f}")
-print(f"{"transform back":35}: {np.mean(results2_sorted)/1000:>15.3f} {np.std(results2_sorted)/1000:>15.3f}")
+print(f"{'transform to grid layout':35}: {np.mean(results_sorted)/1000:>15.3f} {np.std(results_sorted)/1000:>15.3f}")
+print(f"{'transform back':35}: {np.mean(results2_sorted)/1000:>15.3f} {np.std(results2_sorted)/1000:>15.3f}")
