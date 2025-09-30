@@ -40,6 +40,9 @@ as the input and ouput the resulting fermion field tensor.
 The member function `all_calls` outputs all member functions of the instance that compute the
 application of the Dirac operator and are available with the current settings.
 
+The script ``test/test_correct.py`` tests the correctness of all implementations
+of the Wilson and Wilson clover Dirac operator against qcd_ml.
+
 ## Naming convention
 
 The function names are composed of the following parts:

@@ -5,7 +5,6 @@ import numpy as np
 import time
 import copy
 import socket
-import os
 
 import gpt as g
 import qcd_ml
