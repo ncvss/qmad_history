@@ -1,7 +1,6 @@
 import torch
 import qcd_ml
 from qmad_history import clover
-import time
 
 lat_dim = [16,16,16,16]
 mass = -0.5
@@ -21,4 +20,4 @@ dwcv = dwc(v)
 dwcv2 = dwc2.debug_cuda(v)
 
 print(torch.allclose(dwcv,dwcv2))
-# ergebnis: gleich, auch wenn es keine echten eichfelder sind
+# result is the same, even though these are not actual gauge fields

@@ -7,8 +7,8 @@ from .util import get_hop_indices, get_clover_path_matrices, _PathBufferTemp, _s
 
 class wilson_clover_direct_false:
     """
-    Wilson clover Dirac operator with gauge config U, without precomputations,
-    memory layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson clover Dirac operator with gauge config U, without precomputation.
+    The memory layout is U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
     The result is wrong because the computation is incomplete, it is here for performance.
     """
     def __init__(self, U, mass_parameter, csw):
@@ -33,8 +33,9 @@ class wilson_clover_direct_false:
 
 class wilson_clover_hop:
     """
-    Wilson clover Dirac operator that creates a lookup table for the hops, and makes no precomputation.
-    The axes are U[mu,x,y,z,t,g,gi], v[x,y,z,t,s,gi].
+    Wilson clover Dirac operator that creates a lookup table for the hops,
+    and makes no field strength precomputation.
+    The memory layout is U[mu,x,y,z,t,g,gi], v[x,y,z,t,s,gi].
     """
     def __init__(self, U, mass_parameter, csw):
 
@@ -67,8 +68,8 @@ class wilson_clover_hop:
 
 class wilson_clover_fpre:
     """
-    Wilson clover Dirac operator with gauge config U that precomputes field strength matrices,
-    with memory layout U[mu,x,y,z,t,g,h], v[x,y,z,t,s,h] and F[munu][x,y,z,t,g,h].
+    Wilson clover Dirac operator with gauge config U that precomputes field strength matrices.
+    The memory layout is U[mu,x,y,z,t,g,h], v[x,y,z,t,s,h] and F[munu][x,y,z,t,g,h].
     """
     def __init__(self, U, mass_parameter, csw):
         assert tuple(U.shape[5:7]) == (3,3,)
@@ -113,7 +114,8 @@ class wilson_clover_fpre:
 
 class wilson_clover_sigpre:
     """
-    Wilson clover Dirac operator with gauge config U, layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson clover Dirac operator with gauge config U.
+    The memory layout is U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
     
     field_strength * sigma * v is precomputed by computing the tensor product of
     field_strength * sigma.
@@ -156,8 +158,10 @@ class wilson_clover_sigpre:
 
 class wilson_clover_hop_mtsg:
     """
-    Wilson clover Dirac operator that creates a lookup table for the hops and uses AVX instructions.
-    The axes are U[mu,x,y,z,t,g,gi], v[x,y,z,t,s,gi] and F[x,y,z,t,munu,g,gi].
+    Wilson clover Dirac operator that creates a lookup table for the hops
+    and precomputes the field strength.
+    The memory layout is U[mu,x,y,z,t,g,gi], v[x,y,z,t,s,gi] and F[x,y,z,t,munu,g,gi].
+    Some of the calls use AVX instructions.
     """
     def __init__(self, U, mass_parameter, csw):
         self.U = U
@@ -225,8 +229,9 @@ class wilson_clover_hop_mtsg:
 
 class wilson_clover_hop_tmgs:
     """
-    Wilson clover Dirac operator that creates a lookup table for the hops and uses AVX instructions.
-    The axes are U[x,y,z,t,mu,g,gi], v[x,y,z,t,gi,s] and F[x,y,z,t,munu,g,gi].
+    Wilson clover Dirac operator that creates a lookup table for the hops
+    and precomputes the field strength.
+    The memory layout is U[x,y,z,t,mu,g,gi], v[x,y,z,t,gi,s] and F[x,y,z,t,munu,g,gi].
     For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
     """
     def __init__(self, U, mass_parameter, csw):
@@ -266,10 +271,11 @@ class wilson_clover_hop_tmgs:
 
 class wilson_clover_hop_mtsgt_sigpre:
     """
-    Wilson clover Dirac operator with gauge config U, layout U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
+    Wilson clover Dirac operator that creates a lookup table for the hops.
+    The memory layout is U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
+
     field_strength * sigma * v is precomputed by computing the tensor product of field_strength * sigma,
-    and only the upper triangle of two 6x6 blocks is passed for the field strength.
-    The hops are precomputed.
+    and only the upper triangle of two 6x6 blocks is passed for the field strength, as shown in section 3.2.
     """
     def __init__(self, U, mass_parameter, csw):
         assert tuple(U.shape[5:7]) == (3,3,)
@@ -310,16 +316,12 @@ class wilson_clover_hop_mtsgt_sigpre:
         fs_odd_t = field_strength_sigma[:,:,:,1:dim[3]:2]
         field_strength_sigma = torch.stack([fs_even_t, fs_odd_t], dim=-1)
 
-        # until here, the computation works as expected
         # this is hermitian and has two 6x6 blocks (diagonal has numerical artifacts)
-        # print(fs_sigma_grid[0,0,2,2,0:6])
 
         self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,_triag_mask_1],
                                                  field_strength_sigma[:,:,:,:,_triag_mask_2]],dim=4)
         assert tuple(self.field_strength_sigma.shape[4:7]) == (2,21,2,)
 
-        # this is also the expected 
-        # print(self.fs[0,0,2,2,0])
 
     
     def __str__(self):
@@ -328,7 +330,6 @@ class wilson_clover_hop_mtsgt_sigpre:
     def tmngsMht (self, v):
         return torch.ops.qmad_history.dwc_templ_mtsgt_tmngsMht(self.U, v, self.field_strength_sigma,
                                                                self.hop_inds, self.mass_parameter, self.csw)
-        #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
     def all_calls(self):
         return [] + ([self.tmngsMht] if capab("vectorise") else [])
@@ -338,10 +339,11 @@ class wilson_clover_hop_mtsgt_sigpre:
 
 class wilson_clover_hop_mtsg_sigpre:
     """
-    Wilson clover Dirac operator with gauge config U, layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson clover Dirac operator with gauge config U that creates a lookup table for the hops.
+    The memory layout is layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+
     field_strength * sigma * v is precomputed by computing the tensor product of field_strength * sigma,
     and only the upper triangle of two 6x6 blocks is passed for the field strength.
-    The hops are precomputed.
     """
     def __init__(self, U, mass_parameter, csw, boundary_phases=[1,1,1,1]):
         assert tuple(U.shape[5:7]) == (3,3,)
@@ -377,13 +379,11 @@ class wilson_clover_hop_mtsg_sigpre:
         field_strength_sigma = field_strength_sigma.contiguous().reshape(dim+[12,12])
 
         # this should be hermitian and have two 6x6 blocks (diagonal has numerical artifacts)
-        # print(field_strength_sigma[0,0,2,2,0:6])
 
         self.field_strength_sigma = torch.stack([field_strength_sigma[:,:,:,:,dev_triag_mask_1],
                                                  field_strength_sigma[:,:,:,:,dev_triag_mask_2]],dim=-1)
         assert tuple(self.field_strength_sigma.shape[4:6]) == (21,2,)
 
-        # print(self.fs[0,0,2,2])
 
         # implementation of the phases: multiply the gauge field at the boundary with the phase
         if all([phf == 1 for phf in boundary_phases]):
@@ -409,7 +409,6 @@ class wilson_clover_hop_mtsg_sigpre:
     def tmngsMhs (self, v):
         return torch.ops.qmad_history.dwc_grid_mtsg_tmngsMhs(self.U, v, self.field_strength_sigma,
                                                              self.hop_inds, self.mass_parameter)
-        #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
     def tmnsgMhs (self, v):
         return torch.ops.qmad_history.dwc_grid_mtsg_tmnsgMhs(self.U, v, self.field_strength_sigma,
                                                              self.hop_inds, self.mass_parameter)
@@ -428,17 +427,20 @@ class wilson_clover_hop_mtsg_sigpre:
 
 class wilson_clover_hop_mtsgt2_sigpre:
     """
-    Dirac Wilson operator that creates a lookup table for the hops.
+    Wilson clover Dirac operator that creates a lookup table for the hops.
     The axes are U[mu,x,y,z,t2,g,h,t1] and v[x,y,z,t2,s,h,t1].
+    For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
+
     The grid gets split in half, with a register having 1 site from each block.
     t1 is the block number, t2 is the site.
-    For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
+    This is the layout of Grid that was specified in section 3.6.
+
     field_strength * sigma * v is precomputed by computing the tensor product of field_strength * sigma,
     and only the upper triangle of two 6x6 blocks is passed for the field strength.
 
     There is another call that takes v[x,y,z,t,s,h] as input and transforms automatically.
     all_calls outputs the calls that take such a v if v_trafo==True.
-    Otherwise, it outputs the calls that take the v from Grid.
+    Otherwise, it outputs the calls that take v[x,y,z,t2,s,h,t1].
     """
     def __init__(self, U, mass_parameter, csw, v_trafo=False):
         assert tuple(U.shape[5:7]) == (3,3,)
@@ -490,7 +492,6 @@ class wilson_clover_hop_mtsgt2_sigpre:
     def tmngsMht (self, v):
         return torch.ops.qmad_history.dwc_grid_mtsgt2_tmngsMht(self.U, v, self.field_strength_sigma,
                                                                self.hop_inds, self.mass_parameter)
-        #        - self.csw/4 * torch.matmul(self.field_strength_sigma,v.reshape(self.dim+[12,1])).reshape(self.dim+[4,3]))
 
     def trafo_tmngsMht (self, v):
         return torch.ops.qmad_history.dwc_gridtrafo_mtsgt2_tmngsMht(self.U, v, self.field_strength_sigma,

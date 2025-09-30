@@ -5,23 +5,19 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-//#include <cuda/std/complex>
 
-// .cuh ist die Endung für CUDA-Header, sie sind aber das gleiche wie .h
 #include "indexfunc_2.cuh"
 #include "gamma_1.cuh"
 
 
-// I do not know how complex numbers work in Pytorch CUDA
-// so I used the Pytorch C++ datatypes, but the cuda::std funciton for complex conjugate
-// the test result: cuda::std does not work with this datatype
-// but std:: works
+// Information on complex numbers:
+// the c10::complex datatypes work, cuda/std/complex is not needed
+// std::conj has to be called to complex conjugate a number
 
 namespace qmad_history {
 
 
 // naive implementation: simply put the entire cpu function inside the kernel
-// very bad performance
 __global__ void dw_hop_mtsg_tmsgMh_kernel(const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, double mass, c10::complex<double> * result, int vol) {
     int t = blockIdx.x * blockDim.x + threadIdx.x;
@@ -125,7 +121,7 @@ at::Tensor dw_hop_mtsg_tmsgMh_cu (const at::Tensor& U_ten, const at::Tensor& v_t
 
 
 
-// second guess: split the computation into different kernels
+// split the computation into different kernels
 // 1 thread is one output component now
 // this means changes in the components do not work
 // thus we need to compute t, g and s again
@@ -195,7 +191,7 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    // allocate one thread for each vector component, in 1024-thread blocks
+    // allocate one thread for each vector component, in 512-thread blocks
     int threadnum = 512;
     int blocknum = (vvol+threadnum-1)/threadnum;
 
@@ -228,7 +224,7 @@ at::Tensor dw_hop_mtsg_cuv2 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 }
 
 
-// try 3 (inserted for debug): unroll the gi loop
+// unroll the gi loop
 
 __global__ void gaugeterms_mtsg_gi2_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, c10::complex<double> * result, int vol, int mu, int gi){
@@ -286,14 +282,16 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     // double * result_d = (double*) result;
 
     // allocate one thread for each vector component
+    int threadnum = 512;
+    int thread_partition = threadnum;
+    int blocknum = (vol*12+threadnum-1)/threadnum;
+
+    // alternative:
     // the y thread index is the gsgi component (36 possible combinations)
     // the x thread index are different sites (28 sites, 28*36=1008 is the maximum prod that is <1024)
     // dim3 thread_partition = (28,36);
     // const int threadnum = 36*28;
-    int threadnum = 512;
-    int thread_partition = threadnum;
     // int blocknum = (vol*36+threadnum-1)/threadnum;
-    int blocknum = (vol*12+threadnum-1)/threadnum;
 
     // mass term
     mass_mtsg_kernel<<<blocknum,threadnum>>>(v,mass,result,vol);
@@ -335,11 +333,11 @@ at::Tensor dw_hop_mtsg_cuv3 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 }
 
 
-// try 4: use atomic add to also unroll the gi loop
+// use atomic add to also unroll the gi loop
 // mass term is the same
-// problem: atomics do not exist for complex numbers
+// atomics do not exist for complex numbers
 // however, the real and imaginary component of the output are independent
-// so considering it as two doubles should work
+// so considering it as two doubles works
 
 __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const c10::complex<double> * v,
                                           const int32_t * hops, double * result, int vol, int mu){
@@ -371,8 +369,6 @@ __global__ void gaugeterms_gi_mtsg_kernel (const c10::complex<double> * U, const
 
         atomicAdd(result+vixo(t,g,s)*2,gi_step.real());
         atomicAdd(result+vixo(t,g,s)*2+1,gi_step.imag());
-        // result[vixo(t,g,s)] += gi_step;
-
     }
 }
 
@@ -408,7 +404,6 @@ at::Tensor dw_hop_mtsg_cuv4 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 
     // allocate one thread for each vector component
     int threadnum = 512;
-    // int blocknum = (vol*36+threadnum-1)/threadnum;
     int blocknum = (vol*36+threadnum-1)/threadnum;
     int mass_blocknum = (vol*12+threadnum-1)/threadnum;
 
@@ -696,7 +691,7 @@ at::Tensor dw_hop_mtsg_cuv7 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
     double * result_d = (double*) result;
 
-    // allocate only 40 blocks, which is the number of streaming multiprocessors
+    // allocate only 40 blocks, which is the number of streaming multiprocessors on the GPU used
     int threadnum = 1008;
     int blocknum = 40;
 
@@ -794,7 +789,7 @@ at::Tensor dw_hop_mtsg_cuv8 (const at::Tensor& U_ten, const at::Tensor& v_ten,
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
     double * result_d = (double*) result;
 
-    // allocate only 40 blocks, which is the number of streaming multiprocessors
+    // allocate only 40 blocks, which is the number of streaming multiprocessors on the GPU used
     int threadnum = 1024;
     int blocknum = 40;
 
@@ -913,7 +908,6 @@ at::Tensor dw_hop_mtsg_cuv9 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 
     // allocate one thread for each vector component
     int threadnum = 512;
-    // int blocknum = (vol*36+threadnum-1)/threadnum;
     int blocknum = (vol*36+threadnum-1)/threadnum;
     int mass_blocknum = (vol*12+threadnum-1)/threadnum;
 
@@ -958,7 +952,7 @@ at::Tensor dw_hop_mtsg_cuv9 (const at::Tensor& U_ten, const at::Tensor& v_ten,
 
 
 
-// maybe the best way is actually the sparse full wilson matrix
+// multiply fermion field with the full sparse wilson matrix
 // kernel is just a sparse mat-vec mul
 __global__ void sparse_matmul_kernel (const c10::complex<double> * dw, const c10::complex<double> * v,
                                       const int32_t * sparse_addr, double * result, int vol){
@@ -976,10 +970,6 @@ at::Tensor dw_full_cuv10 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
                           const at::Tensor& addr_ten){
     
     TORCH_CHECK(v_ten.dim() == 6);
-    // TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
-    // TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
-    // TORCH_CHECK(U_ten.size(3) == v_ten.size(2));
-    // TORCH_CHECK(U_ten.size(4) == v_ten.size(3));
     TORCH_CHECK(v_ten.size(4) == 4);
     TORCH_CHECK(v_ten.size(5) == 3);
     
@@ -991,7 +981,6 @@ at::Tensor dw_full_cuv10 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
     TORCH_INTERNAL_ASSERT(v_ten.device().type() == at::DeviceType::CUDA);
     TORCH_INTERNAL_ASSERT(addr_ten.device().type() == at::DeviceType::CUDA);
 
-    // int vol = addr_ten.size(0);
     int vol = v_ten.size(0)*v_ten.size(1)*v_ten.size(2)*v_ten.size(3);
 
     at::Tensor result_ten = torch::zeros(v_ten.sizes(), v_ten.options());
@@ -1030,10 +1019,6 @@ at::Tensor dw_full_cuv11 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
                           const at::Tensor& addr_ten){
     
     TORCH_CHECK(v_ten.dim() == 6);
-    // TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
-    // TORCH_CHECK(U_ten.size(2) == v_ten.size(1));
-    // TORCH_CHECK(U_ten.size(3) == v_ten.size(2));
-    // TORCH_CHECK(U_ten.size(4) == v_ten.size(3));
     TORCH_CHECK(v_ten.size(4) == 4);
     TORCH_CHECK(v_ten.size(5) == 3);
     
@@ -1045,7 +1030,6 @@ at::Tensor dw_full_cuv11 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
     TORCH_INTERNAL_ASSERT(v_ten.device().type() == at::DeviceType::CUDA);
     TORCH_INTERNAL_ASSERT(addr_ten.device().type() == at::DeviceType::CUDA);
 
-    // int vol = addr_ten.size(0);
     int vol = v_ten.size(0)*v_ten.size(1)*v_ten.size(2)*v_ten.size(3);
 
     at::Tensor result_ten = torch::empty(v_ten.sizes(), v_ten.options());
@@ -1057,8 +1041,7 @@ at::Tensor dw_full_cuv11 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
 
     // allocate one thread for each component
     int threadnum = 1024;
-    // int blocknum = (vol*36+threadnum-1)/threadnum;
-    int blocknum = (vol*4*3+1023)/1024;
+    int blocknum = (vol*4*3+threadnum-1)/threadnum;
 
     // multiplication
     sparse_matmul2_kernel<<<blocknum,threadnum>>>(dw,v,addr,result,vol);
@@ -1068,6 +1051,7 @@ at::Tensor dw_full_cuv11 (const at::Tensor& dw_ten, const at::Tensor& v_ten,
 
 
 // Registers CUDA implementations
+
 TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
     m.impl("dw_hop_mtsg_tmsgMh", &dw_hop_mtsg_tmsgMh_cu);
     m.impl("dw_hop_mtsg_cuv2", &dw_hop_mtsg_cuv2);
@@ -1081,7 +1065,8 @@ TORCH_LIBRARY_IMPL(qmad_history, CUDA, m) {
     m.impl("dw_full_cuv10", &dw_full_cuv10);
     m.impl("dw_full_cuv11", &dw_full_cuv11);
 }
-// muss wirklich jeder CUDA-Operator eine Variante eines C++-Operators sein?
-// Die Antwort ist: Nein!
+// the CUDA operator may be independent
+// it does not have to be a variant of a C++ operator
+// the operator input and ouput is still defined centrally in cppops.cpp
 
 }

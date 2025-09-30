@@ -18,25 +18,25 @@ at::Tensor dw_dir_mxtsg_xtMmdghs (const at::Tensor& U, const at::Tensor& v, doub
 at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double mass, double csw);
 
 // Wilson Clover with loops x(y(z(t(s(g(g sum(mu, munu)))))))
-// field strength terms are precomputed
+// field strength terms are precomputed as F_munu
 at::Tensor dwc_fpre_mntsg_xtsghmn (const at::Tensor& U, const at::Tensor& v,
                                    const std::vector<at::Tensor>& F,
                                    double mass, double csw);
 
 // Wilson Clover with loops x(y(z(t(mu(g(g sum(s,munu)))))))
-// field strength terms are precomputed
+// field strength terms are precomputed as F_munu
 at::Tensor dwc_fpre_mntsg_xtmghsn (const at::Tensor& U, const at::Tensor& v,
                                    const std::vector<at::Tensor>& F,
                                    double mass, double csw);
 
 // Wilson Clover with loops x(y(z(t(munu,mu(g(g sum(s)))))))
-// field strength terms are precomputed
+// field strength terms are precomputed as F_munu
 at::Tensor dwc_fpre_mntsg_xtmnghs (const at::Tensor& U, const at::Tensor& v,
                                    const std::vector<at::Tensor>& F,
                                    double mass, double csw);
 
 // Wilson Clover with loops x(y(z(t(munu,mu(mu sign(g(g sum(s))))))))
-// field strength terms are precomputed
+// field strength terms are precomputed as F_munu
 at::Tensor dwc_fpre_mntsg_xtmdnghs (const at::Tensor& U, const at::Tensor& v,
                                     const std::vector<at::Tensor>& F,
                                     double mass, double csw);

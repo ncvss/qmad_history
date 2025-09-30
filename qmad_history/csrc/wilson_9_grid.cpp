@@ -1,6 +1,7 @@
-// This Dirac Wilson operator uses the memory layout of Grid
+// Wilson clover that uses a memory layout similar to that of Grid
 // the fastest index goes over neighbouring sites and is as long as the SIMD width
-// for me, with AVX, these are two neighboring sites in t direction
+// for AVX, these are two neighboring sites in t direction
+// the hop addresses are precomputed
 
 #include <torch/extension.h>
 
@@ -135,7 +136,7 @@ at::Tensor dw_templ_mtsgt_tmgsMht (const at::Tensor& U_tensor, const at::Tensor&
                                   const at::Tensor& hops_tensor, double mass){
 
     // memory layout is U[mu,x,y,z,t1,g,gi,t2] and v[x,y,z,t1,s,gi,t2]
-    // tv are the 2 neighboring sites that are in one register
+    // t1 and t2 are the 2 neighboring sites that are in one register
 
     TORCH_CHECK(v_tensor.dim() == 7);
     TORCH_CHECK(U_tensor.size(1) == v_tensor.size(0));

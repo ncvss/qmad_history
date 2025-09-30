@@ -1,6 +1,7 @@
 // this file has the first dirac wilson clover operators that use only torch and c++
-// and compute the hops directly, but take precomputed field strength
-// also, the parallelisation comes from torch
+// and computes the addresses at runtime directly,
+// but takes the precomputed field strength
+// the parallelisation comes from torch
 
 #include <torch/extension.h>
 #include <vector>
@@ -97,8 +98,6 @@ at::Tensor dwc_fpre_mntsg_xtsghmn (const at::Tensor& U, const at::Tensor& v,
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -159,7 +158,7 @@ at::Tensor dwc_fpre_mntsg_xtsghmn (const at::Tensor& U, const at::Tensor& v,
                                     )
                                 ) *0.5
                                 
-                                // dirac wilson clover improvement
+                                // clover improvement
                                 -(
                                     F10_ptr[ptridx6(x,y,z,t,g,gi,fstride)]
                                         * sigf[0][s] * v_ptr[ptridx6(x,y,z,t,sigx[0][s],gi,vstride)]
@@ -267,8 +266,6 @@ at::Tensor dwc_fpre_mntsg_xtmghsn (const at::Tensor& U, const at::Tensor& v,
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -362,7 +359,7 @@ at::Tensor dwc_fpre_mntsg_xtmghsn (const at::Tensor& U, const at::Tensor& v,
                     }
 
 
-                    // dirac wilson clover improvement
+                    // clover improvement
                     for (int64_t g = 0; g < 3; g++){
                         for (int64_t gi = 0; gi < 3; gi++){
                             for (int64_t s = 0; s < 4; s++){
@@ -472,8 +469,6 @@ at::Tensor dwc_fpre_mntsg_xtmnghs (const at::Tensor& U, const at::Tensor& v, con
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -567,7 +562,7 @@ at::Tensor dwc_fpre_mntsg_xtmnghs (const at::Tensor& U, const at::Tensor& v, con
                     }
 
 
-                    // dirac wilson clover improvement
+                    // clover improvement
                     for (int64_t g = 0; g < 3; g++){
                         for (int64_t gi = 0; gi < 3; gi++){
                             for (int64_t s = 0; s < 4; s++){
@@ -719,8 +714,6 @@ at::Tensor dwc_fpre_mntsg_xtmdnghs (const at::Tensor& U, const at::Tensor& v,
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -846,7 +839,7 @@ at::Tensor dwc_fpre_mntsg_xtmdnghs (const at::Tensor& U, const at::Tensor& v,
                     }
 
 
-                    // dirac wilson clover improvement
+                    // clover improvement
                     for (int64_t g = 0; g < 3; g++){
                         for (int64_t gi = 0; gi < 3; gi++){
                             for (int64_t s = 0; s < 4; s++){

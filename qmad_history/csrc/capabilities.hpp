@@ -22,10 +22,6 @@ std::vector<int64_t> capability_function (const at::Tensor& dummy){
     cuda_error = 1;
 #endif
 
-    // at::Tensor out = torch::empty(3, torch::dtype(torch::kInt32));
-    // out[0] = vectorisation;
-    // out[1] = parallelisation;
-    // out[2] = cuda_error;
     std::vector<int64_t> out = {vectorisation, parallelisation, cuda_error};
 
     return out;

@@ -13,6 +13,9 @@
 
 #include "capabilities.hpp"
 
+// this file only contains the Pytorch operator definitions
+// and the bindings to the C++ code
+
 
 namespace qmad_history{
 

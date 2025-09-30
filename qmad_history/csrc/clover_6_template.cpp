@@ -1,4 +1,7 @@
-// this is the same computation as the avx, but using templates for performance
+// wilson clover variants that use AVX spin vectorization
+// hop addresses are precomputed
+// clover terms are precomputed as F_munu
+// templates and compile time optimization are used
 
 #include <torch/extension.h>
 
@@ -19,7 +22,7 @@ namespace qmad_history{
 // template for the body of the t,mu,g,s loop in dwc_call_256d_om_template
 // mu, g and s are template parameters so that the loop body can differ between iterations
 // without having to check at runtime, instead generating the different code at compile time
-// also, now gamma and sigma work as template functions too
+// also, gamma and sigma are template functions
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
 inline void dwc_templ_mtsg_tmgsMhns_loop (const double * U, const double * v, const double * F,
@@ -151,7 +154,7 @@ at::Tensor dwc_templ_mtsg_tmgsMhns (const at::Tensor& U_tensor, const at::Tensor
                                     const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                     double mass, double csw){
 
-    // memory layout has to be U[mu,x,y,z,t,g,gi] and v[x,y,z,t,s,gi]
+    // memory layout has to be U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h]
 
     TORCH_CHECK(v_tensor.dim() == 6);
     TORCH_CHECK(U_tensor.size(1) == v_tensor.size(0));
@@ -246,7 +249,7 @@ at::Tensor dwc_templ_mtsg_tmsgMhns (const at::Tensor& U_tensor, const at::Tensor
                                     const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                     double mass, double csw){
 
-    // memory layout has to be U[mu,x,y,z,t,g,gi] and v[x,y,z,t,s,gi]
+    // memory layout has to be U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h]
 
     TORCH_CHECK(v_tensor.dim() == 6);
     TORCH_CHECK(U_tensor.size(1) == v_tensor.size(0));

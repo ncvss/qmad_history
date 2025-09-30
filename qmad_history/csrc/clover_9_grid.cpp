@@ -1,7 +1,7 @@
-// This Dirac Wilson Clover operator uses the memory layout of Grid
+// Wilson clover that uses a memory layout similar to that of Grid
 // the fastest index goes over neighbouring sites and is as long as the SIMD width
-// for me, with AVX, these are two neighboring sites in t direction
-// the clover term is also in the grid layout:
+// for AVX, these are two neighboring sites in t direction
+// the clover term is also in this layout:
 // the relevant elements of the tensor product sigma x field strength matrix
 // this means we pass the upper triangles of tow 6x6 matrices
 // F[x,y,z,t1,triangle index,flattened upper triangle,t2]
@@ -278,9 +278,6 @@ at::Tensor dwc_templ_mtsgt_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
 
     // register for the mass prefactor
     __m256d massf_reg = _mm256_set1_pd(4.0 + mass);
-
-    // register for the field strength term prefactor -1/2*csw
-    //__m256d csw_reg = _mm256_set1_pd(-0.5*csw);
 
     // vectorization over 2 sites in time
     // thus the space-time loop goes only over half the volume

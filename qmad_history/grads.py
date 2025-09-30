@@ -1,5 +1,7 @@
 import torch
 
+# file that binds the gradient computation function to the Pytorch autograd
+
 
 def _dw_templ_mtsg_backward(ctx, grad):
     U, v, h, mass = ctx.saved_tensors
@@ -15,7 +17,7 @@ def _dw_templ_mtsg_setup_context(ctx, inputs, output):
     # currently, we only implement the v gradient
     if ctx.needs_input_grad[1]:
         saved_U = U
-        saved_mass = torch.tensor([mass]) # apparently this can only save tensors
+        saved_mass = torch.tensor([mass]) # this can only save tensors
         saved_hops = hops
     ctx.save_for_backward(saved_U, saved_v, saved_hops, saved_mass)
 
@@ -36,7 +38,7 @@ def _dwc_grid_mtsg_setup_context(ctx, inputs, output):
     if ctx.needs_input_grad[1]:
         saved_U = U
         saved_fs = fs
-        saved_mass = torch.tensor([mass]) # apparently this can only save tensors
+        saved_mass = torch.tensor([mass]) # this can only save tensors
         saved_hops = hops
     ctx.save_for_backward(saved_U, saved_v, saved_fs, saved_hops, saved_mass)
 
@@ -56,7 +58,7 @@ def _dwc_grid_mtsg_tmnsgMhs_setup_context(ctx, inputs, output):
     if ctx.needs_input_grad[1]:
         saved_U = U
         saved_fs = fs
-        saved_mass = torch.tensor([mass]) # apparently this can only save tensors
+        saved_mass = torch.tensor([mass]) # this can only save tensors
         saved_hops = hops
     ctx.save_for_backward(saved_U, saved_v, saved_fs, saved_hops, saved_mass)
 

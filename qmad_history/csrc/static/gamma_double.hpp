@@ -16,7 +16,7 @@ static const double gamfd [32] =
 //         [ i,-i,-i, i],
 //         [ 1, 1, 1, 1] ]
 
-// for 2 packed spin components, the sigma index is just the spin
+// for 2 spin components in one register, the sigma index is just the spin
 // the two numbers have to be swapped for munu=1,2,3,4
 
 // sigf[munu][i] is the prefactor of spin component i of sigmamunu @ v

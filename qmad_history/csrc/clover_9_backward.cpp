@@ -3,7 +3,7 @@
 // the jacobian matrix of the succeeding computations is already given
 // it has the same shape as a vector field, as the output is a vector field
 
-// according to my derivations, it is almost exactly the normal wilson clover
+// as seen in section 2.2.4, it is almost exactly the normal wilson clover
 // except that the gamma U terms have the inverse sign
 
 #include <torch/extension.h>
@@ -36,10 +36,10 @@ inline int fixo (int t, int triix){
     return t*84 + triix*4;
 }
 
-// template for the body of the t,mu,g,s loop in dw_call_256d_om_template
+// template for the body of the t,mu,g,s loop in dwc_grid_mtsg_backw
 // mu, g and s are template parameters so that the loop body can differ between iterations
 // without having to check at runtime, instead generating the different code at compile time
-// also, now gamma works as a template function too
+// also, gamma is as a template function
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
 inline void dw_grid_mtsg_templ_backw_loop (const double * U, const double * v,
@@ -215,7 +215,7 @@ at::Tensor dwc_grid_mtsg_backw (const at::Tensor& U_tensor, const at::Tensor& gr
                                   const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                   double mass){
 
-    // memory layout has to be U[mu,x,y,z,t,g,gi] and v[x,y,z,t,s,gi]
+    // memory layout has to be U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h]
 
     TORCH_CHECK(grad_tensor.dim() == 6);
     TORCH_CHECK(U_tensor.size(1) == grad_tensor.size(0));
@@ -224,9 +224,6 @@ at::Tensor dwc_grid_mtsg_backw (const at::Tensor& U_tensor, const at::Tensor& gr
     TORCH_CHECK(U_tensor.size(4) == grad_tensor.size(3));
     TORCH_CHECK(grad_tensor.size(4) == 4);
     TORCH_CHECK(grad_tensor.size(5) == 3);
-
-    // TORCH_CHECK(U_tensor.dtype() == at::kComplexDouble);
-    // TORCH_CHECK(v_tensor.dtype() == at::kComplexDouble);
 
     TORCH_CHECK(U_tensor.is_contiguous());
     TORCH_CHECK(grad_tensor.is_contiguous());
@@ -300,11 +297,13 @@ at::Tensor dwc_grid_mtsg_backw (const at::Tensor& U_tensor, const at::Tensor& gr
     return result_tensor;
 }
 
+// different loop ordering
+
 at::Tensor dwc_grid_mtsg_tmnsgMhs_backw (const at::Tensor& U_tensor, const at::Tensor& grad_tensor,
                                   const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                   double mass){
 
-    // memory layout has to be U[mu,x,y,z,t,g,gi] and v[x,y,z,t,s,gi]
+    // memory layout has to be U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h]
 
     TORCH_CHECK(grad_tensor.dim() == 6);
     TORCH_CHECK(U_tensor.size(1) == grad_tensor.size(0));
@@ -313,9 +312,6 @@ at::Tensor dwc_grid_mtsg_tmnsgMhs_backw (const at::Tensor& U_tensor, const at::T
     TORCH_CHECK(U_tensor.size(4) == grad_tensor.size(3));
     TORCH_CHECK(grad_tensor.size(4) == 4);
     TORCH_CHECK(grad_tensor.size(5) == 3);
-
-    // TORCH_CHECK(U_tensor.dtype() == at::kComplexDouble);
-    // TORCH_CHECK(v_tensor.dtype() == at::kComplexDouble);
 
     TORCH_CHECK(U_tensor.is_contiguous());
     TORCH_CHECK(grad_tensor.is_contiguous());

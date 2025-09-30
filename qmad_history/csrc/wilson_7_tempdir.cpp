@@ -1,5 +1,5 @@
-// combine the best from both worlds: direct computation of hops
-// in the template dirac operator
+// wilson dirac operator that computes hop addresses at runtime
+// it uses avx spin vectorization and compile time optimisation
 
 #include <torch/extension.h>
 
@@ -10,7 +10,6 @@
 
 #include "static/indexfunc_double.hpp"
 #include "static/gamma_double.hpp"
-//#include "static/indexfunc_1.hpp"
 #include "complmath_avx.hpp"
 #include "load_avx.hpp"
 
@@ -37,7 +36,6 @@ inline int ptridx7 (int mu, int x, int y, int z, int t, int g, int h, int* strid
 // dsize is the length of the coord axis
 // stride are the strides of the first 3 axes (the fourth one is always 1)
 // this is not the actual array address, s and g are missing
-// the function seems to be correct
 template <int coord, int dir>
 inline int hopc (int x, int y, int z, int t, int dsize, int* stride){
     if constexpr (coord == 0){
@@ -76,8 +74,8 @@ inline int hopc (int x, int y, int z, int t, int dsize, int* stride){
 
 
 // template to compute the flattened address of a vector field after a hop
-// this is the complete address, so it includes spin and gauge
-// stride is all strides
+// this is the complete address, so it includes spin and colour
+// stride is an array that contains the strides of all dimensions
 template <int coord, int dir>
 inline int hopidx6 (int x, int y, int z, int t, int s, int g, int dsize, int* strides){
     if constexpr (coord == 0){
@@ -123,8 +121,8 @@ inline int hopidx6 (int x, int y, int z, int t, int s, int g, int dsize, int* st
 }
 
 // template to compute the flattened address of a gauge field after a hop
-// this is the complete address, so it includes spin and gauge
-// stride is all strides
+// this is the complete address, so it includes spin and colour
+// stride is an array that contains the strides of all dimensions
 template <int coord, int dir>
 inline int hopidx7 (int mu, int x, int y, int z, int t, int g, int h, int dsize, int* strides){
     if constexpr (coord == 0){
@@ -185,7 +183,7 @@ inline int adr (int x, int y, int z, int t, int* stride){
 // template for the body of the x,y,z,t,mu,g,s loop
 // mu, g and s are template parameters so that the loop body can differ between iterations
 // without having to check at runtime, instead generating the different code at compile time
-// also, now gamma works as a template function too
+// also, gamma is a template function
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
 void dw_tempdir_mtsg_tmgsMhs_loop (const double * U, const double * v,
@@ -300,16 +298,6 @@ at::Tensor dw_tempdir_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor
                        sizes[1]*sizes[2]*sizes[3]*3*3, sizes[2]*sizes[3]*3*3, sizes[3]*3*3, 3*3,
                        3, 1};
     int vol = sizes[0]*sizes[1]*sizes[2]*sizes[3];
-
-    // std::cout << "hopc: " << hopc<0,0>(1,2,3,4,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<0,1>(5,4,4,11,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<2,0>(1,2,3,4,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<2,1>(5,4,4,11,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<3,0>(1,2,3,4,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<3,1>(5,4,4,2,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<1,0>(1,2,3,4,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<1,1>(5,4,4,11,sizes[0],str) << "\n";
-    // std::cout << "hopc: " << hopc<3,1>(5,4,4,12,sizes[0],str) << "\n";
     
 
     at::Tensor result_tensor = torch::empty(v_tensor.sizes(), v_tensor.options());

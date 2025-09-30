@@ -3,17 +3,17 @@ import numpy as np
 import time
 import copy
 import socket
-import os
 
 import gpt as g
 import qcd_ml
 
-from qmad_history import compat, wilson, clover, settings, wilson_roofline
+from qmad_history import compat, clover, settings
 
 
 num_threads = torch.get_num_threads()
 hostname = socket.gethostname()
 print("running on host",hostname,"with",num_threads,"threads")
+print("settings:",settings.capab())
 
 
 # split measurement into n_batch batches
@@ -34,7 +34,6 @@ print("mass =", mass)
 rng = g.random("thesis")
 
 start_grid = [4,4,2,4]
-# mehr als 32x32x32x32 ist auf meinem PC nicht möglich, zu wenig Speicher führt zu Absturz
 n_vols = 15
 all_grids = []
 for i in range(n_vols):
@@ -47,7 +46,7 @@ names = ["Fmunu","sigmaF","Fmunu_v","sigmaF_v"]
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 # split data generation into batches that each iterate over all sites
-# it does not work without that, pytorch does some strange things
+# required to further restrict the influence of background processes
 
 for nb in range(0,n_measurements,n_batchlen):
     print("\ncurrent batch:",nb,flush=True)

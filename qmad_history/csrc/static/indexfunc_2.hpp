@@ -1,4 +1,4 @@
-// index functions for flattened space time
+// functions to compute the flattened address from the indices
 // in old (mtsg) and new (tmgs) layout
 
 // index for U in new layout

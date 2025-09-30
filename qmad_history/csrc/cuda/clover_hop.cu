@@ -5,9 +5,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-//#include <cuda/std/complex>
 
-// .cuh ist die Endung für CUDA-Header, sie sind aber das gleiche wie .h
 #include "indexfunc_2.cuh"
 #include "gamma_1.cuh"
 

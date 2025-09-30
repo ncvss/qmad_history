@@ -3,14 +3,13 @@ import numpy as np
 import time
 import copy
 import socket
-import os
 
 import gpt as g
 import qcd_ml
 
-from qmad_history import compat, wilson, clover, settings, wilson_roofline
+from qmad_history import compat, clover, settings
 
-
+print("settings:", settings.capab())
 num_threads = torch.get_num_threads()
 hostname = socket.gethostname()
 print("running on host",hostname,"with",num_threads,"threads")
@@ -35,8 +34,7 @@ print("csw =",csw)
 rng = g.random("th")
 
 start_grid = [4,4,2,4]
-# mehr als 32x32x32x32 ist auf meinem PC nicht möglich, zu wenig Speicher führt zu Absturz
-# auf hpd führt seltsamerweise 64x32x32x64 auch zum Absturz
+# the CPU used ran out of memory for the lattice [64,32,32,64]
 n_vols = 14
 all_grids = []
 for i in range(n_vols):
@@ -46,24 +44,27 @@ for i in range(n_vols):
 vols = [4*4*4*4 *2**ii for ii in range(n_vols)]
 names = ["gpt","qcd_ml","qmad","qmad_gridl"]
 
-# set max time for measure
+# set max time for measurement of slow function
+# if measurement exceeds this time, function is not measured for larger lattices
 max_time = 8.0e+9
+
+# enable gpt memory information
+gpt_mem_info = False
 
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 # split data generation into batches that each iterate over all sites
-# it does not work without that, pytorch does some strange things
+# required to further restrict the influence of background processes
 
 for nb in range(0,n_measurements,n_batchlen):
     max_exceeded = {na:False for na in names}
-    #max_exceeded["qcd_ml"] = True
+    max_exceeded["qcd_ml"] = True if max_time == 0 else False
     print("\ncurrent batch:",nb,flush=True)
     print("current grid layout: ")
     for L_incr in range(n_vols):
         cgrid = all_grids[L_incr]
         vol = cgrid[0]*cgrid[1]*cgrid[2]*cgrid[3]
         print(cgrid,end=" ",flush=True)
-        #print("time exceeded",max_time,":",max_exceeded)
 
         # initialise the fields for this volume
         U_gpt = g.qcd.gauge.random(g.grid(cgrid, g.double), rng)
@@ -85,8 +86,9 @@ for nb in range(0,n_measurements,n_batchlen):
         dwc_qmad = clover.wilson_clover_hop_mtsg_sigpre(U_mtsg,mass,csw)
         dwc_gridl = clover.wilson_clover_hop_mtsgt2_sigpre(U_mtsg,mass,csw)
 
-        # g.message("after initialisation:")
-        # g.mem_report(False)
+        if gpt_mem_info:
+            g.message("after initialisation:")
+            g.mem_report(False)
 
         for n in range(n_warmup):
             res_g = dwc_g(v_gpt)
@@ -99,9 +101,10 @@ for nb in range(0,n_measurements,n_batchlen):
                 res_grid_back = torch.cat([res_gridl[:,:,:,:,:,:,0],res_gridl[:,:,:,:,:,:,1]], dim=3)
                 print("computations equal:",[torch.allclose(res_gpt_back,res_ch) for res_ch in [res_qmad,res_grid_back]])
 
-        # prints memory used by gpt
-        # g.message("after warmup call:")
-        # g.mem_report(False)
+        if gpt_mem_info:
+            # prints memory used by gpt
+            g.message("after warmup call:")
+            g.mem_report(False)
 
         for n in range(nb,nb+n_batchlen):
             start = time.perf_counter_ns()
@@ -128,7 +131,6 @@ for nb in range(0,n_measurements,n_batchlen):
             results[vol]["qmad_gridl"][n] = stop - start
         
         for na in names:
-            #print(na,":",results[vol][na][nb])
             if results[vol][na][nb] > max_time:
                 max_exceeded[na] = True
             

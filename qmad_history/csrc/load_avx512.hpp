@@ -1,5 +1,9 @@
 #include <immintrin.h>
 
+// incomplete AVX-512 data transfer functions
+// not used in this package or the thesis
+
+
 namespace qmad_history{
 
 // static const int spin_addr [] = {0,1,6,7,12,13,18,19};

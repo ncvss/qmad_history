@@ -1,9 +1,9 @@
-// This Dirac Wilson clover operator uses the normal tsg memory layout for v
+// This Wilson clover operator uses the tsg memory layout for v
 // but transforms to the Grid memory layout before application, then back after application
 // the fastest index goes over sites that are furthest from each other in t direction
 // it is as long as the SIMD width (2 sites for AVX)
 // the clover term is also in the grid layout:
-// the relevant elements of the tensor product sigma x field strength matrix
+// the relevant elements of the tensor product sigma field strength matrix
 // this means we pass the upper triangles of two 6x6 matrices
 // F[x,y,z,t1,triangle index,flattened upper triangle,t2]
 // the upper triangle is flattened with the following indices:
@@ -40,11 +40,11 @@ static const int gamx [4][4] =
      {2, 3, 0, 1},
      {2, 3, 0, 1} };
 
-
 // gamf = [[ i, i,-i,-i],
 //         [-1, 1, 1,-1],
 //         [ i,-i,-i, i],
 //         [ 1, 1, 1, 1] ]
+
 
 // multiplication of t2 register with gamf as a template function
 template <int M, int S> inline __m256d gamma_mul_g (__m256d a){
@@ -135,6 +135,7 @@ inline void grid_to_tsg (double* result, int vol, int Lt){
 
 // pass a template parameter if we are at a t boundary
 // tbou=0 is the lower and tbou=1 the higher boundary, anything else is inside
+// when crossing the boundary, the numbers in the register are swapped
 
 template <int mu, int g, int s, int tbou>
 inline void dwc_gridtrafo_mtsgt2_tmgsMht_loop (const double * U, const double * v,
@@ -307,7 +308,7 @@ at::Tensor dwc_gridtrafo_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::
                                     double mass){
 
     // memory layout is U[mu,x,y,z,t1,g,gi,t2] and v[x,y,z,t,s,gi]
-    // t2 are the 2 neighboring sites that are in one register
+    // t2 are the 2 sites from different blocks that are in one register
     // we have to first transform v
 
     TORCH_CHECK(v_tensor.dim() == 6);
@@ -343,6 +344,11 @@ at::Tensor dwc_gridtrafo_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::
     // register for the mass prefactor
     __m256d massf_reg = _mm256_set1_pd(4.0 + mass);
 
+
+    // register for the field strength term prefactor -1/2*csw
+    //__m256d csw_reg = _mm256_set1_pd(-0.5*csw);
+
+    
     // register for the field strength term prefactor -1/2*csw
     //__m256d csw_reg = _mm256_set1_pd(-0.5*csw);
 

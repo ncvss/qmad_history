@@ -3,7 +3,7 @@ import socket
 import numpy as np
 import time
 
-import gpt as g # type: ignore
+import gpt as g
 import qcd_ml
 
 from qmad_history import compat, wilson, clover, settings, wilson_roofline
@@ -156,14 +156,6 @@ for order, c in zip(dwc_grid2.all_call_names(),dwc_grid2.all_calls()):
     dwcv_grid2_back = torch.cat([dwcv_grid2[:,:,:,:,:,:,0],dwcv_grid2[:,:,:,:,:,:,1]], dim=3)
     check_correct.append((order,torch.allclose(dwcv_py,dwcv_grid2_back)))
 
-# print("my clover:")
-# print(dwcv_grid_back[0,1,0,2]-dwv_grid_back[0,1,0,2])
-# print(dwcv_grid_back[0,1,0,3]-dwv_grid_back[0,1,0,3])
-# print("qcd_ml:")
-# print(dwcv_py[0,1,0,2]-dwv_py[0,1,0,2])
-# print(dwcv_py[0,1,0,3]-dwv_py[0,1,0,3])
-# aktuell: nur der erste Eintrag des 6-Blocks ist korrekt
-# Grund: die Indizes waren off by 1, jetzt stimmt es
 
 for cc in check_correct:
     if type(cc) is tuple:

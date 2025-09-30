@@ -1,5 +1,6 @@
-// this is the template wilson clover
-// but the clover term has the grid layout
+// wilson clover that uses AVX spin vectorization and templates
+// it takes precomputed hop addresses
+// for the clover term, sigma F is precomputed, with the layout:
 // F[x,y,z,t,flattened upper triangle,block index]
 // the upper triangle is flattened with the following indices:
 //  0 | 1 | 2 | 3 | 4 | 5
@@ -9,7 +10,7 @@
 //  4 | 9 |13 |16 |18 |19
 //  5 |10 |14 |17 |19 |20
 // (the lower triangles are the same numbers, but conjugated)
-// the wilson term is just the one from the template wilson
+// the wilson term is the one from the template wilson
 
 #include <torch/extension.h>
 

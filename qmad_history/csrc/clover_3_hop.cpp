@@ -1,4 +1,4 @@
-// this file contains hop versions for the wilson clover
+// this file contains wilson clover versions that takes precomputed hop addresses
 // only with mtsg memory layout
 // both Fmunu and sigmaF precomputations are used
 
@@ -15,7 +15,7 @@ at::Tensor dwc_hop_mtsg_tmsgMhn_fpre (const at::Tensor& U_ten, const at::Tensor&
                                      const at::Tensor& fs_tensors,
                                      const at::Tensor& hops_ten, double mass, double csw){
                                 
-    // data layout for F is still t,munu,g,gi here
+    // data layout for F is still F[t,munu,g,gi] here
     
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
@@ -43,7 +43,6 @@ at::Tensor dwc_hop_mtsg_tmsgMhn_fpre (const at::Tensor& U_ten, const at::Tensor&
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    //std::cout << "\n\n\n" << U_ten.scalar_type() << "\n\n\n";
 
 #pragma omp parallel for
     for (int t = 0; t < vol; t++){
@@ -114,7 +113,7 @@ at::Tensor dwc_hop_mtsg_tmnsgMh_sigpre (const at::Tensor& U_ten, const at::Tenso
                                      const at::Tensor& fs_tensors,
                                      const at::Tensor& hops_ten, double mass){
                                 
-    // fs_tensors is the upper half of the 2 6x6 blocks of sigma F
+    // fs_tensors is the upper triangle of the 2 6x6 blocks of sigma F
     
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
@@ -142,7 +141,6 @@ at::Tensor dwc_hop_mtsg_tmnsgMh_sigpre (const at::Tensor& U_ten, const at::Tenso
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    //std::cout << "\n\n\n" << U_ten.scalar_type() << "\n\n\n";
 
 #pragma omp parallel for
     for (int t = 0; t < vol; t++){
@@ -260,7 +258,7 @@ at::Tensor dwc_debug_cuda_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten
                                      const at::Tensor& fs_tensors,
                                      const at::Tensor& hops_ten, double mass, double csw){
                                 
-    // data layout for F is still t,munu,g,gi here
+    // data layout for F is still F[t,munu,g,gi] here
     
     TORCH_CHECK(v_ten.dim() == 6);
     TORCH_CHECK(U_ten.size(1) == v_ten.size(0));
@@ -288,7 +286,6 @@ at::Tensor dwc_debug_cuda_fpre (const at::Tensor& U_ten, const at::Tensor& v_ten
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    //std::cout << "\n\n\n" << U_ten.scalar_type() << "\n\n\n";
 
 #pragma omp parallel for
     for (int t = 0; t < vol; t++){

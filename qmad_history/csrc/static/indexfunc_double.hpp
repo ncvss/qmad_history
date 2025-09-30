@@ -1,8 +1,14 @@
+// functions to compute the flattened address from the indices
+// for arrays where complex numbers are stored as 2 adjacent doubles
+// in old (mtsg) and new (tmgs) layout
+
 // address for complex gauge field pointer that is stored as 2 doubles
+// in tmgh layout
 inline int uixd (int t, int mu, int g, int gi){
     return t*72 + mu*18 + g*6 + gi*2;
 }
 // address for complex vector field pointer that is stored as 2 doubles
+// in tgs layout
 inline int vixd (int t, int g, int s){
     return t*24 + g*8 + s*2;
 }
@@ -24,12 +30,13 @@ inline int fixd (int t, int munu, int g, int gi){
 }
 
 
-
-// address for U in old layout for 2-double format
+// address for complex gauge field pointer that is stored as 2 doubles
+// in mtgh layout
 inline int uixo (int t, int mu, int g, int gi, int vol){
     return mu*vol*18 + t*18 + g*6 + gi*2;
 }
-// address for v in old layout for 2-double format
+// address for complex vector field pointer that is stored as 2 doubles
+// in tsg layout
 inline int vixo (int t, int g, int s){
     return t*24 + s*6 + g*2;
 }

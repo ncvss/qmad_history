@@ -4,24 +4,11 @@ import numpy as np
 from .settings import capab
 from .util import get_hop_indices
 
-# import os
-
-# this_dir = os.path.dirname(os.path.curdir)
-# settings_file = os.path.join(this_dir, "qmad_history", "settings.txt")
-
-# capab = dict()
-
-# # take the settings from the text file
-# with open(settings_file, "r") as sfile:
-#     data = sfile.readlines()
-#     for li in data:
-#         wo = li.split()
-#         capab[wo[0]] = bool(wo[1])
 
 class wilson_direct:
     """
-    Dirac Wilson operator with gauge config U, without precomputations,
-    memory layout U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson Dirac operator with gauge config U, without precomputation.
+    The memory layout is U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
     Also includes versions that split space-time into blocks.
     """
     def __init__(self, U, mass_parameter):
@@ -55,7 +42,11 @@ class wilson_direct:
 
 class wilson_eo:
     """
-    Dirac Wilson operator with gauge config U on even-odd checkerboard.
+    Wilson Dirac operator with gauge config U on even-odd checkerboard.
+    The input gauge field has layout U[mu,x,y,z,t,g,h], which is then transformed
+    to the even-odd layout given in section 3.5.
+    The input fermion field is a list of two tensors, one each for even and odd,
+    in the layout v[x,y,z,t,s,h].
     """
     def __init__(self, U, mass_parameter):
         # the dimensions have to have even sizes for the algorithm to work
@@ -94,10 +85,12 @@ class wilson_eo:
 
 class wilson_hop_mtsg:
     """
-    Dirac Wilson operator that creates a lookup table for the hops.
-    The axes are U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson Dirac operator that creates a lookup table for the hops.
+    The memory layout is U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    This class contains calls to both CUDA and CPU implementations.
     The normal boundary phases are 1 for all directions, but can be set to 1 or -1.
-    Most calls currently do not take different boundary phases
+    There are two different implementations for the phases.
+    Most calls do not implement the phases.
     """
     def __init__(self, U: torch.Tensor, mass_parameter, boundary_phases=[1,1,1,1]):
         self.U = U
@@ -229,7 +222,7 @@ class wilson_hop_mtsg:
 
 class wilson_hop_eo:
     """
-    Dirac Wilson operator with gauge config U on even-odd checkerboard that precomputes the hop addresses.
+    Wilson Dirac operator with gauge config U on even-odd checkerboard that precomputes the hop addresses.
     The input U still has the axes U[mu,x,y,z,t,g,h].
     The call takes one even and one odd U and v each, which have the t axis split in half.
     The input v is a list of even and odd v.
@@ -330,9 +323,9 @@ class wilson_hop_eo:
 
 class wilson_hop_tmgs:
     """
-    Dirac Wilson operator that creates a lookup table for the hops.
-    The axes are U[x,y,z,t,mu,g,h] and v[x,y,z,t,h,s].
-    For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
+    Wilson Dirac operator that creates a lookup table for the hops.
+    The memory layout for the operator calls is U[x,y,z,t,mu,g,h] and v[x,y,z,t,h,s].
+    For simplicity, and because the path buffer requires it, the input gauge layout is U[mu,x,y,z,t,g,h].
     """
     def __init__(self, U, mass_parameter):
         U = torch.permute(U, (1,2,3,4,0,5,6)).contiguous()
@@ -370,9 +363,9 @@ class wilson_hop_tmgs:
 
 class wilson_hop_mtsgt:
     """
-    Dirac Wilson operator that creates a lookup table for the hops.
-    The axes are U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
-    For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
+    Wilson Dirac operator that creates a lookup table for the hops.
+    The memory layout is U[mu,x,y,z,t1,g,h,t2] and v[x,y,z,t1,s,h,t2].
+    For simplicity, and because the path buffer requires it, the input gauge layout is U[mu,x,y,z,t,g,h].
     """
     def __init__(self, U, mass_parameter):
         assert tuple(U.shape[5:7]) == (3,3,)
@@ -405,11 +398,12 @@ class wilson_hop_mtsgt:
 
 class wilson_hop_mtsgt2:
     """
-    Dirac Wilson operator that creates a lookup table for the hops.
-    The axes are U[mu,x,y,z,t2,g,h,t1] and v[x,y,z,t2,s,h,t1].
+    Wilson Dirac operator that creates a lookup table for the hops.
+    The memory layout is U[mu,x,y,z,t2,g,h,t1] and v[x,y,z,t2,s,h,t1].
+    For simplicity, and because the path buffer requires it, the input gauge layout is U[mu,x,y,z,t,g,h].
     The grid gets split in half, with a register having 1 site from each block.
+    This is the layout of Grid that was specified in section 3.6.
     t1 is the block number, t2 is the site.
-    For simplicity, and because the path buffer requires it, the input U is still U[mu,x,y,z,t,g,h].
     """
     def __init__(self, U, mass_parameter):
         assert tuple(U.shape[5:7]) == (3,3,)
@@ -423,14 +417,6 @@ class wilson_hop_mtsgt2:
         Ufirst = U[:,:,:,:,0:tlen//2]
         Usecond = U[:,:,:,:,tlen//2:tlen]
         self.U = torch.stack([Ufirst, Usecond], dim=-1)
-
-        # # add halo (additional array entries after the boundary for hops in t direction)
-        # halo_grid = list(Usimd.shape)
-        # halo_grid[3] += 2
-        # self.U = torch.tensor(halo_grid, dtype=torch.cdouble)
-        # self.U[:,:,:,1:-1] = Usimd
-        # self.U[:,:,:,0] = Usimd[:,:,:,-1]
-        # self.U[:,:,:,-1] = Usimd[:,:,:,0]
 
         grid = [U.shape[1], U.shape[2], U.shape[3], U.shape[4]//2]
         self.hop_inds = get_hop_indices(grid)
@@ -450,10 +436,12 @@ class wilson_hop_mtsgt2:
 
 class wilson_full:
     """
-    Wilson Dirac operator that computes the full matrix in space-time-spinor-colour space.
+    Wilson Dirac operator that computes the full matrix in space-time-spinor-colour space,
+    and transforms it to the sparse layout detailed in appendix A.2.
     Currently, it just does a dummy computation that uses the wrong numbers.
+    The performance is the same if the correct numbers are used.
     """
-    def __init__(self, U: torch.Tensor, mass_parameter, boundary_phases=[1,1,1,1]):
+    def __init__(self, U: torch.Tensor, mass_parameter, tensor_index_compute=True):
         U
         assert tuple(U.shape[5:7]) == (3,3,)
         assert U.shape[0] == 4
@@ -469,49 +457,50 @@ class wilson_full:
 
         self.dummy_dw = torch.randn([vol,4,3,49],dtype=torch.cdouble,device=op_device)
 
-        # computation taken directly (very slow)
-        # gamx = [[3,2,1,0],[3,2,1,0],[2,3,0,1],[2,3,0,1]]
-        # self.sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
-        # for t in range(vol):
-        #     for s in range(4):
-        #         for g in range(3):
-        #             self.sparse_addr[t,s,g,0] = t*12+s*3+g
-        #             for mu in range(8):
-        #                 for gi in range(3):
-        #                     self.sparse_addr[t,s,g,1+mu*6+gi] = hop_inds[t,mu]*12+s*3+gi
-        #                     self.sparse_addr[t,s,g,1+mu*6+gi+3] = hop_inds[t,mu]*12+gamx[mu//2][s]*3+gi
-        # assert torch.all(self.sparse_addr>=0) and torch.all(self.sparse_addr<vol*4*3)
-
-        # the sparse address tensor will have the indices t,s,g,contributions
-        # the contributions will be: first the mass term, then hops in order mu,dir,gamma/no gamma,gi
-        # first the mass term, which is simply the address of each site at that same site
-        mass_ind_np = np.indices([vol,4,3],sparse=False)
-        mass_ind = torch.tensor(mass_ind_np, dtype=torch.int32).permute((1,2,3,0,))
-        tsg_strides = torch.tensor([12,3,1], dtype=torch.int32)
-        mass_ind = torch.matmul(mass_ind,tsg_strides)
-        mass_ind = torch.reshape(mass_ind, [vol,4,3,1])
-        assert tuple(mass_ind.shape) == (vol,4,3,1,)
-        # now the hop term contributions
-        # hop_inds already is in order t,mu,dir (mu,dir are one axis)
-        # so we first take the correct hop address by broadcasting hop_inds to the sparse shape
-        # multiplied by 12, as hop_inds takes sites but we take spin-colour components
-        sparse2 = torch.broadcast_to(hop_inds,[4,3,2,3,vol,8])*12
-        # gamx is brought to the mu,dir,s shape
-        gamx_tensor = torch.tensor([[3,2,1,0]]*4+[[2,3,0,1]]*4,dtype=torch.int32)
-        s_tensor = torch.tensor([0,1,2,3],dtype=torch.int32)
-        # permute sparse2 so we can add gamx
-        sparse2 = torch.permute(sparse2, (2,4,1,3,5,0))
-        # multiplied by 3, as gamx takes spin components but we take spin-colour components
-        sparse2[0] += s_tensor*3
-        sparse2[1] += gamx_tensor*3
-        # now reshape to add gi term
-        sparse2 = torch.permute(sparse2, (1,5,2,4,0,3))
-        gi_tensor = torch.tensor([0,1,2],dtype=torch.int32)
-        sparse2 += gi_tensor
-        assert tuple(sparse2.shape) == (vol,4,3,8,2,3)
-        sparse2 = torch.reshape(sparse2, [vol,4,3,48])
-        sparse_addr_2 = torch.cat([mass_ind, sparse2],dim=3).contiguous()
-        self.sparse_addr = sparse_addr_2.to(op_device)
+        if not tensor_index_compute:
+            # computation taken directly (very slow)
+            gamx = [[3,2,1,0],[3,2,1,0],[2,3,0,1],[2,3,0,1]]
+            self.sparse_addr = torch.empty([vol,4,3,49],dtype=torch.int32,device=op_device)
+            for t in range(vol):
+                for s in range(4):
+                    for g in range(3):
+                        self.sparse_addr[t,s,g,0] = t*12+s*3+g
+                        for mu in range(8):
+                            for gi in range(3):
+                                self.sparse_addr[t,s,g,1+mu*6+gi] = hop_inds[t,mu]*12+s*3+gi
+                                self.sparse_addr[t,s,g,1+mu*6+gi+3] = hop_inds[t,mu]*12+gamx[mu//2][s]*3+gi
+            assert torch.all(self.sparse_addr>=0) and torch.all(self.sparse_addr<vol*4*3)
+        else:
+            # the sparse address tensor will have the indices t,s,g,contributions
+            # the contributions will be: first the mass term, then hops in order mu,dir,gamma/no gamma,gi
+            # first the mass term, which is simply the address of each site at that same site
+            mass_ind_np = np.indices([vol,4,3],sparse=False)
+            mass_ind = torch.tensor(mass_ind_np, dtype=torch.int32).permute((1,2,3,0,))
+            tsg_strides = torch.tensor([12,3,1], dtype=torch.int32)
+            mass_ind = torch.matmul(mass_ind,tsg_strides)
+            mass_ind = torch.reshape(mass_ind, [vol,4,3,1])
+            assert tuple(mass_ind.shape) == (vol,4,3,1,)
+            # now the hop term contributions
+            # hop_inds already is in order t,mu,dir (mu,dir are one axis)
+            # so we first take the correct hop address by broadcasting hop_inds to the sparse shape
+            # multiplied by 12, as hop_inds takes sites but we take spin-colour components
+            sparse2 = torch.broadcast_to(hop_inds,[4,3,2,3,vol,8])*12
+            # gamx is brought to the mu,dir,s shape
+            gamx_tensor = torch.tensor([[3,2,1,0]]*4+[[2,3,0,1]]*4,dtype=torch.int32)
+            s_tensor = torch.tensor([0,1,2,3],dtype=torch.int32)
+            # permute sparse2 so we can add gamx
+            sparse2 = torch.permute(sparse2, (2,4,1,3,5,0))
+            # multiplied by 3, as gamx takes spin components but we take spin-colour components
+            sparse2[0] += s_tensor*3
+            sparse2[1] += gamx_tensor*3
+            # now reshape to add gi term
+            sparse2 = torch.permute(sparse2, (1,5,2,4,0,3))
+            gi_tensor = torch.tensor([0,1,2],dtype=torch.int32)
+            sparse2 += gi_tensor
+            assert tuple(sparse2.shape) == (vol,4,3,8,2,3)
+            sparse2 = torch.reshape(sparse2, [vol,4,3,48])
+            sparse_addr_2 = torch.cat([mass_ind, sparse2],dim=3).contiguous()
+            self.sparse_addr = sparse_addr_2.to(op_device)
          
         
     def cuv10(self, v):

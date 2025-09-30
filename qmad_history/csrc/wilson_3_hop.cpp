@@ -1,8 +1,9 @@
-// this file has the dirac wilson operators that use only c++
-// and precompute the addresses for the hops (only 1 index for space-time)
-// also, the parallelisation is base omp
-// the code is asically c++ except for the access to torch tensors
-// the memory layout is the old one
+// wilson dirac operators that use only c++
+// and take precomputed hop addresses
+// they use only one index for the space-time site
+// parallelisation with base OpenMP
+// the code is pure c++ except for the access to torch tensors
+// the memory layout is U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,g]
 
 #include <torch/extension.h>
 #include <omp.h>
@@ -236,7 +237,6 @@ at::Tensor dw_hop_mtsg_tmsgMh_cpu (const at::Tensor& U_ten, const at::Tensor& v_
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    //std::cout << "\n\n\n" << U_ten.scalar_type() << "\n\n\n";
 
 #pragma omp parallel for
     for (int t = 0; t < vol; t++){
@@ -298,7 +298,7 @@ at::Tensor dw_hop_mtsg_tmsgMh_cpu (const at::Tensor& U_ten, const at::Tensor& v_
 at::Tensor dw_hop_block_mtsg_btmsgMh (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                       const at::Tensor& hops_ten, double mass){
     
-    // in this function, we use only the flattened space-time index!
+    // in this function, we use only the flattened space-time index
     // The indices for the input arrays are U[mu,t,g,gi] and v[t,s,gi]
     
     int dims [4] = {U_ten.size(1), U_ten.size(2), U_ten.size(3), U_ten.size(4)};
@@ -313,9 +313,6 @@ at::Tensor dw_hop_block_mtsg_btmsgMh (const at::Tensor& U_ten, const at::Tensor&
     // space-time axes have to have even length for blocking to work
     TORCH_CHECK(dims[0]%2 + dims[1]%2 + dims[2]%2 + dims[3]%2 == 0,
                 "Axes need to have even length for blocking");
-    // TORCH_CHECK(dims[1]%2 == 0, "Axis needs to have even length for blocking");
-    // TORCH_CHECK(dims[2]%2 == 0, "Axis needs to have even length for blocking");
-    // TORCH_CHECK(dims[3]%2 == 0, "Axis needs to have even length for blocking");
     
     TORCH_CHECK(U_ten.is_contiguous());
     TORCH_CHECK(v_ten.is_contiguous());

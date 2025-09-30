@@ -1,8 +1,8 @@
-// this is the same computation as the avx, but using templates for performance
+// wilson that uses avx, templates and precomputed hop addresses
 // the input is of varying size, so that a roofline plot can be fitted
 
 #include <torch/extension.h>
-//#define VECTORISATION_ACTIVATED
+
 #ifdef VECTORISATION_ACTIVATED
 
 #include <omp.h>
@@ -131,9 +131,7 @@ at::Tensor dw_roof_templ_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Ten
     TORCH_CHECK(v_tensor.is_contiguous());
 
     int rvol = hops_tensor.size(0);
-    //std::cout << "base volume: " << rvol << std::endl;
     int vol = U_tensor.size(1)*U_tensor.size(2)*U_tensor.size(3)*U_tensor.size(4);
-    //std::cout << "input volume: " << vol << std::endl;
 
     at::Tensor result_tensor = torch::empty({rvol,4,3}, v_tensor.options());
 

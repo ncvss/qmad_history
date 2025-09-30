@@ -1,7 +1,6 @@
-// this file has the dirac wilson operators that use only torch and c++
-// and compute everything directly
+// wilson dirac operators that compute addresses at runtime
 // the space-time loops are split in blocks
-// also, the parallelisation comes from torch
+// parallelisation comes from torch
 
 #include <torch/extension.h>
 #include <vector>
@@ -33,8 +32,7 @@ at::Tensor dw_block_mxtsg_dbxtsghm (const at::Tensor& U, const at::Tensor& v, do
     TORCH_CHECK(U.dtype() == at::kComplexDouble);
     TORCH_CHECK(v.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to
-    // its place in memory
+    // if the data is not contiguous, we cannot calculate pointers
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 
@@ -80,8 +78,6 @@ at::Tensor dw_block_mxtsg_dbxtsghm (const at::Tensor& U, const at::Tensor& v, do
 #else
     for (int64_t startx = 0; startx < v_size[0]; startx += bls){
 #endif
-// #pragma omp parallel for
-//     for (int64_t startx = 0; startx < v_size[0]; startx += bls){
     for (int64_t starty = 0; starty < v_size[1]; starty += bls){
     for (int64_t startz = 0; startz < v_size[2]; startz += bls){
     for (int64_t startt = 0; startt < v_size[3]; startt += bls){
@@ -172,8 +168,6 @@ at::Tensor dw_block_mxtsg_dbxtsghm (const at::Tensor& U, const at::Tensor& v, do
 #else
     for (int64_t startx = 0; startx < v_size[0]; startx += bls){
 #endif
-// #pragma omp parallel for
-//     for (int64_t startx = 0; startx < v_size[0]; startx += bls){
     for (int64_t starty = 0; starty < v_size[1]; starty += bls){
     for (int64_t startz = 0; startz < v_size[2]; startz += bls){
     for (int64_t startt = 0; startt < v_size[3]; startt += bls*2){
@@ -268,8 +262,7 @@ at::Tensor dw_block_mxtsg_bxtsghm (const at::Tensor& U, const at::Tensor& v, dou
     TORCH_CHECK(U.dtype() == at::kComplexDouble);
     TORCH_CHECK(v.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to
-    // its place in memory
+    // if the data is not contiguous, we cannot calculate pointers
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 
@@ -315,8 +308,6 @@ at::Tensor dw_block_mxtsg_bxtsghm (const at::Tensor& U, const at::Tensor& v, dou
 #else
     for (int64_t startx = 0; startx < v_size[0]; startx += bls){
 #endif
-// #pragma omp parallel for
-//     for (int64_t startx = 0; startx < v_size[0]; startx += bls){
     for (int64_t starty = 0; starty < v_size[1]; starty += bls){
     for (int64_t startz = 0; startz < v_size[2]; startz += bls){
     for (int64_t startt = 0; startt < v_size[3]; startt += bls){

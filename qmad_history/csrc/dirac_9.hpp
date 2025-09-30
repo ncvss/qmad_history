@@ -3,7 +3,7 @@
 namespace qmad_history{
 
 /**
- * @brief Dirac Wilson operator using vectorisation with the Grid memory layout
+ * @brief Wilson Dirac operator using vectorisation with the Grid memory layout
  *        (2 neighbouring sites in t direction are in one register,
  *        this is the fastest runnning index in memory)
  * 
@@ -17,7 +17,7 @@ at::Tensor dw_templ_mtsgt_tmgsMht (const at::Tensor& U_tensor, const at::Tensor&
                                    const at::Tensor& hops_tensor, double mass);
 
 /**
- * @brief Dirac Wilson Clover operator using vectorisation with the Grid memory layout
+ * @brief Wilson clover Dirac operator using vectorisation with the Grid memory layout
  *        (2 neighbouring sites in t direction are in one register,
  *        this is the fastest runnning index in memory)
  * 
@@ -36,7 +36,7 @@ at::Tensor dwc_templ_mtsgt_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
 
 
 /**
- * @brief Dirac Wilson Clover operator using the qcd_ml memory layout and spin vectorisation,
+ * @brief Wilson clover Dirac operator using the qcd_ml memory layout and spin vectorisation,
  *        but computing the clover term like in Grid
  * 
  * @param U_tensor gauge field
@@ -50,7 +50,8 @@ at::Tensor dwc_templ_mtsgt_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
 at::Tensor dwc_grid_mtsg_tmngsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                   double mass);
-                        
+
+// like the above operator, but different loop layout
 at::Tensor dwc_grid_mtsg_tmnsgMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& fs_tensors, const at::Tensor& hops_tensor,
                                   double mass);
@@ -92,7 +93,7 @@ at::Tensor dw_grid_mtsgt2_tmgsMht (const at::Tensor& U_tensor, const at::Tensor&
 
 
 /**
- * @brief Dirac Wilson Clover operator using vectorisation with the Grid memory layout
+ * @brief Wilson clover Dirac operator using vectorisation with the Grid memory layout
  *        (2 sites in t direction that are furthest from each other are in one register,
  *        this is the fastest runnning index in memory)
  * 
@@ -110,7 +111,7 @@ at::Tensor dwc_grid_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
 
 
 /**
- * @brief Wilson Clover using vectorisation with the Grid memory layout
+ * @brief Wilson clover using vectorisation with the Grid memory layout
  *        (2 sites in t direction that are furthest from each other are in one register,
  *        this is the fastest runnning index in memory),
  *        but the input and output fermion fields are in tsg layout and get transformed

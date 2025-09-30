@@ -1,4 +1,6 @@
-// this is the same computation as the avx, but using templates for performance
+// wilson variants that use AVX spin vectorization
+// hop addresses are precomputed
+// templates and compile time optimization are used, by manually unrolling the loops over mu,s,g
 
 #include <torch/extension.h>
 
@@ -16,10 +18,10 @@
 
 namespace qmad_history{
 
-// template for the body of the t,mu,g,s loop in dw_call_256d_om_template
+// template for the body of the t,mu,g,s loop in dw_templ_mtsg_tmgsMhs and dw_templ_mtsg_tmsgMhs
 // mu, g and s are template parameters so that the loop body can differ between iterations
 // without having to check at runtime, instead generating the different code at compile time
-// also, now gamma works as a template function too
+// also, gamma is a template function
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
 inline void dw_templ_mtsg_tmgsMhs_loop (const double * U, const double * v,

@@ -1,5 +1,5 @@
 # test if operator works on a cuda machine
-# and if the output is then correct
+# and if the output is correct
 
 import torch
 import qmad_history.wilson
@@ -44,7 +44,7 @@ print("number of sites that are the same:",torch.sum(differsites))
 #         for z in range(8):
 #             print("all correct at x,y,z=",x,y,z,":",torch.all(differsites[x,y,z]))
 
-# test how the tensor looks like
+# test for periodic structures in the result tensor if result is wrong
 swaps = 0
 diffflat = torch.flatten(differsites)
 for i in range(torch.numel(diffflat)-1):

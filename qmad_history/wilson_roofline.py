@@ -5,12 +5,14 @@ from .settings import capab
 
 class wilson_hop_mtsg_roofline:
     """
-    Dirac Wilson operator that creates a lookup table for the hops.
-    The axes are U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    Wilson Dirac operator that creates a lookup table for the hops.
+    The memory layout is U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h].
+    
     U and v may be of a different size, so that there is less data transfered and thus the flop/byte
     can be varied, which allows us to fit to the roofline model.
     (The computation and thus the amount of flop is always the same, so the flop/s
     can be computed by measuring the time.)
+
     base_grid is the space-time of the result tensor (which is output in a flattened shape).
     """
     def __init__(self, U, mass_parameter, base_grid):

@@ -10,8 +10,10 @@ import os
 import gpt as g
 import qcd_ml
 
-from qmad_history import compat, wilson, clover, settings
+from qmad_history import compat, clover, settings
 
+
+print("settings:", settings.capab())
 
 num_threads = torch.get_num_threads()
 hostname = socket.gethostname()
@@ -37,7 +39,6 @@ print("csw =",csw)
 rng = g.random("these")
 
 start_grid = [4,4,2,4]
-# mehr als 32x32x32x32 ist auf meinem PC nicht möglich, zu wenig Speicher führt zu Absturz
 n_vols = 15
 all_grids = []
 for i in range(n_vols):
@@ -50,7 +51,7 @@ names = ["no_grad","with_grad"]
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 # split data generation into batches that each iterate over all sites
-# it does not work without that, pytorch does some strange things
+# required to further restrict the influence of background processes
 
 for nb in range(0,n_measurements,n_batchlen):
     print("\ncurrent batch:",nb,flush=True)
@@ -76,7 +77,7 @@ for nb in range(0,n_measurements,n_batchlen):
             vgrad = v.clone().detach().requires_grad_(True)
             res_no = dwc.tmnsgMhs(v)
             res_grad = dwc.tmnsgMhs(vgrad)
-            # use the gradient for computation in each iteration
+            # call gradient computation in each iteration
             loss_qmad = (res_grad * res_grad.conj()).real.sum()
             loss_qmad.backward()
             if n == 0 and nb == 0:
@@ -101,7 +102,7 @@ for nb in range(0,n_measurements,n_batchlen):
             stop = time.perf_counter_ns()
             results[vol]["with_grad"][n] = stop - start
 
-            # use the gradient for computation in each iteration
+            # call gradient computation in each iteration
             loss_qmad = (res_grad * res_grad.conj()).real.sum()
             loss_qmad.backward()
 

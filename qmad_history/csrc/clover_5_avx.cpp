@@ -1,4 +1,6 @@
-// Dirac Wilson Clover using avx vectorization of the spin
+// this file contains wilson clover versions that use AVX vectorisation of the spin
+// the hop addresses are precomputed
+// the field strength is precomputed as either F_munu or sigma F
 
 #include <torch/extension.h>
 
@@ -572,7 +574,6 @@ at::Tensor dwc_avx_mtsg_tmgsMhns (const at::Tensor& U_tensor, const at::Tensor& 
 }
 
 
-// as I chose msg to be the best order, I have to add it here as well
 
 at::Tensor dwc_avx_mtsg_tmsgMhns (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& fs_tensors,
@@ -845,7 +846,7 @@ at::Tensor dwc_avx_mtsg_tmsgMhns (const at::Tensor& U_tensor, const at::Tensor& 
 }
 
 
-// non-template version of the grid layout of sigma field strength
+// avx version that precomputes the sigma F tensor product
 
 at::Tensor dwc_avx_mtsg_tmnsgMhs_sigpre (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& fs_tensors,

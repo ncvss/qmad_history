@@ -1,15 +1,17 @@
 #include <immintrin.h>
 
+// functions to transfer data between AVX registers and fields with the Grid layout
+
 namespace qmad_history {
 
-// load function for v and U with the grid layout
+// load function for v and U with the Grid layout
 inline __m256d load_site (const double * addr){
     // as the values for 2 t sites are next to each other,
     // this is simply a load intrinsic instruction
     return _mm256_loadu_pd(addr);
 }
 
-// store function for U and v with grid layout
+// store function for U and v with Grid layout
 inline void store_site (double * addr, __m256d a){
     // simply the store intrinsic function
     _mm256_storeu_pd(addr, a);

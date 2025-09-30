@@ -5,6 +5,7 @@ import copy
 
 from qmad_history import wilson, settings
 
+print("settings:", settings.capab())
 
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
@@ -22,12 +23,10 @@ print("cuda_error_handling:", settings.capab("cuda_error_handling"))
 
 print(n_measurements,"repetitions in",n_batch,"batches")
 print("mass =", mass)
-#print("csw =",csw)
 
 cuda0 = torch.device("cuda:0")
 print("using device",cuda0)
 
-# this is on the gpu, so we need way larger lattices
 start_grid = [8,8,4,8]
 start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
 n_vols = 12
@@ -42,7 +41,7 @@ names = ["tsg_kernel","tmsg_kernel","tmsgh_kernel","tsg_3d_kernel"]
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 # split data generation into batches that each iterate over all sites
-# it does not work without that, pytorch does some strange things
+# required to further restrict the influence of background processes
 
 for nb in range(0,n_measurements,n_batchlen):
     print("\ncurrent batch:",nb,flush=True)
@@ -53,7 +52,8 @@ for nb in range(0,n_measurements,n_batchlen):
         print(cgrid,end=" ",flush=True)
 
         # initialise the fields for this volume
-        # gpt is not installed, so we have to use pseudo fields
+        # gpt is not installed, so we have to use random numbers as pseudo fields
+        # performance is the same
         U_cpu = torch.randn([4]+cgrid+[3,3], dtype=torch.cdouble)
         v_cpu = torch.randn(cgrid+[4,3], dtype=torch.cdouble)
 
@@ -61,9 +61,6 @@ for nb in range(0,n_measurements,n_batchlen):
         vcu = v_cpu.to(cuda0)
 
         dw_cu = wilson.wilson_hop_mtsg(Ucu, mass)
-        # dw_ref = qcd_ml.qcd.dirac.dirac_wilson(Ucu, mass)
-
-        # calls = [dw_cu.cu_tsg,dw_cu.cu_Mtmsg,dw_cu.cu_Mtmsgh,dw_cu.cu_3d_tsg]
 
         for n in range(n_warmup):
             torch.cuda.synchronize()
@@ -76,7 +73,6 @@ for nb in range(0,n_measurements,n_batchlen):
             res_3d_tsg = dw_cu.cuv2(vcu)
             torch.cuda.synchronize()
             if n == 0 and nb == 0:
-                # res_ref = dw_ref(vcu)
                 print("computations equal:",[torch.allclose(res_tsg,res_ch) for res_ch in [res_tmsg,res_tmsgh,res_3d_tsg]])
 
         for n in range(nb,nb+n_batchlen):

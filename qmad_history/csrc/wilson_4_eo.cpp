@@ -1,4 +1,5 @@
-// only the even-odd dirac operator
+// wilson dirac operator that splits the lattice in even and odd, as in section 3.5
+// the hop are computed at runtime or at initialisation, depending on the variant
 
 #include <torch/extension.h>
 #include <vector>
@@ -17,20 +18,21 @@
 
 namespace qmad_history {
 
+
+// version that computes hops at runtime
+
 at::Tensor dw_eo_pmtsg_pxtMmghs (const at::Tensor& Ue, const at::Tensor& Uo,
                                  const at::Tensor& ve, const at::Tensor& vo,
                                  double mass, std::vector<int64_t> eodim){
     
-    // I add an argument for the lattice axis dimensions of the even/odd arrays,
-    // as it is easier to insert the even/odd arrays flattened
-    // the even/odd have the same dimensions as normal, except that t is halved
+    // the even/odd tensors are flattened in the space-time indices
+    // there is a parameter for the actual lattice dimensions of the even/odd arrays
+    // they have the same dimensions as normal, except that t is halved
 
     TORCH_CHECK(Ue.is_contiguous());
     TORCH_CHECK(Uo.is_contiguous());
     TORCH_CHECK(ve.is_contiguous());
     TORCH_CHECK(vo.is_contiguous());
-
-    //std::cout << "the sizes of vector, gauge, and return:" << std::endl;
 
     // size of space-time, spin and gauge axes
     int64_t v_size [6] = {eodim[0], eodim[1], eodim[2], eodim[3], ve.size(1), ve.size(2)};
@@ -320,6 +322,8 @@ at::Tensor dw_eo_pmtsg_pxtMmghs (const at::Tensor& Ue, const at::Tensor& Uo,
 }
 
 
+// versions with hops precomputed
+
 at::Tensor dw_eo_hop_pmtsg_ptMmsgh (const at::Tensor& Ue_ten, const at::Tensor& Uo_ten,
                                     const at::Tensor& ve_ten, const at::Tensor& vo_ten,
                                     const at::Tensor& hopse_ten, const at::Tensor& hopso_ten,
@@ -347,7 +351,7 @@ at::Tensor dw_eo_hop_pmtsg_ptMmsgh (const at::Tensor& Ue_ten, const at::Tensor& 
     TORCH_CHECK(Uo_ten.dtype() == at::kComplexDouble);
     TORCH_CHECK(vo_ten.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
+    // if the data is not contiguous, we cannot calculate pointers
     TORCH_CHECK(Ue_ten.is_contiguous());
     TORCH_CHECK(ve_ten.is_contiguous());
     TORCH_CHECK(Uo_ten.is_contiguous());
@@ -472,7 +476,7 @@ at::Tensor dw_eo_hop_pmtsg_pMtmsgh (const at::Tensor& Ue_ten, const at::Tensor& 
     TORCH_CHECK(Uo_ten.dtype() == at::kComplexDouble);
     TORCH_CHECK(vo_ten.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
+    // if the data is not contiguous, we cannot calculate pointers
     TORCH_CHECK(Ue_ten.is_contiguous());
     TORCH_CHECK(ve_ten.is_contiguous());
     TORCH_CHECK(Uo_ten.is_contiguous());

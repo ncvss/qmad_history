@@ -4,7 +4,7 @@ import torch
 import qmad_history.wilson
 import time
 
-print("do a very simple benchmark try")
+print("perform a very simple benchmark test")
 lat_dim = [16,16,8,16]
 cuda0 = torch.device("cuda:0")
 mass = -0.5

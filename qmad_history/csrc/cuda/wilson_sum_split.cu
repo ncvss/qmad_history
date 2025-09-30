@@ -5,9 +5,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-//#include <cuda/std/complex>
 
-// .cuh ist die Endung für CUDA-Header, sie sind aber das gleiche wie .h
 #include "indexfunc_2.cuh"
 #include "gamma_1.cuh"
 
@@ -84,7 +82,7 @@ at::Tensor dw_hop_mtsg_cu_tsg (const at::Tensor& U_ten, const at::Tensor& v_ten,
     const int32_t* hops = hops_ten.const_data_ptr<int32_t>();
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
 
-    // allocate one thread for each vector component, in 1024-thread blocks
+    // allocate one thread for each vector component, in 512-thread blocks
     int threadnum = 512;
     int blocknum = (vvol+threadnum-1)/threadnum;
 
@@ -176,7 +174,7 @@ at::Tensor dw_hop_mtsg_cu_Mtmsg (const at::Tensor& U_ten, const at::Tensor& v_te
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
     double * result_d = (double*) result;
 
-    // allocate one thread for each vector component times mu, in 1024-thread blocks
+    // allocate one thread for each vector component times mu, in 512-thread blocks
     int threadnum = 512;
     int mass_blocknum = (vvol+threadnum-1)/threadnum;
     int blocknum = (vvol*4+threadnum-1)/threadnum;
@@ -270,7 +268,7 @@ at::Tensor dw_hop_mtsg_cu_Mtmsgh (const at::Tensor& U_ten, const at::Tensor& v_t
     c10::complex<double>* result = result_ten.mutable_data_ptr<c10::complex<double>>();
     double * result_d = (double*) result;
 
-    // allocate one thread for each vector component times mu and gi, in 1024-thread blocks
+    // allocate one thread for each vector component times mu and gi, in 512-thread blocks
     int threadnum = 512;
     int mass_blocknum = (vvol+threadnum-1)/threadnum;
     int blocknum = (vvol*4*3+threadnum-1)/threadnum;

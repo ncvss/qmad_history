@@ -1,5 +1,7 @@
 #include <immintrin.h>
 
+// functions to transfer data between AVX registers and fields with mtsg and tmgs layout
+
 namespace qmad_history {
 
 // load function for v with the old layout

@@ -1,5 +1,8 @@
 #include <immintrin.h>
 
+// implementation of complex arithmetic on AVX registers
+// see also appendix C
+
 /**
  * @brief multiply a scalar from a memory pointer onto 2 complex numbers
  *        in a 256 bit register

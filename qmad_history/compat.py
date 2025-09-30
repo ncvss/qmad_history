@@ -1,5 +1,5 @@
 import numpy as np
-import gpt as g # type: ignore
+import gpt as g
 import torch
 
 

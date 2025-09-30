@@ -3,12 +3,9 @@ import socket
 import numpy as np
 import time
 
-from qmad_history import compat, settings, wilson_roofline
+from qmad_history import wilson_roofline
 
-
-# try to understand what happens in the roofline dirac wilson
-
-# visualize the hop accesses in 2 dimensions
+# visualize the hop accesses from the roofline wilson in 2 dimensions
 
 base_lat_dim = [4,4,4,4]
 in_lat_dims = [[4,4,4,4],[4,4,4,8],[4,4,6,8],[4,4,4,12],[4,4,4,16]]

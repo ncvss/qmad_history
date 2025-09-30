@@ -1,4 +1,4 @@
-# very simple benchmark test
+# very simple benchmark test for cuda
 
 import torch
 import qmad_history.wilson

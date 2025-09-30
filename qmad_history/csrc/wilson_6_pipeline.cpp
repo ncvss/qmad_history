@@ -1,5 +1,7 @@
-// this is the same computation as the avx, but using templates for performance
-// and unrolling the gi loop and arranging it so that it fits into the pipeline
+// wilson variant that uses AVX spin vectorization
+// hop addresses are precomputed
+// templates and compile time optimization are used
+// the h loop is unrolled and rearranged for pipelining
 
 #include <torch/extension.h>
 
@@ -17,10 +19,10 @@
 
 namespace qmad_history{
 
-// template for the body of the t,mu,g,s loop in dw_call_256d_om_template
+// template for the body of the t,mu,g,s loop in dw_tempipe_mtsg_tmgsMhs
 // mu, g and s are template parameters so that the loop body can differ between iterations
 // without having to check at runtime, instead generating the different code at compile time
-// also, now gamma works as a template function too
+// also, gamma is a template function
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
 void dw_tempipe_mtsg_tmgsMhs_loop (const double * U, const double * v,
@@ -43,107 +45,108 @@ void dw_tempipe_mtsg_tmgsMhs_loop (const double * U, const double * v,
     }
 
 
-    //for (int gi = 0; gi < 3; gi++){
+    // the unrolled h loop with h=0,1,2
 
-        // v hop in negative mu * gammma
-        __m256d v_Hmum_gam0;
-        if constexpr (mu == 0 || mu == 1){
-            v_Hmum_gam0 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,0)],0,gamx_pd[s]));
-            // because mu=0,1: swap the 2 numbers in the register
-        } else {
-            v_Hmum_gam0 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],0,gamx_pd[s]));
-        }
-        __m256d v_Hmum_gam1;
-        if constexpr (mu == 0 || mu == 1){
-            v_Hmum_gam1 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,0)],1,gamx_pd[s]));
-            // because mu=0,1: swap the 2 numbers in the register
-        } else {
-            v_Hmum_gam1 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],1,gamx_pd[s]));
-        }
-        __m256d v_Hmum_gam2;
-        if constexpr (mu == 0 || mu == 1){
-            v_Hmum_gam2 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,0)],2,gamx_pd[s]));
-            // because mu=0,1: swap the 2 numbers in the register
-        } else {
-            v_Hmum_gam2 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],2,gamx_pd[s]));
-        }
+    // v hop in negative mu * gammma
+    __m256d v_Hmum_gam0;
+    if constexpr (mu == 0 || mu == 1){
+        v_Hmum_gam0 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,0)],0,gamx_pd[s]));
+        // because mu=0,1: swap the 2 numbers in the register
+    } else {
+        v_Hmum_gam0 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],0,gamx_pd[s]));
+    }
+    __m256d v_Hmum_gam1;
+    if constexpr (mu == 0 || mu == 1){
+        v_Hmum_gam1 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,0)],1,gamx_pd[s]));
+        // because mu=0,1: swap the 2 numbers in the register
+    } else {
+        v_Hmum_gam1 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],1,gamx_pd[s]));
+    }
+    __m256d v_Hmum_gam2;
+    if constexpr (mu == 0 || mu == 1){
+        v_Hmum_gam2 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,0)],2,gamx_pd[s]));
+        // because mu=0,1: swap the 2 numbers in the register
+    } else {
+        v_Hmum_gam2 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],2,gamx_pd[s]));
+    }
 
-        // multiply the gamma prefactor for s and s+1
-        v_Hmum_gam0 = gamma_mul<mu,s>(v_Hmum_gam0);
-        v_Hmum_gam1 = gamma_mul<mu,s>(v_Hmum_gam1);
-        v_Hmum_gam2 = gamma_mul<mu,s>(v_Hmum_gam2);
-        
+    // multiply the gamma prefactor for s and s+1
+    v_Hmum_gam0 = gamma_mul<mu,s>(v_Hmum_gam0);
+    v_Hmum_gam1 = gamma_mul<mu,s>(v_Hmum_gam1);
+    v_Hmum_gam2 = gamma_mul<mu,s>(v_Hmum_gam2);
+    
 
-        // v hop in negative mu
-        __m256d v_Hmum0 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],0,s));
-        __m256d v_Hmum1 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],1,s));
-        __m256d v_Hmum2 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],2,s));
+    // v hop in negative mu
+    __m256d v_Hmum0 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],0,s));
+    __m256d v_Hmum1 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],1,s));
+    __m256d v_Hmum2 = load_split_spin(v+vixo(hops[hixd(t,mu,0)],2,s));
 
-        // add those together
-        v_Hmum0 = _mm256_add_pd(v_Hmum0, v_Hmum_gam0);
-        v_Hmum1 = _mm256_add_pd(v_Hmum1, v_Hmum_gam1);
-        v_Hmum2 = _mm256_add_pd(v_Hmum2, v_Hmum_gam2);
+    // add those together
+    v_Hmum0 = _mm256_add_pd(v_Hmum0, v_Hmum_gam0);
+    v_Hmum1 = _mm256_add_pd(v_Hmum1, v_Hmum_gam1);
+    v_Hmum2 = _mm256_add_pd(v_Hmum2, v_Hmum_gam2);
 
-        // take Umu hop in negative mu, adjoint it, and multiply onto v sum
-        v_Hmum0 = compl_scalarmem_conj_vectorreg_mul(U+uixo(hops[hixd(t,mu,0)],mu,0,g,vol),v_Hmum0);
-        v_Hmum1 = compl_scalarmem_conj_vectorreg_mul(U+uixo(hops[hixd(t,mu,0)],mu,1,g,vol),v_Hmum1);
-        v_Hmum2 = compl_scalarmem_conj_vectorreg_mul(U+uixo(hops[hixd(t,mu,0)],mu,2,g,vol),v_Hmum2);
+    // take Umu hop in negative mu, adjoint it, and multiply onto v sum
+    v_Hmum0 = compl_scalarmem_conj_vectorreg_mul(U+uixo(hops[hixd(t,mu,0)],mu,0,g,vol),v_Hmum0);
+    v_Hmum1 = compl_scalarmem_conj_vectorreg_mul(U+uixo(hops[hixd(t,mu,0)],mu,1,g,vol),v_Hmum1);
+    v_Hmum2 = compl_scalarmem_conj_vectorreg_mul(U+uixo(hops[hixd(t,mu,0)],mu,2,g,vol),v_Hmum2);
 
-        // v hop in positive mu * gamma
-        __m256d v_Hmup_gam0;
-        if constexpr (mu == 0 || mu == 1){
-            v_Hmup_gam0 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,1)],0,gamx_pd[s]));
-            // because mu=0,1: swap the 2 numbers in the register
-        } else {
-            v_Hmup_gam0 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],0,gamx_pd[s]));
-        }
-        __m256d v_Hmup_gam1;
-        if constexpr (mu == 0 || mu == 1){
-            v_Hmup_gam1 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,1)],1,gamx_pd[s]));
-            // because mu=0,1: swap the 2 numbers in the register
-        } else {
-            v_Hmup_gam1 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],1,gamx_pd[s]));
-        }
-        __m256d v_Hmup_gam2;
-        if constexpr (mu == 0 || mu == 1){
-            v_Hmup_gam2 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,1)],2,gamx_pd[s]));
-            // because mu=0,1: swap the 2 numbers in the register
-        } else {
-            v_Hmup_gam2 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],2,gamx_pd[s]));
-        }
+    // v hop in positive mu * gamma
+    __m256d v_Hmup_gam0;
+    if constexpr (mu == 0 || mu == 1){
+        v_Hmup_gam0 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,1)],0,gamx_pd[s]));
+        // because mu=0,1: swap the 2 numbers in the register
+    } else {
+        v_Hmup_gam0 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],0,gamx_pd[s]));
+    }
+    __m256d v_Hmup_gam1;
+    if constexpr (mu == 0 || mu == 1){
+        v_Hmup_gam1 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,1)],1,gamx_pd[s]));
+        // because mu=0,1: swap the 2 numbers in the register
+    } else {
+        v_Hmup_gam1 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],1,gamx_pd[s]));
+    }
+    __m256d v_Hmup_gam2;
+    if constexpr (mu == 0 || mu == 1){
+        v_Hmup_gam2 = load_split_spin_sw(v+vixo(hops[hixd(t,mu,1)],2,gamx_pd[s]));
+        // because mu=0,1: swap the 2 numbers in the register
+    } else {
+        v_Hmup_gam2 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],2,gamx_pd[s]));
+    }
 
-        v_Hmup_gam0 = gamma_mul<mu,s>(v_Hmup_gam0);
-        v_Hmup_gam1 = gamma_mul<mu,s>(v_Hmup_gam1);
-        v_Hmup_gam2 = gamma_mul<mu,s>(v_Hmup_gam2);
-        
+    v_Hmup_gam0 = gamma_mul<mu,s>(v_Hmup_gam0);
+    v_Hmup_gam1 = gamma_mul<mu,s>(v_Hmup_gam1);
+    v_Hmup_gam2 = gamma_mul<mu,s>(v_Hmup_gam2);
+    
 
-        // v hop in positive mu
-        __m256d v_Hmup0 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],0,s));
-        __m256d v_Hmup1 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],1,s));
-        __m256d v_Hmup2 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],2,s));
+    // v hop in positive mu
+    __m256d v_Hmup0 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],0,s));
+    __m256d v_Hmup1 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],1,s));
+    __m256d v_Hmup2 = load_split_spin(v+vixo(hops[hixd(t,mu,1)],2,s));
 
-        // subtract those 2
-        v_Hmup0 = _mm256_sub_pd(v_Hmup0, v_Hmup_gam0);
-        v_Hmup1 = _mm256_sub_pd(v_Hmup1, v_Hmup_gam1);
-        v_Hmup2 = _mm256_sub_pd(v_Hmup2, v_Hmup_gam2);
+    // subtract those 2
+    v_Hmup0 = _mm256_sub_pd(v_Hmup0, v_Hmup_gam0);
+    v_Hmup1 = _mm256_sub_pd(v_Hmup1, v_Hmup_gam1);
+    v_Hmup2 = _mm256_sub_pd(v_Hmup2, v_Hmup_gam2);
 
-        // multiply U at this point onto v sum
-        v_Hmup0 = compl_scalarmem_vectorreg_mul(U+uixo(t,mu,g,0,vol),v_Hmup0);
-        v_Hmup1 = compl_scalarmem_vectorreg_mul(U+uixo(t,mu,g,1,vol),v_Hmup1);
-        v_Hmup2 = compl_scalarmem_vectorreg_mul(U+uixo(t,mu,g,2,vol),v_Hmup2);
+    // multiply U at this point onto v sum
+    v_Hmup0 = compl_scalarmem_vectorreg_mul(U+uixo(t,mu,g,0,vol),v_Hmup0);
+    v_Hmup1 = compl_scalarmem_vectorreg_mul(U+uixo(t,mu,g,1,vol),v_Hmup1);
+    v_Hmup2 = compl_scalarmem_vectorreg_mul(U+uixo(t,mu,g,2,vol),v_Hmup2);
 
 
-        // add both U*v terms
-        v_Hmum0 = _mm256_add_pd(v_Hmum0,v_Hmup0);
-        v_Hmum1 = _mm256_add_pd(v_Hmum1,v_Hmup1);
-        v_Hmum2 = _mm256_add_pd(v_Hmum2,v_Hmup2);
+    // add both U*v terms
+    v_Hmum0 = _mm256_add_pd(v_Hmum0,v_Hmup0);
+    v_Hmum1 = _mm256_add_pd(v_Hmum1,v_Hmup1);
+    v_Hmum2 = _mm256_add_pd(v_Hmum2,v_Hmup2);
 
-        // *(-0.5) and add to incr
-        incr = _mm256_fmadd_pd(v_Hmum0,m0p5_reg,incr);
-        incr = _mm256_fmadd_pd(v_Hmum1,m0p5_reg,incr);
-        incr = _mm256_fmadd_pd(v_Hmum2,m0p5_reg,incr);
+    // *(-0.5) and add to incr
+    incr = _mm256_fmadd_pd(v_Hmum0,m0p5_reg,incr);
+    incr = _mm256_fmadd_pd(v_Hmum1,m0p5_reg,incr);
+    incr = _mm256_fmadd_pd(v_Hmum2,m0p5_reg,incr);
 
-    //}
+    // unrolled h loop end
+    
     // store incr in result
     store_split_spin(result+vixo(t,g,s),incr);
     
@@ -153,7 +156,7 @@ void dw_tempipe_mtsg_tmgsMhs_loop (const double * U, const double * v,
 at::Tensor dw_tempipe_mtsg_tmgsMhs (const at::Tensor& U_tensor, const at::Tensor& v_tensor,
                                   const at::Tensor& hops_tensor, double mass){
 
-    // memory layout has to be U[mu,x,y,z,t,g,gi] and v[x,y,z,t,s,gi]
+    // memory layout has to be U[mu,x,y,z,t,g,h] and v[x,y,z,t,s,h]
 
     TORCH_CHECK(v_tensor.dim() == 6);
     TORCH_CHECK(U_tensor.size(1) == v_tensor.size(0));

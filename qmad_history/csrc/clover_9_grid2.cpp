@@ -1,4 +1,4 @@
-// This Dirac Wilson Clover operator uses the actual memory layout of Grid
+// Wilson lover that uses the actual memory layout of Grid
 // the fastest index is as long as the SIMD width
 // it goes over sites that are furthest from each other in t direction
 // the clover term is also in the grid layout:
@@ -76,6 +76,7 @@ template <int M, int S> inline __m256d gamma_mul_g (__m256d a){
 
 // pass a template parameter if we are at a t boundary
 // tbou=0 is the lower and tbou=1 the higher boundary, anything else is inside
+// when crossing the boundary, the numbers in the register are swapped
 
 template <int mu, int g, int s, int tbou>
 inline void dwc_grid_mtsgt2_tmgsMht_loop (const double * U, const double * v,
@@ -248,7 +249,7 @@ at::Tensor dwc_grid_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
                                     double mass){
 
     // memory layout is U[mu,x,y,z,t1,g,gi,t2] and v[x,y,z,t1,s,gi,t2]
-    // t2 are the 2 neighboring sites that are in one register
+    // t2 are the 2 sites from different sub-blocks that are in one register
 
     TORCH_CHECK(v_tensor.dim() == 7);
     TORCH_CHECK(U_tensor.size(1) == v_tensor.size(0));
@@ -281,9 +282,6 @@ at::Tensor dwc_grid_mtsgt2_tmngsMht (const at::Tensor& U_tensor, const at::Tenso
 
     // register for the mass prefactor
     __m256d massf_reg = _mm256_set1_pd(4.0 + mass);
-
-    // register for the field strength term prefactor -1/2*csw
-    //__m256d csw_reg = _mm256_set1_pd(-0.5*csw);
 
     // vectorization over 2 sites in time
     // thus the space-time loop goes only over half the volume

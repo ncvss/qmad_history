@@ -1,4 +1,4 @@
-// This Dirac Wilson operator uses the memory layout of Grid
+// Wilson Dirac operator that uses the memory layout of Grid
 // the fastest index goes over sites that are furthest from each other in t direction
 // it is as long as the SIMD width (2 sites for AVX)
 
@@ -66,6 +66,7 @@ template <int M, int S> inline __m256d gamma_mul_g (__m256d a){
 
 // pass a template parameter if we are at a t boundary
 // tbou=0 is the lower and tbou=1 the higher boundary, anything else is inside
+// if a register across the boundary is accessed, the numbers inside are swapped
 
 template <int mu, int g, int s, int tbou>
 inline void dw_grid_mtsgt2_tmgsMht_loop (const double * U, const double * v,

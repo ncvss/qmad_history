@@ -1,8 +1,9 @@
-// this file has the dirac wilson operators that use only c++
-// and precompute the addresses for the hops (only 1 index for space-time)
-// also, the parallelisation is base omp
-// the code is basically c++ except for the access to torch tensors
-// the memory layout is the new one
+// wilson dirac operators that use only c++
+// and take precomputed hop addresses
+// they use only one index for the space-time site
+// parallelisation with base OpenMP
+// the code is pure c++ except for the access to torch tensors
+// the memory layout is U[x,y,z,t,mu,g,h] and v[x,y,z,t,g,s]
 
 #include <torch/extension.h>
 #include <omp.h>

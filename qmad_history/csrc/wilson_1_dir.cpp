@@ -1,6 +1,5 @@
-// this file has the first dirac wilson operators that use only torch and c++
-// and compute everything directly
-// also, the parallelisation comes from torch
+// this file contains wilson dirac operators that compute addresses at runtime
+// parallelisation comes from torch
 
 #include <torch/extension.h>
 #include <vector>
@@ -33,7 +32,7 @@ at::Tensor dw_dir_mxtsg_xtsgMhm (const at::Tensor& U, const at::Tensor& v, doubl
     TORCH_CHECK(U.dtype() == at::kComplexDouble);
     TORCH_CHECK(v.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
+    // if the data is not contiguous, we cannot calculate pointers
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 
@@ -79,8 +78,6 @@ at::Tensor dw_dir_mxtsg_xtsgMhm (const at::Tensor& U, const at::Tensor& v, doubl
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -169,8 +166,7 @@ at::Tensor dw_dir_mxtsg_xtMmghs (const at::Tensor& U, const at::Tensor& v, doubl
     TORCH_CHECK(U.dtype() == at::kComplexDouble);
     TORCH_CHECK(v.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to
-    // its place in memory
+    // if the data is not contiguous, we cannot calculate pointers
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 
@@ -216,8 +212,6 @@ at::Tensor dw_dir_mxtsg_xtMmghs (const at::Tensor& U, const at::Tensor& v, doubl
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -335,8 +329,7 @@ at::Tensor dw_dir_mxtsg_xtMmdghs (const at::Tensor& U, const at::Tensor& v, doub
     TORCH_CHECK(U.dtype() == at::kComplexDouble);
     TORCH_CHECK(v.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to
-    // its place in memory
+    // if the data is not contiguous, we cannot calculate pointers
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 
@@ -382,8 +375,6 @@ at::Tensor dw_dir_mxtsg_xtMmdghs (const at::Tensor& U, const at::Tensor& v, doub
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){

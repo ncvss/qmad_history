@@ -1,4 +1,4 @@
-// gradient computation for template avx wilson
+// gradient computation for avx wilson that uses templates
 
 #include <torch/extension.h>
 
@@ -16,10 +16,10 @@
 
 namespace qmad_history{
 
-// template for the body of the t,mu,g,s loop in dw_call_256d_om_template
+// template for the body of the t,mu,g,s loop in dw_templ_mtsg_tmgsMhs_backw
 // mu, g and s are template parameters so that the loop body can differ between iterations
 // without having to check at runtime, instead generating the different code at compile time
-// also, now gamma works as a template function too
+// gamma is also template function
 // t is a function parameter, as it varies at compile time, also the loop does not change with t
 template <int mu, int g, int s>
 void dw_templ_mtsg_tmgsMhs_backw_loop (const double * U, const double * v,
@@ -113,9 +113,6 @@ at::Tensor dw_templ_mtsg_tmgsMhs_backw (const at::Tensor& U_tensor, const at::Te
     TORCH_CHECK(U_tensor.size(4) == grad_tensor.size(3));
     TORCH_CHECK(grad_tensor.size(4) == 4);
     TORCH_CHECK(grad_tensor.size(5) == 3);
-
-    // TORCH_CHECK(U_tensor.dtype() == at::kComplexDouble);
-    // TORCH_CHECK(v_tensor.dtype() == at::kComplexDouble);
 
     TORCH_CHECK(U_tensor.is_contiguous());
     TORCH_CHECK(grad_tensor.is_contiguous());

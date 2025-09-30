@@ -1,7 +1,7 @@
 // this file has the dirac wilson clover operator that uses only torch and c++
-// and tries to compute the field strength directly
-// the computation is incomplete, I did it just as a speed test
-// also, the parallelisation comes from torch
+// and computes the field strength directly at runtime
+// the computation is incomplete, this is just for a performance test
+// the parallelisation comes from torch
 
 #include <torch/extension.h>
 #include <vector>
@@ -31,7 +31,7 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
     TORCH_CHECK(v.size(4) == 4);
     TORCH_CHECK(v.size(5) == 3);
 
-    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
+    // if the data is not contiguous, we cannot calculate the pointer to its memory address
     TORCH_CHECK(U.is_contiguous());
     TORCH_CHECK(v.is_contiguous());
 
@@ -79,8 +79,6 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
 #else
     for (int64_t x = 0; x < v_size[0]; x++){
 #endif
-// #pragma omp parallel for
-//     for (int64_t x = 0; x < v_size[0]; x++){
         for (int64_t y = 0; y < v_size[1]; y++){
             for (int64_t z = 0; z < v_size[2]; z++){
                 for (int64_t t = 0; t < v_size[3]; t++){
@@ -173,7 +171,7 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
                         }
                     }
 
-                    // dirac wilson clover improvement
+                    // clover improvement
                     // here we directly compute the clover terms
                     // we start with only the H_-0 H_-1 H_+0 H_+1 term to test
                     // this is already much slower than with precomputation
@@ -196,56 +194,6 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
                             }
                         }
                     }
-                    // for (int64_t g = 0; g < 3; g++){
-                    //     for (int64_t gi = 0; gi < 3; gi++){
-                    //         for (int64_t s = 0; s < 4; s++){
-                    //             res_ptr[ptridx6(x,y,z,t,s,g,vstride)] -=
-                    //                 F20_ptr[ptridx6(x,y,z,t,g,gi,fstride)]
-                    //                     * sigf[1][s] * v_ptr[ptridx6(x,y,z,t,sigx[1][s],gi,vstride)]
-                    //                     *csw*0.5;
-                    //         }
-                    //     }
-                    // }
-                    // for (int64_t g = 0; g < 3; g++){
-                    //     for (int64_t gi = 0; gi < 3; gi++){
-                    //         for (int64_t s = 0; s < 4; s++){
-                    //             res_ptr[ptridx6(x,y,z,t,s,g,vstride)] -=
-                    //                 F21_ptr[ptridx6(x,y,z,t,g,gi,fstride)]
-                    //                     * sigf[2][s] * v_ptr[ptridx6(x,y,z,t,sigx[2][s],gi,vstride)]
-                    //                     *csw*0.5;
-                    //         }
-                    //     }
-                    // }
-                    // for (int64_t g = 0; g < 3; g++){
-                    //     for (int64_t gi = 0; gi < 3; gi++){
-                    //         for (int64_t s = 0; s < 4; s++){
-                    //             res_ptr[ptridx6(x,y,z,t,s,g,vstride)] -=
-                    //                 F30_ptr[ptridx6(x,y,z,t,g,gi,fstride)]
-                    //                     * sigf[3][s] * v_ptr[ptridx6(x,y,z,t,sigx[3][s],gi,vstride)]
-                    //                     *csw*0.5;
-                    //         }
-                    //     }
-                    // }
-                    // for (int64_t g = 0; g < 3; g++){
-                    //     for (int64_t gi = 0; gi < 3; gi++){
-                    //         for (int64_t s = 0; s < 4; s++){
-                    //             res_ptr[ptridx6(x,y,z,t,s,g,vstride)] -=
-                    //                 F31_ptr[ptridx6(x,y,z,t,g,gi,fstride)]
-                    //                     * sigf[4][s] * v_ptr[ptridx6(x,y,z,t,sigx[4][s],gi,vstride)]
-                    //                     *csw*0.5;
-                    //         }
-                    //     }
-                    // }
-                    // for (int64_t g = 0; g < 3; g++){
-                    //     for (int64_t gi = 0; gi < 3; gi++){
-                    //         for (int64_t s = 0; s < 4; s++){
-                    //             res_ptr[ptridx6(x,y,z,t,s,g,vstride)] -=
-                    //                 F32_ptr[ptridx6(x,y,z,t,g,gi,fstride)]
-                    //                     * sigf[5][s] * v_ptr[ptridx6(x,y,z,t,sigx[5][s],gi,vstride)]
-                    //                     *csw*0.5;
-                    //         }
-                    //     }
-                    // }
 
                 }
             }
@@ -257,8 +205,6 @@ at::Tensor dwc_dir_mxtsg_false (const at::Tensor& U, const at::Tensor& v, double
 
     return result;
 }
-
-
 
 }
 

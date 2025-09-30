@@ -1,5 +1,6 @@
-# just apply the operator a few times for perf
-# often enough so that the initialisation does not contribute
+# apply the clover from GPT a number of times
+# then measure the statistics with perf
+# large number of repetitions to reduce impact of initialisation
 
 import torch
 import socket
@@ -12,8 +13,6 @@ hostname = socket.gethostname()
 print("running on host",hostname,"with",num_threads,"threads")
 
 
-# split measurement into n_batch batches
-# we alternate between operators and lattice dimensions
 n_measurements = 1000
 
 mass = -0.5
@@ -27,7 +26,7 @@ print("csw =",csw)
 rng = g.random("thee")
 
 grid0 = [32,32,32,64]
-vol = 2**21
+vol = grid0[0]*grid0[1]*grid0[2]*grid0[3]
 
 print("grid layout:",grid0)
 

@@ -1,4 +1,5 @@
-// this is the same computation as the avx, but using templates for performance
+// incomplete implementation of the wilson dirac operator using AVX-512
+// not used in the thesis
 
 #include <torch/extension.h>
 

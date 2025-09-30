@@ -5,7 +5,7 @@ import copy
 
 from qmad_history import clover, settings
 
-print("cuda_error_handling:", settings.capab("cuda_error_handling"))
+print("settings:", settings.capab())
 
 # split measurement into n_batch batches
 # we alternate between operators and lattice dimensions
@@ -26,9 +26,7 @@ print("csw =",csw)
 cuda0 = torch.device("cuda")
 print("using device",cuda0)
 
-# this is on the gpu, so we need way larger lattices
-# but also, these lattices are currently too large
-# the script ran out of memory for 64,32,32,64
+# on the GPU this script was run on, it ran out of memory for 64,32,32,64
 start_grid = [8,8,4,8]
 start_vol = start_grid[0]*start_grid[1]*start_grid[2]*start_grid[3]
 n_vols = 10
@@ -43,7 +41,7 @@ names = ["fmunu","sigmaf",]
 results = {vv:{na:np.zeros(n_measurements) for na in names} for vv in vols}
 
 # split data generation into batches that each iterate over all sites
-# it does not work without that, pytorch does some strange things
+# required to further restrict the influence of background processes
 
 for nb in range(0,n_measurements,n_batchlen):
     print("\ncurrent batch:",nb,flush=True)
@@ -54,7 +52,8 @@ for nb in range(0,n_measurements,n_batchlen):
         print(cgrid,end=" ",flush=True)
 
         # initialise the fields for this volume
-        # gpt is not installed, so we have to use pseudo fields
+        # gpt is not installed, so we have to use random numbers as pseudo fields
+        # does not change the performance of the computation
         U_cpu = torch.randn([4]+cgrid+[3,3], dtype=torch.cdouble)
         v_cpu = torch.randn(cgrid+[4,3], dtype=torch.cdouble)
 
@@ -73,8 +72,6 @@ for nb in range(0,n_measurements,n_batchlen):
             res_sf = dwc_sf.cu_tsg_tn(vcu)
             torch.cuda.synchronize()
             # because these are pseudo fields, the results are not equal
-            # if n == 0 and nb == 0:
-            #     print("computations equal:",torch.allclose(res_f,res_sf))
 
         for n in range(nb,nb+n_batchlen):
             torch.cuda.synchronize()

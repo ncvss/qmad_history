@@ -1,4 +1,5 @@
-// Dirac Wilson using avx vectorization of the spin
+// wilson dirac versions that use AVX vectorisation of the spin
+// the hop addresses are precomputed
 
 #include <torch/extension.h>
 

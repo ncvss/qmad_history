@@ -1,4 +1,4 @@
-// hop version of the wilson clover
+// this file contains wilson clover versions that takes precomputed hop addresses
 // without precomputation of the field strength
 
 #include <torch/extension.h>
@@ -349,8 +349,8 @@ inline void clover_direct_rearr (const c10::complex<double> *U, const c10::compl
 at::Tensor dwc_hop_mtsg_tmsgMh_dir (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                     const at::Tensor& hops_ten, double mass, double csw){
                                     
-    // in this function, we use only the flattened space-time index!
-    // The indices for the input arrays are U[mu,t,g,gi] and v[t,s,gi]
+    // in this function, we use only the flattened space-time index
+    // The indices for the input arrays are U[mu,t,g,h] and v[t,s,h]
 
     // check for correct size of vector field
     TORCH_CHECK(v_ten.dim() == 6);
@@ -364,7 +364,7 @@ at::Tensor dwc_hop_mtsg_tmsgMh_dir (const at::Tensor& U_ten, const at::Tensor& v
     TORCH_CHECK(U_ten.dtype() == at::kComplexDouble);
     TORCH_CHECK(v_ten.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
+    // if the data is not contiguous, we cannot calculate the pointer to its address
     TORCH_CHECK(U_ten.is_contiguous());
     TORCH_CHECK(v_ten.is_contiguous());
 
@@ -440,8 +440,8 @@ at::Tensor dwc_hop_mtsg_tmsgMh_dir (const at::Tensor& U_ten, const at::Tensor& v
 at::Tensor dwc_hop_mtsg_tmsgMh_dir_rearr (const at::Tensor& U_ten, const at::Tensor& v_ten,
                                           const at::Tensor& hops_ten, double mass, double csw){
                                     
-    // in this function, we use only the flattened space-time index!
-    // The indices for the input arrays are U[mu,t,g,gi] and v[t,s,gi]
+    // in this function, we use only the flattened space-time index
+    // The indices for the input arrays are U[mu,t,g,h] and v[t,s,h]
 
     // check for correct size of vector field
     TORCH_CHECK(v_ten.dim() == 6);
@@ -455,7 +455,7 @@ at::Tensor dwc_hop_mtsg_tmsgMh_dir_rearr (const at::Tensor& U_ten, const at::Ten
     TORCH_CHECK(U_ten.dtype() == at::kComplexDouble);
     TORCH_CHECK(v_ten.dtype() == at::kComplexDouble);
 
-    // if the data is not contiguous, we cannot calculate the pointer to its place in memory
+    // if the data is not contiguous, we cannot calculate the pointer to its address
     TORCH_CHECK(U_ten.is_contiguous());
     TORCH_CHECK(v_ten.is_contiguous());
 

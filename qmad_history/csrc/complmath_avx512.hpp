@@ -1,5 +1,8 @@
 #include <immintrin.h>
 
+// incomplete AVX-512 implementation of complex arithmetic
+// not used in this package or the thesis
+
 namespace qmad_history {
 
 /**

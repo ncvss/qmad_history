@@ -1,5 +1,6 @@
-# just apply the operator a few times for perf
-# often enough so that the initialisation does not contribute
+# apply our clover implementation a number of times
+# then measure the statistics with perf
+# large number of repetitions to reduce impact of initialisation
 
 import torch
 import socket
@@ -29,7 +30,7 @@ print("csw =",csw)
 rng = g.random("thy")
 
 grid0 = [32,32,32,64]
-vol = 2**21
+vol = grid0[0]*grid0[1]*grid0[2]*grid0[3]
 
 print("grid layout:",grid0)
 
