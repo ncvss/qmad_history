@@ -4,13 +4,13 @@ This repository serves as an archive of the code written for my master's thesis.
 It contains implementation variants of the Wilson and Wilson clover Dirac
 operators with different optimization steps.
 
-The implementations were written as Pytorch C++ extension code, or as pure C++ code.
-The Pytorch extension located in ``qmad_history`` can be installed as a Python module.
-The C++ files located in ``test/pure_cpp`` each represent an independent program.
+The implementations were written as Pytorch C++ or CUDA extension code, or as pure C++ code.
+The Pytorch extension located in ``qmad_history/`` can be installed as a Python module.
+The C++ files located in ``test/pure_cpp/`` each represent an independent program.
 
 ## Installation
 
-This package requires Pytorch and Numpy.
+The Python module part of this repository requires Pytorch and Numpy.
 The code for the thesis was written specifically for Pytorch 2.4.
 
 For the tests, the packages [GPT](https://github.com/lehner/gpt)
@@ -29,6 +29,8 @@ vectorization are enabled. If disabled, all functions throw an error.
 - ``cuda_error_handling``: activates manual error handling for kernel calls in the CUDA code.
 This is required to catch some errors that would have no error message at all.
 It generates large overhead, so it should not be used when making performance measurements.
+
+The C++ programs require OpenMP and AVX.
 
 
 ## Functionality
@@ -86,9 +88,10 @@ from each other in t direction are in one register.
 
 ## Usage in the thesis
 
-The folder ``test/pure_cpp`` contains standalone C++ programs that were used for the
-simpler tests in the thesis. The other tests in the thesis used the Pytorch
-extension operators and called them from Python.
+The simpler tests in the thesis used pure C++.
+They each are compiled from a single C++ file located in `test/pure_cpp/`.
+The other tests in the thesis used the Pytorch
+extension operators and called them from a Python script.
 
 The plots in the thesis were generated from the data ouput by the following scripts:
 
