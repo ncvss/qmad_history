@@ -82,10 +82,21 @@ from each other in t direction are in one register.
 
 ## Usage in the thesis
 
+The folder ``test/pure_cpp`` contains standalone C++ programs that were used for the
+simpler tests in the thesis. The other tests in the thesis used the Pytorch
+extension operators and called them from Python.
+
 The plots in the thesis were generated from the data ouput by the following scripts:
 
 |figure|script|
 |---|---|
+|9| `test/pure_cpp/full_sparse_dirac_matrix.cpp` |
+| 10|  `test/pure_cpp/clover_term_variants.cpp` |
+|12| `test/pure_cpp/mass_term_unroll.cpp` |
+|13 |  `test/pure_cpp/wilson_layout_loop.cpp` |
+|14|  `test/pure_cpp/wilson_loop_lookup.cpp` |
+|15|  `test/pure_cpp/wilson_parallel_domains.cpp` |
+|16,17| `test/pure_cpp/even_odd_wilson.cpp` |
 |18| `test/thesissteps/wilson_avx_spin_layout_test.py` |
 |19 | `test/thesissteps/clover_avx_f_layout_test.py` |
 |20| `test/thesissteps/wilson_avx_templ_test.py` |
@@ -95,3 +106,6 @@ The plots in the thesis were generated from the data ouput by the following scri
 |24| `test/thesissteps/wilson_cuda_split_sum_test.py` |
 |25| `test/thesissteps/clover_cuda_test.py` |
 |26| `test/thesissteps/clover_final_comparison.py` |
+|27| `test/pure_cpp/parallel_sums.cpp` |
+|28|  `test/pure_cpp/pipelining.cpp` |
+|29| `test/pure_cpp/vectorise_arraysum.cpp` |
