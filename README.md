@@ -4,6 +4,10 @@ This repository serves as an archive of the code written for my master's thesis.
 It contains implementation variants of the Wilson and Wilson clover Dirac
 operators with different optimization steps.
 
+The implementations were written as Pytorch C++ extension code, or as pure C++ code.
+The Pytorch extension can be installed as a Python module.
+The C++ files each represent an independent program.
+
 ## Installation
 
 This package requires Pytorch and Numpy.
@@ -53,13 +57,13 @@ The function names are composed of the following parts:
 3. order of the loops over the indices
 
 The indices are named in the following way:
-- ``m`` is the hop direction ($\mu$)
+- ``m`` is the direction ($\mu$) of the parallel transports to the neighbours (hops)
 - ``d`` is the sign of the hop direction
 - ``x`` stands for all space axes
 - ``t`` is time
 - ``s`` is spin
-- ``g`` is gauge
-- ``h`` is the gauge that is summed over in the SU(3) matrix multiplication
+- ``g`` is colour
+- ``h`` is the colour that is summed over in the SU(3) matrix multiplication
 - ``u`` means a sum is unrolled
 - ``n`` is the clover term orientation ($\mu\nu$),
 - ``b`` is the blocked space-time
