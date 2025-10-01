@@ -5,8 +5,8 @@ It contains implementation variants of the Wilson and Wilson clover Dirac
 operators with different optimization steps.
 
 The implementations were written as Pytorch C++ extension code, or as pure C++ code.
-The Pytorch extension can be installed as a Python module.
-The C++ files each represent an independent program.
+The Pytorch extension located in ``qmad_history`` can be installed as a Python module.
+The C++ files located in ``test/pure_cpp`` each represent an independent program.
 
 ## Installation
 
