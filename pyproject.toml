@@ -1,6 +1,9 @@
 [project]
 name = "qmad_history"
-description = "document every step in optimizing qcd_ml_accel_dirac "
+authors = [
+    {name="Nico Voß"}
+]
+description = "document the code used in my master thesis "
 requires-python=">=3.4"
 dependencies=['torch >= 2.4.0, <2.5']
 version = "0.0.1"
